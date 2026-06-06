@@ -15,7 +15,7 @@ export async function GET(req: Request) {
       headers: {
         'X-App-Token': secret
       },
-      next: { revalidate: 3600 } // Cache the backend response for 1 hour
+      cache: 'no-store'
     });
     const data = await res.json();
     return NextResponse.json(data);

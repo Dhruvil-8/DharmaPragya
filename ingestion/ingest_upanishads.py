@@ -31,6 +31,8 @@ def clean_verse(text):
     return text
 
 def devanagari_to_int(s):
+    # If the marker has dots (e.g. 1.1.2), just take the last part
+    s = s.split('.')[-1]
     DEV_DIGITS = {'०': '0', '१': '1', '२': '2', '३': '3', '४': '4', '५': '5', '६': '6', '७': '7', '८': '8', '९': '9'}
     normal_chars = []
     for c in s:
@@ -91,8 +93,11 @@ def run():
             cursor.execute('INSERT INTO sections (source_id, chapter_number, chapter_name) VALUES (?, ?, ?)', (source_id, 1, name))
             section_id = cursor.lastrowid
             
-            # Split by verse marks e.g. ॥ १ ॥
-            parts = re.split(r'([॥|]\s*[०-९\d]+\s*[॥|])', text)
+            # Remove SF (Sandhi-Free) lines which are student notes
+            text = re.sub(r'\n\s*SF[^\n]*', '', text)
+            
+            # Split by verse marks e.g. ॥ १ ॥, ॥ १.१.१ ॥, or मन्त्र १ [I.i.1]
+            parts = re.split(r'([॥|]\s*[०-९\d\.]+\s*[॥|]|मन्त्र\s*[०-९\d]+[^\n]*)', text)
             
             v_idx = 1
             for i in range(0, len(parts), 2):
