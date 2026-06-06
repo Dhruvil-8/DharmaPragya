@@ -1,6 +1,6 @@
 # DharmaPragya
 
-DharmaPragya is a platform that allows users to explore the wisdom of Sanatan Dharma by asking questions. The system leverages AI to intelligently route questions and synthesize answers based on citations drawn directly from the Srimad Bhagavad Gita and the Rigveda.
+DharmaPragya is a platform that allows users to explore the wisdom of Sanatan Dharma by asking questions. The system leverages AI to intelligently route questions and synthesize answers based on citations drawn directly from foundational texts like the Srimad Bhagavad Gita, the Vedas, the Upanishads, the Mahabharata, the Ramayana, and the Yoga Sutras.
 
 **Note:** This project is an extension and scalable evolution of the original [SrimadBhgavadGita](https://github.com/Dhruvil-8/SrimadBhgavadGita) repository.
 
@@ -53,4 +53,4 @@ The scriptures are sourced from several authoritative digital archives:
 ## Limitations & Future Work
 - **Data Verification:** The scriptures and datasets ingested into the platform have been parsed from various open-source archives and texts. They have not been thoroughly, manually verified verse-by-verse for absolute typographical or structural accuracy.
 - **AI Hallucinations:** While the system utilizes strict, mathematically enforced source routing to minimize hallucinations, the AI can still make mistakes or misinterpret esoteric philosophy. The synthesized answers should be used for spiritual exploration, not as absolute dogma.
-- **Future Improvements:** Future work will focus on improving data accuracy, expanding the repository of scriptures, and refining the cross-referencing capabilities of the AI router.
+- **Future Improvements:** Future work will focus on adding multiple language translations and commentaries, improving data accuracy, expanding the repository of scriptures, and refining the cross-referencing capabilities of the AI router.
