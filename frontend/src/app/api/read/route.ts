@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8080';
   const secret = process.env.FRONTEND_SECRET || '';

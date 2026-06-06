@@ -24,7 +24,7 @@ export default function VerseBlock({
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const audioPath = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8080'}/api/audio/${verse.chapter_number}/${verse.verse_number}.mp3`;
+  const audioPath = `/api/audio/${verse.chapter_number}/${verse.verse_number}`;
 
   const playAudio = () => {
     try {
