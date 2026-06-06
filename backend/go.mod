@@ -1,11 +1,11 @@
 module dharmapragya
 
-go 1.25.0
+go 1.25.8
 
 require (
 	github.com/google/generative-ai-go v0.20.1
 	github.com/joho/godotenv v1.5.1
-	google.golang.org/api v0.283.0
+	google.golang.org/api v0.274.0
 	modernc.org/sqlite v1.51.0
 )
 

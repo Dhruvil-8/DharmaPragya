@@ -140,6 +140,7 @@ type RouterResponse struct {
 }
 
 type RouterPayload struct {
+	Reasoning string           `json:"reasoning"`
 	IsOnTopic bool             `json:"is_on_topic"`
 	Verses    []RouterResponse `json:"verses"`
 }
@@ -184,24 +185,72 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 	}
 	model := client.GenerativeModel(modelName)
 
-	// 1. Router Call
-	prompt := fmt.Sprintf(`You are a Sanatan Dharma Scripture classifier and router. 
-The user is asking: "%s".
+	// Set persona as native system instructions
+	model.SystemInstruction = &genai.Content{
+		Parts: []genai.Part{
+			genai.Text("You are an expert Sanatan Dharma scripture scholar and router. " +
+				"Your job is to analyze questions and pinpoint the exact authoritative scriptures, chapters, and verses."),
+		},
+	}
+
+	// Enforce Structured JSON Schema for the router output
+	model.ResponseMIMEType = "application/json"
+	model.ResponseSchema = &genai.Schema{
+		Type: genai.TypeObject,
+		Properties: map[string]*genai.Schema{
+			"reasoning": {
+				Type:        genai.TypeString,
+				Description: "Step-by-step pre-retrieval reasoning: Identify the core philosophical themes, keywords, and doctrinal concepts in the user's question, and explain which scriptures and chapters cover them.",
+			},
+			"is_on_topic": {
+				Type:        genai.TypeBoolean,
+				Description: "True if the question is related to Sanatan Dharma, spiritual life, philosophy, dharma, or scriptures; false otherwise.",
+			},
+			"verses": {
+				Type:        genai.TypeArray,
+				Description: "The list of relevant verses to retrieve. This array must be empty if is_on_topic is false.",
+				Items: &genai.Schema{
+					Type: genai.TypeObject,
+					Properties: map[string]*genai.Schema{
+						"source": {
+							Type: genai.TypeString,
+							Enum: []string{
+								"Bhagavad Gita", "Rigveda", "Mahabharata", "Valmiki Ramayana",
+								"Atharva Veda", "Yajur Veda", "Patanjali Yoga Sutras",
+								"Isha Upanishad", "Kena Upanishad", "Katha Upanishad", "Prashna Upanishad",
+								"Mundaka Upanishad", "Mandukya Upanishad", "Taittiriya Upanishad", "Aitareya Upanishad",
+								"Chandogya Upanishad", "Brihadaranyaka Upanishad", "Shvetashvatara Upanishad",
+								"Kaushitaki Upanishad", "Maitri Upanishad", "Amritabindu Upanishad", "Tejobindu Upanishad",
+							},
+						},
+						"chapter": {
+							Type:        genai.TypeInteger,
+							Description: "The chapter number based on the specific mapping scheme.",
+						},
+						"verse": {
+							Type:        genai.TypeInteger,
+							Description: "The verse number.",
+						},
+					},
+					Required: []string{"source", "chapter", "verse"},
+				},
+			},
+		},
+		Required: []string{"reasoning", "is_on_topic", "verses"},
+	}
+
+	// 1. Router Call Prompt
+	prompt := fmt.Sprintf(`User Question: "%s"
 Filter preference: "%s"
 
-Analyze the question carefully. Determine if the question is related to Sanatan Dharma, spiritual life, philosophy, morality, meditation, historical scripture figures, or the scriptures. 
-If it is unrelated (e.g., questions about modern sports, coding, cooking, math, pop culture, trivia, or daily news), you MUST classify it as off-topic.
+Analyze the question carefully and route it.
 
-Return ONLY a valid JSON object with the following keys:
-- "is_on_topic": boolean (true if the query is related to Sanatan Dharma, spiritual life, philosophy, dharma, or scriptures; false otherwise)
-- "verses": a JSON array of objects with keys "source" (string, one of: "Bhagavad Gita", "Rigveda", "Mahabharata", "Valmiki Ramayana", "Atharva Veda", "Yajur Veda", "Patanjali Yoga Sutras", "Isha Upanishad", "Kena Upanishad", "Katha Upanishad", "Prashna Upanishad", "Mundaka Upanishad", "Mandukya Upanishad", "Taittiriya Upanishad", "Aitareya Upanishad", "Chandogya Upanishad", "Brihadaranyaka Upanishad", "Shvetashvatara Upanishad", "Kaushitaki Upanishad", "Maitri Upanishad", "Amritabindu Upanishad", "Tejobindu Upanishad"), "chapter" (integer), and "verse" (integer). This array must be empty if "is_on_topic" is false.
-
-SOURCE FILTERING RULE (VERY IMPORTANT):
-- If the "Filter preference" above is a specific scripture name (e.g., "Mahabharata"), you MUST ONLY route and return verses from that specific scripture. You are not allowed to suggest verses from other sources in this case.
+SOURCE FILTERING RULE:
+- If the "Filter preference" above is a specific scripture name (e.g., "Mahabharata"), you MUST ONLY route and return verses from that specific scripture.
 - If the "Filter preference" is "Upanishad", you MUST ONLY return verses from the Upanishads.
-- If the "Filter preference" is "All", you are free to suggest relevant verses from any of the 6 available sources.
+- If the "Filter preference" is "All", you are free to suggest relevant verses from any available source.
 
-MAPPING SCHEME FOR CHAPTER NUMBERS (VERY IMPORTANT):
+MAPPING SCHEME FOR CHAPTER NUMBERS:
 - "Bhagavad Gita": Chapters are numbered 1 to 18.
 - "Rigveda": Calculate chapter as (Mandala * 1000) + Hymn. E.g., Mandala 1, Hymn 164 is chapter 1164. Mandala 10, Hymn 129 is chapter 10129.
 - "Mahabharata": Calculate chapter as (Parva * 1000) + Adhyaya. E.g., Adi Parva (Parva 1), Adhyaya 1 is chapter 1001. Bhishma Parva (Parva 6), Adhyaya 25 is chapter 6025.
@@ -209,15 +258,7 @@ MAPPING SCHEME FOR CHAPTER NUMBERS (VERY IMPORTANT):
 - "Atharva Veda": Calculate chapter as (Kaanda * 1000) + Sukta. E.g., Kaanda 1, Sukta 1 is chapter 1001. Kaanda 20, Sukta 143 is chapter 20143.
 - "Yajur Veda": Chapters/Adhyayas are numbered 1 to 40 directly.
 - "Patanjali Yoga Sutras": Chapters (Padas) are numbered 1 to 4 directly.
-- Upanishads: For all Upanishads (e.g., "Isha Upanishad"), chapter is ALWAYS 1.
-
-Do not include markdown blocks, just raw JSON. Example:
-{
-  "is_on_topic": true,
-  "verses": [
-    {"source": "Bhagavad Gita", "chapter": 2, "verse": 47}
-  ]
-}`, req.Question, req.SourceFilter)
+- Upanishads: For all Upanishads (e.g., "Isha Upanishad"), chapter is ALWAYS 1.`, req.Question, req.SourceFilter)
 
 	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
 	if err != nil {
@@ -240,6 +281,8 @@ Do not include markdown blocks, just raw JSON. Example:
 	err = json.Unmarshal([]byte(routerText), &payload)
 	if err != nil {
 		log.Printf("Router JSON parse error: %v, text: %s", err, routerText)
+	} else {
+		log.Printf("[AskAI Router reasoning]: %s", payload.Reasoning)
 	}
 
 	// Strong Programmatic Guardrail: Decline immediately if the AI classified it as off-topic
@@ -293,7 +336,7 @@ Do not include markdown blocks, just raw JSON. Example:
 		}
 	}
 
-	// 3. Synthesize
+	// 3. Synthesize with post-retrieval reasoning instructions
 	synthPrompt := fmt.Sprintf(`You are an expert scholar and wise teacher of Sanatan Dharma. 
 User Question: "%s"
 
@@ -306,10 +349,13 @@ CRITICAL GUARDRAIL: If the user's question is completely unrelated to Sanatan Dh
 
 Structure your response as follows:
 - Start with a direct, comprehensive synthesis paragraph answering the user's question.
-- Follow up with a detailed philosophical breakdown referencing the retrieved verses, Sanskrit word meanings, and commentaries.
+- Perform a thorough post-retrieval analysis: Break down the Sanskrit word-by-word meanings of the key terms, and explain how they construct the philosophical framework answering the question.
+- Connect the translations and different commentaries (e.g. Sankaracharya, Ramanuja, Sivananda), explaining how different schools of thought interpret these specific verses.
 - Keep the tone respectful, authoritative, and traditional. Do not mention "database", "retrieved verses", or technical terms. Write as a unified master class.`, req.Question, contextBuilder.String())
 
-	synthResp, err := model.GenerateContent(ctx, genai.Text(synthPrompt))
+	// Reset any ResponseMIMEType and ResponseSchema settings so that the synthesis step returns clean free-form markdown
+	synthModel := client.GenerativeModel(modelName)
+	synthResp, err := synthModel.GenerateContent(ctx, genai.Text(synthPrompt))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
