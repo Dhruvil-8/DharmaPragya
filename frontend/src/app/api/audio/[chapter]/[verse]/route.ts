@@ -11,7 +11,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ chapter:
     const res = await fetch(`${backendUrl}/api/audio/${chapter}/${verse}.mp3`, {
       headers: {
         'X-App-Token': secret
-      }
+      },
+      cache: 'no-store'
     });
 
     if (!res.ok) {
