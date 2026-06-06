@@ -27,7 +27,10 @@ backend/vendor/
 
 # Databases
 *.db
+*.sqlite
 *.sqlite3
+*-wal
+*-shm
 
 # Ingestion (Python)
 raw_data/
