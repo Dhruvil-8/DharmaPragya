@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"dharmapragya/internal/api"
 	"dharmapragya/internal/storage"
@@ -36,8 +37,12 @@ func main() {
 		audioHandler.ServeHTTP(w, r)
 	})
 
-	log.Println("Server listening on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Server listening on :%s\n", port)
+	if err := http.ListenAndServe(":" + port, nil); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
