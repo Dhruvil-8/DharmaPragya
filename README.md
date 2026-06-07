@@ -22,13 +22,26 @@ Vector databases often suffer from keyword blindness, broken contextual chunking
 - **Ingestion:** Python
 
 ## Data Sources
-The scriptures are sourced from several authoritative digital archives:
-- **Bhagavad Gita**: Sourced from the open-source [Gita GitHub Project](https://github.com/gita/gita), which credits the [Gita Supersite by IIT Kanpur](https://www.gitasupersite.iitk.ac.in/) as the original source.
-- **Rigveda**: Sourced from the [VedaWeb Project](https://github.com/VedaWebProject/vedaweb-data).
+The scriptures are ingested and stored inside a unified SQLite database schema. Below is the current mapping status of translations and commentaries:
+
+| Scripture Source | Verses | Sanskrit Text | English Translation | Hindi Translation | Commentaries |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Bhagavad Gita** | 701 | Yes | Yes (5 authors) | Yes (2 authors) | Yes (15+ authors / Sanskrit, Hindi, English) |
+| **Rigveda** | 10,552 | Yes | Yes (Griffith) | No | No |
+| **Patanjali Yoga Sutras** | 195 | Yes | Yes (Johnston) | No | No |
+| **Mahabharata** | 73,436 | Yes | No | No | No |
+| **Valmiki Ramayana** | 18,761 | Yes | No | No | No |
+| **Atharva Veda** | 6,190 | Yes | No | No | No |
+| **Yajur Veda** | 1,967 | Yes | No | No | No |
+| **15 Upanishads** | 2,900+ | Yes | No | No | No |
+
+### Sourcing & Ingestion details:
+- **Bhagavad Gita**: Ingested from the open-source [Gita GitHub Project](https://github.com/gita/gita), credited to the [IIT Kanpur Gita Supersite](https://www.gitasupersite.iitk.ac.in/).
+- **Rigveda**: Ingested from the [VedaWeb Project](https://github.com/VedaWebProject/vedaweb-data).
 - **Mahabharata & Valmiki Ramayana**: Digitized BORI critical editions sourced from the [Bhandarkar Oriental Research Institute Electronic Text (BORI)](https://bombay.indology.info/).
 - **Atharva Veda & Yajur Veda**: Shukla Yajurveda (Madhyandina Samhita) and Atharva Veda (Shaunaka Samhita) JSON datasets sourced from [DharmicData](https://github.com/bhavykhatri/DharmicData).
-- **Patanjali Yoga Sutras**: Sanskrit text sourced from [Sanskrit Documents](https://sanskritdocuments.org/doc_yoga/yogasuutra.html) and English translation by Charles Johnston sourced from [Project Gutenberg](https://dn790000.ca.archive.org/0/items/theyogasutrasofp02526gut/patan10.txt).
-- **Mukhya Upanishads**: 15 Principal Upanishads scraped and processed directly from the HTML source at [Sanskrit Documents](https://sanskritdocuments.org/sanskrit/upanishhat/).
+- **Patanjali Yoga Sutras**: Ingested and aligned 1-to-1 from [Sanskrit Documents](https://sanskritdocuments.org/doc_yoga/yogasuutra.html) (Sanskrit) and Charles Johnston's translation from [Project Gutenberg](https://dn790000.ca.archive.org/0/items/theyogasutrasofp02526gut/patan10.txt) (English).
+- **15 Mukhya & Yoga Upanishads**: Scraped and split verse-by-verse from raw HTML pages at [Sanskrit Documents](https://sanskritdocuments.org/sanskrit/upanishhat/). Includes *Brihadaranyaka, Chandogya, Taittiriya, Aitareya, Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Shvetashvatara, Kaushitaki, Maitri, Amritabindu, and Tejobindu*.
 
 ## Getting Started
 
