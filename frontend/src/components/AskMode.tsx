@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { AiResponse, VerseData } from '../types';
 import VerseBlock from './VerseBlock';
 
@@ -97,7 +98,24 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
       {aiResponse && (
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-6">
           <h2 className="text-2xl font-semibold mb-3 text-orange-700">Synthesized Answer</h2>
-          <p className="text-lg leading-relaxed whitespace-pre-wrap">{aiResponse.answer}</p>
+          <div className="text-lg leading-relaxed text-gray-800">
+            <ReactMarkdown
+              components={{
+                h1: ({ ...props }) => <h1 className="text-2xl font-bold mt-6 mb-3 text-orange-700" {...props} />,
+                h2: ({ ...props }) => <h2 className="text-xl font-semibold mt-5 mb-2 text-orange-700" {...props} />,
+                h3: ({ ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2 text-orange-700" {...props} />,
+                p: ({ ...props }) => <p className="mb-4 text-gray-700 leading-relaxed" {...props} />,
+                ul: ({ ...props }) => <ul className="list-disc pl-5 mb-4 text-gray-700 space-y-1" {...props} />,
+                ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-4 text-gray-700 space-y-1" {...props} />,
+                li: ({ ...props }) => <li className="mb-1" {...props} />,
+                strong: ({ ...props }) => <strong className="font-semibold text-gray-900" {...props} />,
+                em: ({ ...props }) => <em className="italic text-gray-800" {...props} />,
+                blockquote: ({ ...props }) => <blockquote className="border-l-4 border-orange-200 pl-4 italic my-4 text-gray-600" {...props} />,
+              }}
+            >
+              {aiResponse.answer}
+            </ReactMarkdown>
+          </div>
           <div className="mt-4 pt-4 border-t border-gray-100">
             <p className="text-sm text-gray-500 italic">
               AI-generated answers can make mistakes. Please verify important philosophical interpretations with original texts or a guru.
