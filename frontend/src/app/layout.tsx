@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DharmaPragya - AI Powered Sanatan Dharma Wisdom",
     description: "Explore the profound wisdom of Sanatan Dharma with an AI guide that cites the Vedas, Upanishads, and Epics.",
-    url: "https://dharmapragya.vercel.app", // Adjust to final Vercel URL
+    url: "https://dharma-pragya.vercel.app",
     siteName: "DharmaPragya",
     type: "website",
   },
