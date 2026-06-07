@@ -13,6 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://dharma-pragya.vercel.app"),
+  alternates: {
+    canonical: "/",
+  },
   title: "DharmaPragya - AI Powered Sanatan Dharma Wisdom",
   description: "Explore the profound wisdom of Sanatan Dharma. Ask philosophical questions and get synthesized answers with direct citations from the Bhagavad Gita, Vedas, Upanishads, Mahabharata, and Ramayana.",
   keywords: "Sanatan Dharma, Bhagavad Gita, Rigveda, Upanishads, Mahabharata, Valmiki Ramayana, Patanjali Yoga Sutras, Hindu philosophy, Spirituality",
