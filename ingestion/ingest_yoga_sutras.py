@@ -48,7 +48,7 @@ def parse_english_properly():
     with open("scratch/patan10.txt", "r", encoding="utf-8", errors="ignore") as f:
         content = f.read()
 
-    matches = re.finditer(r'(?m)^\s*(\d+)\.\s+(.*?)(?=\n\s*\n)', content, re.DOTALL)
+    matches = re.finditer(r'(?m)^\s*(\d+)\.?\s+(.*?)(?=\n\s*\n)', content, re.DOTALL)
     
     current_ch = 1
     verses = {}
