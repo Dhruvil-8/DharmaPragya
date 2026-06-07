@@ -41,7 +41,7 @@ The scriptures are ingested and stored inside a unified SQLite database schema. 
 - **Mahabharata & Valmiki Ramayana**: Digitized BORI critical editions sourced from the [Bhandarkar Oriental Research Institute Electronic Text (BORI)](https://bombay.indology.info/).
 - **Atharva Veda & Yajur Veda**: Shukla Yajurveda (Madhyandina Samhita) and Atharva Veda (Shaunaka Samhita) JSON datasets sourced from [DharmicData](https://github.com/bhavykhatri/DharmicData).
 - **Patanjali Yoga Sutras**: Ingested and aligned 1-to-1 from [Sanskrit Documents](https://sanskritdocuments.org/doc_yoga/yogasuutra.html) (Sanskrit) and Charles Johnston's translation from [Project Gutenberg](https://dn790000.ca.archive.org/0/items/theyogasutrasofp02526gut/patan10.txt) (English).
-- **15 Mukhya & Yoga Upanishads**: Scraped and split verse-by-verse from raw HTML pages at [Sanskrit Documents](https://sanskritdocuments.org/sanskrit/upanishhat/). Includes *Brihadaranyaka, Chandogya, Taittiriya, Aitareya, Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Shvetashvatara, Kaushitaki, Maitri, Amritabindu, and Tejobindu*.
+- **Upanishads**: Scraped and split verse-by-verse from raw HTML pages at [Sanskrit Documents](https://sanskritdocuments.org/sanskrit/upanishhat/). Includes *Brihadaranyaka, Chandogya, Taittiriya, Aitareya, Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Shvetashvatara, Kaushitaki, Maitri, Amritabindu, and Tejobindu*.
 
 ## Getting Started
 
