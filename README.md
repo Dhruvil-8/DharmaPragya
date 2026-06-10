@@ -68,6 +68,6 @@ The scriptures are ingested and stored inside a unified SQLite database schema. 
 ## Limitations & Future Work
 - **Data Verification:** Scripture datasets are parsed from open-source archives and are not manually verified verse-by-verse.
 - **Coordinate Precision:** LLM coordinate routing is highly accurate for shorter texts (e.g. Bhagavad Gita) but can occasionally yield off-topic or non-existent verses on massive texts, which the backend ignores.
-- **AI Hallucinations:** Synthesized answers are for philosophical exploration and should not be treated as absolute dogma.
+- **AI Hallucinations:** Synthesized answers are for philosophical exploration and should not be treated as absolute spiritual authority.
 - **Future Work:** Focuses on expanding multi-language support, database verification, and refining coordinate routing safety filters.
 
