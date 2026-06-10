@@ -11,6 +11,7 @@ interface AskModeProps {
 export default function AskMode({ apiBaseUrl }: AskModeProps) {
   const [query, setQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState('All');
+  const [language, setLanguage] = useState('english');
   const [aiResponse, setAiResponse] = useState<AiResponse | null>(null);
   const [sourceVerseData, setSourceVerseData] = useState<VerseData[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -121,12 +122,26 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
     const availableVoices = voicesList.length > 0 ? voicesList : (typeof window !== 'undefined' ? window.speechSynthesis.getVoices() : []);
     
+    // Match SpeechSynthesis voice by selected language code prefix
+    const langPrefixes: Record<string, string> = {
+      english: 'en',
+      hindi: 'hi',
+      gujarati: 'gu',
+      marathi: 'mr',
+      tamil: 'ta',
+      telugu: 'te',
+      bengali: 'bn',
+      kannada: 'kn',
+    };
+    const prefix = langPrefixes[language] || 'en';
+
     // Choose a high-quality, natural-sounding voice if available
     const preferredVoice = 
-      availableVoices.find(v => v.lang.startsWith('en') && v.name.includes('Natural')) || // Edge natural voices
-      availableVoices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||  // Chrome premium voices
-      availableVoices.find(v => v.lang.startsWith('en') && v.name.includes('Samantha')) || // macOS native Samantha
-      availableVoices.find(v => v.lang.startsWith('en') && v.name.includes('Microsoft')) || // Windows native voices
+      availableVoices.find(v => v.lang.startsWith(prefix) && v.name.includes('Natural')) ||
+      availableVoices.find(v => v.lang.startsWith(prefix) && v.name.includes('Google')) ||
+      availableVoices.find(v => v.lang.startsWith(prefix)) ||
+      // Fallback to English if target language voice is not available in browser
+      availableVoices.find(v => v.lang.startsWith('en') && v.name.includes('Natural')) ||
       availableVoices.find(v => v.lang.startsWith('en'));
 
     if (preferredVoice) {
@@ -157,7 +172,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
       const askResponse = await fetch(`${apiBaseUrl}/api/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: query, source_filter: sourceFilter }),
+        body: JSON.stringify({ question: query, source_filter: sourceFilter, language: language }),
       });
 
       if (!askResponse.ok) throw new Error('Failed to get a response from the AI.');
@@ -199,23 +214,43 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
               <span>Ask the Scriptures</span>
             </div>
             
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              <label className="text-xs text-stone-500 font-semibold uppercase tracking-wider">Focus Source:</label>
-              <select 
-                value={sourceFilter} 
-                onChange={e => setSourceFilter(e.target.value)} 
-                className="p-2 text-xs bg-cream-200/50 hover:bg-cream-200 border border-cream-400/80 rounded-lg text-saffron-700 font-semibold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
-              >
-                <option value="All">All Sources</option>
-                <option value="Bhagavad Gita">Bhagavad Gita</option>
-                <option value="Rigveda">Rigveda</option>
-                <option value="Mahabharata">Mahabharata</option>
-                <option value="Valmiki Ramayana">Valmiki Ramayana</option>
-                <option value="Atharva Veda">Atharva Veda</option>
-                <option value="Yajur Veda">Yajur Veda</option>
-                <option value="Patanjali Yoga Sutras">Patanjali Yoga Sutras</option>
-                <option value="Upanishad">Upanishads</option>
-              </select>
+            <div className="flex flex-wrap items-center gap-4 self-start sm:self-auto">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-stone-500 font-semibold uppercase tracking-wider">Focus Source:</label>
+                <select 
+                  value={sourceFilter} 
+                  onChange={e => setSourceFilter(e.target.value)} 
+                  className="p-2 text-xs bg-cream-200/50 hover:bg-cream-200 border border-cream-400/80 rounded-lg text-saffron-700 font-semibold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
+                >
+                  <option value="All">All Sources</option>
+                  <option value="Bhagavad Gita">Bhagavad Gita</option>
+                  <option value="Rigveda">Rigveda</option>
+                  <option value="Mahabharata">Mahabharata</option>
+                  <option value="Valmiki Ramayana">Valmiki Ramayana</option>
+                  <option value="Atharva Veda">Atharva Veda</option>
+                  <option value="Yajur Veda">Yajur Veda</option>
+                  <option value="Patanjali Yoga Sutras">Patanjali Yoga Sutras</option>
+                  <option value="Upanishad">Upanishads</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-stone-500 font-semibold uppercase tracking-wider">Language:</label>
+                <select 
+                  value={language} 
+                  onChange={e => setLanguage(e.target.value)} 
+                  className="p-2 text-xs bg-cream-200/50 hover:bg-cream-200 border border-cream-400/80 rounded-lg text-saffron-700 font-semibold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
+                >
+                  <option value="english">English</option>
+                  <option value="hindi">हिन्दी (Hindi)</option>
+                  <option value="gujarati">ગુજરાતી (Gujarati)</option>
+                  <option value="marathi">मराठी (Marathi)</option>
+                  <option value="tamil">தமிழ் (Tamil)</option>
+                  <option value="telugu">తెలుగు (Telugu)</option>
+                  <option value="bengali">বাংলা (Bengali)</option>
+                  <option value="kannada">ಕನ್ನಡ (Kannada)</option>
+                </select>
+              </div>
             </div>
           </div>
 
