@@ -16,7 +16,7 @@ export default function HomePage() {
       {/* Decorative background sun glow */}
       <div className="absolute top-[-10%] left-[50%] translate-x-[-50%] w-[600px] h-[600px] bg-gradient-to-b from-saffron-300/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-4xl z-10 flex flex-col flex-grow">
+      <div className="w-full max-w-5xl z-10 flex flex-col flex-grow">
         <Header />
 
         {/* Tab Segmented Control */}

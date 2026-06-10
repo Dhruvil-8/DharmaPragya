@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { AiResponse, VerseData } from '../types';
 import VerseBlock from './VerseBlock';
-import { Sparkles, Compass, AlertCircle, ArrowRight, HelpCircle, FileText } from 'lucide-react';
+import { Sparkles, Compass, AlertCircle, ArrowRight, HelpCircle, FileText, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 
 interface AskModeProps {
   apiBaseUrl: string;
@@ -16,6 +16,103 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const recognitionRef = useRef<any>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  const startListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please try Chrome, Edge, or Safari.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setQuery(prev => (prev ? prev + ' ' : '') + transcript);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  const speakAnswer = () => {
+    if (!aiResponse || !aiResponse.answer) return;
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    // Strip markdown formatting and citations for clean narration
+    const cleanText = aiResponse.answer
+      .replace(/\[\^?\d+\]/g, '') // remove markdown/citation index links
+      .replace(/[\#\*\_`~\-]/g, '') // remove formatting symbols
+      .replace(/!\[.*?\]\(.*?\)/g, '') // remove images
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utteranceRef.current = utterance;
+
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+
+    utterance.onerror = (e) => {
+      console.error("TTS error:", e);
+      setIsSpeaking(false);
+    };
+
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    window.speechSynthesis.speak(utterance);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -24,6 +121,10 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
     setAiResponse(null);
     setSourceVerseData([]);
     setIsAiLoading(true);
+
+    // Stop any active text to speech reading when seeking new wisdom
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
 
     try {
       const askResponse = await fetch(`${apiBaseUrl}/api/ask`, {
@@ -91,13 +192,27 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
             </div>
           </div>
 
-          <textarea 
-            value={query} 
-            onChange={(e) => setQuery(e.target.value)} 
-            placeholder="e.g., How does one achieve peace of mind amidst chaos?" 
-            className="w-full p-4 border border-cream-400/80 hover:border-cream-500/80 bg-white rounded-xl text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-saffron-500/20 focus:border-saffron-500/80 transition-all text-sm leading-relaxed" 
-            rows={3} 
-          />
+          <div className="relative">
+            <textarea 
+              value={query} 
+              onChange={(e) => setQuery(e.target.value)} 
+              placeholder="e.g., How does one achieve peace of mind amidst chaos?" 
+              className="w-full p-4 pr-12 border border-cream-400/80 hover:border-cream-500/80 bg-white rounded-xl text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-saffron-500/20 focus:border-saffron-500/80 transition-all text-sm leading-relaxed" 
+              rows={3} 
+            />
+            <button
+              type="button"
+              onClick={isListening ? stopListening : startListening}
+              className={`absolute right-3.5 bottom-3.5 p-2 rounded-xl transition-all duration-300 cursor-pointer ${
+                isListening 
+                  ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-sm' 
+                  : 'text-stone-400 hover:text-saffron-600 hover:bg-cream-200/50'
+              }`}
+              title={isListening ? "Listening... click to stop" : "Speak query"}
+            >
+              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </button>
+          </div>
 
           <button 
             type="submit" 
@@ -138,11 +253,27 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
             <FileText className="w-40 h-40 text-stone-900" />
           </div>
 
-          <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-cream-300/40">
-            <div className="p-1.5 bg-saffron-50 text-saffron-600 rounded-lg">
-              <Sparkles className="w-5 h-5" />
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-cream-300/40">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 bg-saffron-50 text-saffron-600 rounded-lg">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl font-bold font-cinzel text-saffron-700">Synthesized Answer</h2>
             </div>
-            <h2 className="text-xl font-bold font-cinzel text-saffron-700">Synthesized Answer</h2>
+            
+            <button
+              type="button"
+              onClick={speakAnswer}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer shadow-sm hover:shadow ${
+                isSpeaking 
+                  ? 'bg-gradient-to-r from-terracotta-500 to-terracotta-600 text-white border-terracotta-600' 
+                  : 'bg-cream-300 hover:bg-saffron-100 border border-cream-400 text-saffron-700 hover:text-saffron-800'
+              }`}
+              title={isSpeaking ? "Stop reading" : "Read answer aloud"}
+            >
+              {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+              <span>{isSpeaking ? 'Stop Voice' : 'Listen Answer'}</span>
+            </button>
           </div>
 
           <div className="text-base leading-relaxed text-stone-800 font-serif">

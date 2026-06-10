@@ -64,10 +64,7 @@ export default function Header() {
                 {/* Content */}
                 <div className="flex-1 px-6 py-8 space-y-8">
                   <p className="text-sm text-stone-700 leading-relaxed font-serif">
-                    DharmaPragya is an AI-guided sanctuary for exploring the wisdom of Sanatan Dharma. 
-                    Unlike simple search engines, it utilizes LLMs to analyze queries and retrieve 
-                    verbatim verses directly from a fast, local SQLite database containing authentic translations 
-                    and commentaries.
+                    DharmaPragya is a platform that allows users to explore the wisdom of Sanatan Dharma by asking questions.
                   </p>
 
                   {/* GitHub Link Button */}
