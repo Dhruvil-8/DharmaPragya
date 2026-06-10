@@ -66,7 +66,8 @@ The scriptures are ingested and stored inside a unified SQLite database schema. 
    *The site will be available at `http://localhost:3000`.*
 
 ## Limitations & Future Work
-- **Data Verification:** The scriptures and datasets ingested into the platform have been parsed from various open-source archives and texts. They have not been thoroughly, manually verified verse-by-verse for absolute typographical or structural accuracy.
-- **Scripture Coordinate Precision:** Direct coordinate routing leverages the LLM's internal scriptural memory. While this is highly accurate for well-known or shorter texts (like the Bhagavad Gita and Patanjali Yoga Sutras), the LLM's memory can be less precise for massive scriptures (like the 73,000+ verses of the Mahabharata or the 15 Mukhya Upanishads). This fuzzy coordinate memory can occasionally result in suggesting a verse that is slightly off-topic or doesn't exist (which the backend automatically ignores).
-- **AI Hallucinations:** While the system utilizes source routing to minimize hallucinations, the AI can still make mistakes or misinterpret esoteric philosophy. The synthesized answers should be used for spiritual exploration, not as absolute dogma.
-- **Future Improvements:** Future work will focus on adding multiple language translations and commentaries, improving data accuracy, expanding the repository of scriptures, and implementing a post-retrieval AI verification loop to automatically double-check and filter out coordinate routing errors before they are displayed.
+- **Data Verification:** Scripture datasets are parsed from open-source archives and are not manually verified verse-by-verse.
+- **Coordinate Precision:** LLM coordinate routing is highly accurate for shorter texts (e.g. Bhagavad Gita) but can occasionally yield off-topic or non-existent verses on massive texts, which the backend ignores.
+- **AI Hallucinations:** Synthesized answers are for philosophical exploration and should not be treated as absolute dogma.
+- **Future Work:** Focuses on expanding multi-language support, database verification, and refining coordinate routing safety filters.
+
