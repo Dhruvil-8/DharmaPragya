@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"dharmapragya/internal/models"
 	"dharmapragya/internal/storage"
 
 	"github.com/google/generative-ai-go/genai"
@@ -56,6 +57,7 @@ func (h *Handler) ReadVerses(w http.ResponseWriter, r *http.Request) {
 
 	if source == "" {
 		sources, _ := h.db.GetSources()
+		w.Header().Set("Cache-Control", "public, max-age=3600")
 		json.NewEncoder(w).Encode(sources)
 		return
 	}
@@ -74,6 +76,7 @@ func (h *Handler) ReadVerses(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		w.Header().Set("Cache-Control", "public, max-age=86400")
 		json.NewEncoder(w).Encode(sections)
 		return
 	}
@@ -106,6 +109,7 @@ func (h *Handler) ReadVerses(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 			json.NewEncoder(w).Encode(verses)
 			return
 		}
@@ -113,6 +117,7 @@ func (h *Handler) ReadVerses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 	json.NewEncoder(w).Encode(v)
 }
 
@@ -122,15 +127,8 @@ type AskRequest struct {
 }
 
 type AskResponse struct {
-	Answer    string     `json:"answer"`
-	Citations []Citation `json:"citations"`
-}
-
-type Citation struct {
-	Source  string `json:"source"`
-	Chapter int    `json:"chapter"`
-	Verse   int    `json:"verse"`
-	Text    string `json:"text"`
+	Answer    string         `json:"answer"`
+	Citations []models.Verse `json:"citations"`
 }
 
 type RouterResponse struct {
@@ -290,27 +288,19 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(AskResponse{
 			Answer:    "I couldn't find any relevant verses in the Bhagavad Gita, Rigveda, Mahabharata, Valmiki Ramayana, Atharva Veda, Yajur Veda, Patanjali Yoga Sutras, or Upanishads for your question. Please ask a question related to spiritual life, duty, philosophy, or the scriptures.",
-			Citations: []Citation{},
+			Citations: []models.Verse{},
 		})
 		return
 	}
 
 	// 2. Fetch Context
 	var contextBuilder strings.Builder
-	var fetchedCitations []Citation
+	var fetchedVerses []*models.Verse
 
 	vIdx := 0
 	for _, route := range payload.Verses {
 		v, err := h.db.GetVerse(route.Source, route.Chapter, route.Verse)
 		if err == nil {
-			var englishText string
-			for _, t := range v.Translations {
-				if t.Language == "english" {
-					englishText = t.Text
-					break
-				}
-			}
-
 			// Build rich details for the LLM to write a deeply intelligent response
 			var details strings.Builder
 			details.WriteString(fmt.Sprintf("=== Retrieved Verse Index: %d ===\n", vIdx))
@@ -329,12 +319,7 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 			contextBuilder.WriteString(details.String())
 			contextBuilder.WriteString("\n---\n")
 
-			fetchedCitations = append(fetchedCitations, Citation{
-				Source:  route.Source,
-				Chapter: route.Chapter,
-				Verse:   route.Verse,
-				Text:    englishText,
-			})
+			fetchedVerses = append(fetchedVerses, v)
 			vIdx++
 		}
 	}
@@ -411,19 +396,23 @@ In your output JSON response:
 	if err != nil {
 		log.Printf("Synthesis JSON parse error: %v, text: %s", err, synthText)
 		// Fallback: If parse fails, return raw text as answer and all fetched citations
+		var fallbackCitations []models.Verse
+		for _, vPtr := range fetchedVerses {
+			fallbackCitations = append(fallbackCitations, *vPtr)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(AskResponse{
 			Answer:    synthText,
-			Citations: fetchedCitations,
+			Citations: fallbackCitations,
 		})
 		return
 	}
 
 	// Filter citations to only show verified ones
-	var verifiedCitations []Citation
+	var verifiedCitations []models.Verse
 	for _, idx := range synthPayload.VerifiedCitationIndices {
-		if idx >= 0 && idx < len(fetchedCitations) {
-			verifiedCitations = append(verifiedCitations, fetchedCitations[idx])
+		if idx >= 0 && idx < len(fetchedVerses) {
+			verifiedCitations = append(verifiedCitations, *fetchedVerses[idx])
 		}
 	}
 

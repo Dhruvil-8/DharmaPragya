@@ -7,7 +7,7 @@ export interface Citation {
 
 export interface AiResponse {
   answer: string;
-  citations: Citation[] | null;
+  citations: VerseData[] | null;
 }
 
 export interface Translation {

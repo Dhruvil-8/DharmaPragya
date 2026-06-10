@@ -1,17 +1,114 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plus-jakarta), sans-serif;
+  --font-serif: var(--font-lora), serif;
+  --font-cinzel: var(--font-cinzel), serif;
+  
+  --color-saffron-50: #fffbeb;
+  --color-saffron-100: #fef3c7;
+  --color-saffron-200: #fde68a;
+  --color-saffron-300: #fcd34d;
+  --color-saffron-400: #fbbf24;
+  --color-saffron-500: #d97706;
+  --color-saffron-600: #b45309;
+  --color-saffron-700: #78350f;
+  
+  --color-terracotta-50: #fdf8f6;
+  --color-terracotta-100: #faebe6;
+  --color-terracotta-500: #c2410c;
+  --color-terracotta-700: #9a3412;
+  --color-terracotta-800: #7c2d12;
+  
+  --color-cream-50: #fdfdfb;
+  --color-cream-100: #fdfbf7;
+  --color-cream-200: #fcf8f0;
+  --color-cream-300: #faf5eb;
+  --color-cream-400: #f5eedc;
+  --color-cream-500: #ebdcb9;
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fdfbf7;
+  --foreground: #2d261e;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  background-image: radial-gradient(rgba(217, 119, 6, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Beautiful custom animations and styling */
+.spiritual-gradient {
+  background: linear-gradient(135deg, #fdfbf7 0%, #faf5eb 50%, #f5eedc 100%);
+}
+
+.glow-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glow-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg) translateX(-100%);
+  transition: none;
+}
+
+.glow-btn:hover::after {
+  transform: skewX(-25deg) translateX(100%);
+  transition: all 0.75s ease;
+}
+
+.mandala-bg {
+  mask-image: radial-gradient(circle at center, black 30%, transparent 70%);
+}
+
+/* Custom scrollbar for premium aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fdfbf7;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ebdcb9;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d97706;
+}
+
+/* Shimmer animation for loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f5eedc 25%, #faf5eb 50%, #f5eedc 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
 }

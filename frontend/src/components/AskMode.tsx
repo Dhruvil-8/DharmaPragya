@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { AiResponse, VerseData } from '../types';
 import VerseBlock from './VerseBlock';
+import { Sparkles, Compass, AlertCircle, ArrowRight, HelpCircle, FileText } from 'lucide-react';
 
 interface AskModeProps {
   apiBaseUrl: string;
@@ -13,7 +14,6 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
   const [aiResponse, setAiResponse] = useState<AiResponse | null>(null);
   const [sourceVerseData, setSourceVerseData] = useState<VerseData[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isSourceLoading, setIsSourceLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,107 +39,182 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
       setIsAiLoading(false);
 
       if (askData.citations?.length) {
-        setIsSourceLoading(true);
-
-        const versePromises = askData.citations.map((s) =>
-          fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(s.source)}&chapter=${s.chapter}&verse=${s.verse}`).then((res) => {
-            if (!res.ok) throw new Error(`Failed to retrieve verse`);
-            return res.json();
-          })
-        );
-
-        const versesData: VerseData[] = await Promise.all(versePromises);
-        setSourceVerseData(versesData.filter(v => v !== null));
-        setIsSourceLoading(false);
+        setSourceVerseData(askData.citations);
       }
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
       else setError('An unexpected error occurred.');
       setIsAiLoading(false);
-      setIsSourceLoading(false);
+    }
+  };
+
+  const scrollToVerse = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Add temporary highlight effect
+      element.classList.add('ring-2', 'ring-saffron-500', 'ring-offset-2');
+      setTimeout(() => {
+        element.classList.remove('ring-2', 'ring-saffron-500', 'ring-offset-2');
+      }, 2000);
     }
   };
 
   return (
-    <>
-      <form onSubmit={handleSubmit} className="mb-8">
-        <div className="mb-4">
-          <label className="mr-2 text-gray-700 font-medium">Source Filter:</label>
-          <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)} className="p-2 border rounded border-gray-300">
-            <option value="All">All Sources</option>
-            <option value="Bhagavad Gita">Bhagavad Gita</option>
-            <option value="Rigveda">Rigveda</option>
-            <option value="Mahabharata">Mahabharata</option>
-            <option value="Valmiki Ramayana">Valmiki Ramayana</option>
-            <option value="Atharva Veda">Atharva Veda</option>
-            <option value="Yajur Veda">Yajur Veda</option>
-            <option value="Patanjali Yoga Sutras">Patanjali Yoga Sutras</option>
-            <option value="Upanishad">Upanishads</option>
-          </select>
-        </div>
-        <textarea 
-          value={query} 
-          onChange={(e) => setQuery(e.target.value)} 
-          placeholder="What is the nature of duty?" 
-          className="w-full p-3 border border-orange-200 rounded-lg shadow-sm focus:ring-2 focus:ring-orange-500 focus:outline-none" 
-          rows={3} 
-        />
-        <button 
-          type="submit" 
-          disabled={isAiLoading || isSourceLoading} 
-          className="w-full mt-2 p-3 bg-orange-600 text-white font-semibold rounded-lg shadow-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-        >
-          {isAiLoading ? 'Synthesizing Wisdom...' : 'Seek Wisdom'}
-        </button>
-      </form>
+    <div className="space-y-6">
+      {/* Query Card */}
+      <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl border border-cream-400 shadow-sm hover:shadow-md transition-all duration-300">
+        <form onSubmit={handleSubmit}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2 text-saffron-700 font-semibold">
+              <Compass className="w-5 h-5" />
+              <span>Ask the Scriptures</span>
+            </div>
+            
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <label className="text-xs text-stone-500 font-semibold uppercase tracking-wider">Focus Source:</label>
+              <select 
+                value={sourceFilter} 
+                onChange={e => setSourceFilter(e.target.value)} 
+                className="p-2 text-xs bg-cream-200/50 hover:bg-cream-200 border border-cream-400/80 rounded-lg text-saffron-700 font-semibold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
+              >
+                <option value="All">All Sources</option>
+                <option value="Bhagavad Gita">Bhagavad Gita</option>
+                <option value="Rigveda">Rigveda</option>
+                <option value="Mahabharata">Mahabharata</option>
+                <option value="Valmiki Ramayana">Valmiki Ramayana</option>
+                <option value="Atharva Veda">Atharva Veda</option>
+                <option value="Yajur Veda">Yajur Veda</option>
+                <option value="Patanjali Yoga Sutras">Patanjali Yoga Sutras</option>
+                <option value="Upanishad">Upanishads</option>
+              </select>
+            </div>
+          </div>
 
-      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4" role="alert">{error}</div>}
-      
+          <textarea 
+            value={query} 
+            onChange={(e) => setQuery(e.target.value)} 
+            placeholder="e.g., How does one achieve peace of mind amidst chaos?" 
+            className="w-full p-4 border border-cream-400/80 hover:border-cream-500/80 bg-white rounded-xl text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-saffron-500/20 focus:border-saffron-500/80 transition-all text-sm leading-relaxed" 
+            rows={3} 
+          />
+
+          <button 
+            type="submit" 
+            disabled={isAiLoading || !query.trim()} 
+            className="w-full mt-3 py-3 px-6 glow-btn cursor-pointer bg-gradient-to-r from-saffron-500 to-terracotta-600 hover:from-saffron-600 hover:to-terracotta-700 text-white font-semibold rounded-xl shadow-md disabled:from-stone-300 disabled:to-stone-400 disabled:shadow-none disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+          >
+            {isAiLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Synthesizing Wisdom...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                <span>Seek Wisdom</span>
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50/50 border border-red-200 text-red-700 px-5 py-4 rounded-xl flex items-start gap-3 shadow-sm" role="alert">
+          <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-sm">Action Failed</h4>
+            <p className="text-xs text-red-600 mt-1">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Synthesized Answer Output */}
       {aiResponse && (
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-6">
-          <h2 className="text-2xl font-semibold mb-3 text-orange-700">Synthesized Answer</h2>
-          <div className="text-lg leading-relaxed text-gray-800">
+        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-cream-400 border-t-4 border-t-saffron-500 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+            <FileText className="w-40 h-40 text-stone-900" />
+          </div>
+
+          <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-cream-300/40">
+            <div className="p-1.5 bg-saffron-50 text-saffron-600 rounded-lg">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <h2 className="text-xl font-bold font-cinzel text-saffron-700">Synthesized Answer</h2>
+          </div>
+
+          <div className="text-base leading-relaxed text-stone-800 font-serif">
             <ReactMarkdown
               components={{
-                h1: ({ ...props }) => <h1 className="text-2xl font-bold mt-6 mb-3 text-orange-700" {...props} />,
-                h2: ({ ...props }) => <h2 className="text-xl font-semibold mt-5 mb-2 text-orange-700" {...props} />,
-                h3: ({ ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2 text-orange-700" {...props} />,
-                p: ({ ...props }) => <p className="mb-4 text-gray-700 leading-relaxed" {...props} />,
-                ul: ({ ...props }) => <ul className="list-disc pl-5 mb-4 text-gray-700 space-y-1" {...props} />,
-                ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-4 text-gray-700 space-y-1" {...props} />,
+                h1: ({ ...props }) => <h1 className="text-2xl font-bold mt-6 mb-3 text-saffron-700 font-cinzel" {...props} />,
+                h2: ({ ...props }) => <h2 className="text-xl font-semibold mt-5 mb-2 text-saffron-700 font-cinzel" {...props} />,
+                h3: ({ ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2 text-saffron-700 font-cinzel" {...props} />,
+                p: ({ ...props }) => <p className="mb-4 text-stone-700 leading-relaxed" {...props} />,
+                ul: ({ ...props }) => <ul className="list-disc pl-5 mb-4 text-stone-700 space-y-1.5 font-sans text-sm" {...props} />,
+                ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-4 text-stone-700 space-y-1.5 font-sans text-sm" {...props} />,
                 li: ({ ...props }) => <li className="mb-1" {...props} />,
-                strong: ({ ...props }) => <strong className="font-semibold text-gray-900" {...props} />,
-                em: ({ ...props }) => <em className="italic text-gray-800" {...props} />,
-                blockquote: ({ ...props }) => <blockquote className="border-l-4 border-orange-200 pl-4 italic my-4 text-gray-600" {...props} />,
+                strong: ({ ...props }) => <strong className="font-semibold text-stone-900 font-sans text-sm" {...props} />,
+                em: ({ ...props }) => <em className="italic text-stone-800" {...props} />,
+                blockquote: ({ ...props }) => (
+                  <blockquote className="border-l-4 border-saffron-400 pl-4 py-1 italic my-4 text-stone-600 bg-cream-200/30 rounded-r-lg" {...props} />
+                ),
               }}
             >
               {aiResponse.answer}
             </ReactMarkdown>
           </div>
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="text-sm text-gray-500 italic">
-              AI-generated answers can make mistakes. Please verify important philosophical interpretations with original texts or a guru.
-            </p>
+
+          {/* Interactive Citation Badges */}
+          {aiResponse.citations && aiResponse.citations.length > 0 && (
+            <div className="mt-6 pt-5 border-t border-cream-300/40">
+              <h4 className="text-xs font-bold text-saffron-700 tracking-wider uppercase mb-3">Verified References</h4>
+              <div className="flex flex-wrap gap-2">
+                {aiResponse.citations.map((cit, idx) => {
+                  const targetId = `source-verse-${idx}`;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => scrollToVerse(targetId)}
+                      className="px-3.5 py-1.5 text-xs bg-cream-300/60 hover:bg-saffron-100 border border-cream-400/60 hover:border-saffron-300 rounded-full text-saffron-700 hover:text-saffron-800 font-medium cursor-pointer transition-all duration-300 flex items-center gap-1 shadow-sm hover:shadow"
+                    >
+                      <span className="font-bold text-[10px] bg-saffron-500 text-white w-4 h-4 rounded-full flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      {cit.source_name} — Ch. {cit.chapter_number}, Verse {cit.verse_number}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-5 pt-4 border-t border-cream-300/40 flex items-center gap-2 text-stone-400 text-xs italic">
+            <HelpCircle className="w-4 h-4 shrink-0 text-stone-400/80" />
+            <span>Answers are generated by AI and citations are served directly from official datasets. Please verify translations with standard copies.</span>
           </div>
         </div>
       )}
-      
-      {isSourceLoading && <p className="text-center mt-4">Loading source details...</p>}
 
+      {/* Relevant Sources Display */}
       {sourceVerseData.length > 0 && (
-        <div className="mt-6 space-y-6">
-          <h2 className="text-2xl font-semibold text-orange-700 mb-4">Relevant Sources</h2>
+        <div className="mt-8 space-y-6">
+          <div className="flex items-center gap-2 border-b border-cream-400 pb-2">
+            <FileText className="w-5 h-5 text-saffron-600" />
+            <h2 className="text-xl font-bold font-cinzel text-saffron-700">Verified Verse Records</h2>
+          </div>
           {sourceVerseData.map((verse, idx) => (
-            <VerseBlock 
-              key={`${verse.source_name}-${verse.id}-${idx}`} 
-              verse={verse} 
-              index={idx} 
-              isAskMode={true} 
-              apiBaseUrl={apiBaseUrl} 
-            />
+            <div id={`source-verse-${idx}`} key={`${verse.source_name}-${verse.id}-${idx}`} className="transition-all duration-500">
+              <VerseBlock 
+                verse={verse} 
+                index={idx} 
+                isAskMode={true} 
+              />
+            </div>
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }

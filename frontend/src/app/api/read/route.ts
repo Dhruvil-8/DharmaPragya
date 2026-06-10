@@ -14,11 +14,18 @@ export async function GET(req: Request) {
     const res = await fetch(url, {
       headers: {
         'X-App-Token': secret
-      },
-      cache: 'no-store'
+      }
     });
+    
     const data = await res.json();
-    return NextResponse.json(data);
+    
+    const headers = new Headers();
+    const cacheControl = res.headers.get('cache-control');
+    if (cacheControl) {
+      headers.set('Cache-Control', cacheControl);
+    }
+    
+    return NextResponse.json(data, { headers });
   } catch (error) {
     console.error("API route fetch error:", error);
     return NextResponse.json({ error: 'Failed to fetch from backend' }, { status: 500 });
