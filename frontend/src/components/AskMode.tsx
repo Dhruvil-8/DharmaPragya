@@ -18,13 +18,28 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voicesList, setVoicesList] = useState<SpeechSynthesisVoice[]>([]);
 
   const recognitionRef = useRef<any>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   useEffect(() => {
+    const updateVoices = () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        setVoicesList(window.speechSynthesis.getVoices());
+      }
+    };
+
+    updateVoices();
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = updateVoices;
+    }
+
     return () => {
       window.speechSynthesis.cancel();
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
@@ -104,11 +119,23 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
       setIsSpeaking(false);
     };
 
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
+    const availableVoices = voicesList.length > 0 ? voicesList : (typeof window !== 'undefined' ? window.speechSynthesis.getVoices() : []);
+    
+    // Choose a high-quality, natural-sounding voice if available
+    const preferredVoice = 
+      availableVoices.find(v => v.lang.startsWith('en') && v.name.includes('Natural')) || // Edge natural voices
+      availableVoices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||  // Chrome premium voices
+      availableVoices.find(v => v.lang.startsWith('en') && v.name.includes('Samantha')) || // macOS native Samantha
+      availableVoices.find(v => v.lang.startsWith('en') && v.name.includes('Microsoft')) || // Windows native voices
+      availableVoices.find(v => v.lang.startsWith('en'));
+
     if (preferredVoice) {
       utterance.voice = preferredVoice;
     }
+
+    // Warm, friendly, and spiritual voice configurations
+    utterance.rate = 0.92;   // Slightly slower pace (0.92) is much easier to follow
+    utterance.pitch = 1.02;  // Slightly warmer pitch
 
     window.speechSynthesis.speak(utterance);
   };
