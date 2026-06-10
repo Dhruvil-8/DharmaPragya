@@ -69,8 +69,22 @@ export default function VerseBlock({
     }
   };
 
-  const hasTranslations = verse.translations && verse.translations.filter(t => t.language?.toLowerCase() === selectedLanguage).length > 0;
-  const hasCommentaries = verse.commentaries && verse.commentaries.filter(c => c.language?.toLowerCase() === selectedLanguage).length > 0;
+  const hasSanskritTranslation = verse.translations && verse.translations.some(t => t.language?.toLowerCase() === 'sanskrit');
+  const hasSanskritCommentary = verse.commentaries && verse.commentaries.some(c => c.language?.toLowerCase() === 'sanskrit');
+  const availableLanguages: Language[] = ['english', 'hindi'];
+  if (hasSanskritTranslation || hasSanskritCommentary) {
+    availableLanguages.push('sanskrit');
+  }
+
+  const isSelectedLanguageSupported = 
+    selectedLanguage === 'english' || 
+    selectedLanguage === 'hindi' || 
+    (selectedLanguage === 'sanskrit' && (hasSanskritTranslation || hasSanskritCommentary));
+
+  const activeLanguage = isSelectedLanguageSupported ? selectedLanguage : 'english';
+
+  const hasTranslations = verse.translations && verse.translations.filter(t => t.language?.toLowerCase() === activeLanguage).length > 0;
+  const hasCommentaries = verse.commentaries && verse.commentaries.filter(c => c.language?.toLowerCase() === activeLanguage).length > 0;
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-cream-400 hover:border-saffron-500/20 transition-all duration-300 relative overflow-hidden">
@@ -150,12 +164,12 @@ export default function VerseBlock({
         </div>
 
         <div className="flex gap-1.5 bg-cream-300/80 p-1 rounded-full border border-cream-400/50">
-          {(['english', 'hindi'] as Language[]).map((lang) => (
+          {availableLanguages.map((lang) => (
             <button 
               key={lang} 
               onClick={() => setSelectedLanguage(lang)} 
               className={`px-4 py-1.5 text-xs font-semibold rounded-full cursor-pointer transition-all duration-300 ${
-                selectedLanguage === lang 
+                activeLanguage === lang 
                   ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white shadow-sm' 
                   : 'text-saffron-700 hover:text-saffron-600 hover:bg-cream-300/40'
               }`}
@@ -172,13 +186,13 @@ export default function VerseBlock({
         <div className="space-y-3">
           <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-700 uppercase tracking-wider">
             <BookOpen className="w-3.5 h-3.5" />
-            <span>Translations ({selectedLanguage})</span>
+            <span>Translations ({activeLanguage})</span>
           </div>
 
           {hasTranslations ? (
             <div className="grid gap-3">
               {verse.translations
-                .filter(t => t.language?.toLowerCase() === selectedLanguage)
+                .filter(t => t.language?.toLowerCase() === activeLanguage)
                 .map((t, i) => (
                   <div key={i} className="p-4 bg-saffron-50/50 border border-saffron-200/20 hover:border-saffron-200/40 rounded-xl transition-all duration-200 shadow-sm">
                     <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-saffron-600 bg-saffron-100/50 px-2 py-0.5 rounded border border-saffron-200/30 mb-2">
@@ -190,7 +204,7 @@ export default function VerseBlock({
             </div>
           ) : (
             <p className="text-stone-400 italic text-xs p-4 bg-cream-200/20 rounded-xl border border-dashed border-cream-400/40 text-center">
-              No translation available in {selectedLanguage} for this verse.
+              No translation available in {activeLanguage} for this verse.
             </p>
           )}
         </div>
@@ -200,13 +214,13 @@ export default function VerseBlock({
           <div className="space-y-3 pt-2">
             <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-700 uppercase tracking-wider">
               <Volume2 className="w-3.5 h-3.5" />
-              <span>Commentaries ({selectedLanguage})</span>
+              <span>Commentaries ({activeLanguage})</span>
             </div>
 
             {hasCommentaries ? (
               <div className="space-y-3">
                 {verse.commentaries
-                  .filter(c => c.language?.toLowerCase() === selectedLanguage)
+                  .filter(c => c.language?.toLowerCase() === activeLanguage)
                   .map((c, i) => (
                     <div key={i} className="p-5 bg-stone-50 border border-cream-400/60 rounded-xl hover:shadow-sm transition-all duration-200">
                       <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-stone-500 bg-stone-200/50 px-2 py-0.5 rounded border border-stone-300/30 mb-2">
@@ -218,7 +232,7 @@ export default function VerseBlock({
               </div>
             ) : (
               <p className="text-stone-400 italic text-xs p-4 bg-cream-200/20 rounded-xl border border-dashed border-cream-400/40 text-center">
-                No commentary available in {selectedLanguage} for this verse.
+                No commentary available in {activeLanguage} for this verse.
               </p>
             )}
           </div>
