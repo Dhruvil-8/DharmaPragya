@@ -238,7 +238,11 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                 <label className="text-xs text-stone-500 font-semibold uppercase tracking-wider">Language:</label>
                 <select 
                   value={language} 
-                  onChange={e => setLanguage(e.target.value)} 
+                  onChange={e => {
+                    setLanguage(e.target.value);
+                    window.speechSynthesis.cancel();
+                    setIsSpeaking(false);
+                  }} 
                   className="p-2 text-xs bg-cream-200/50 hover:bg-cream-200 border border-cream-400/80 rounded-lg text-saffron-700 font-semibold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
                 >
                   <option value="english">English</option>
@@ -323,19 +327,21 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
               <h2 className="text-xl font-bold font-cinzel text-saffron-700">Synthesized Answer</h2>
             </div>
             
-            <button
-              type="button"
-              onClick={speakAnswer}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer shadow-sm hover:shadow ${
-                isSpeaking 
-                  ? 'bg-gradient-to-r from-terracotta-500 to-terracotta-600 text-white border-terracotta-600' 
-                  : 'bg-cream-300 hover:bg-saffron-100 border border-cream-400 text-saffron-700 hover:text-saffron-800'
-              }`}
-              title={isSpeaking ? "Stop reading" : "Read answer aloud"}
-            >
-              {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-              <span>{isSpeaking ? 'Stop Voice' : 'Listen Answer'}</span>
-            </button>
+            {language === 'english' && (
+              <button
+                type="button"
+                onClick={speakAnswer}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer shadow-sm hover:shadow ${
+                  isSpeaking 
+                    ? 'bg-gradient-to-r from-terracotta-500 to-terracotta-600 text-white border-terracotta-600' 
+                    : 'bg-cream-300 hover:bg-saffron-100 border border-cream-400 text-saffron-700 hover:text-saffron-800'
+                }`}
+                title={isSpeaking ? "Stop reading" : "Read answer aloud"}
+              >
+                {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                <span>{isSpeaking ? 'Stop Voice' : 'Listen Answer'}</span>
+              </button>
+            )}
           </div>
 
           <div className="text-base leading-relaxed text-stone-800 font-serif">
