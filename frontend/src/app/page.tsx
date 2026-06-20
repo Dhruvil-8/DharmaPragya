@@ -49,7 +49,7 @@ export default function HomePage() {
             <AskMode apiBaseUrl={API_BASE_URL} />
           </div>
           <div className={mode === 'read' ? 'animate-fade-in' : 'hidden'}>
-            <ReadMode apiBaseUrl={API_BASE_URL} />
+            <ReadMode apiBaseUrl={API_BASE_URL} isActive={mode === 'read'} />
           </div>
         </div>
 

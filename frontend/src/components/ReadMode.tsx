@@ -5,9 +5,10 @@ import { ChevronRight, List, BookMarked, ArrowLeft, BookOpen, Eye, Languages, Vo
 
 interface ReadModeProps {
   apiBaseUrl: string;
+  isActive?: boolean;
 }
 
-export default function ReadMode({ apiBaseUrl }: ReadModeProps) {
+export default function ReadMode({ apiBaseUrl, isActive = true }: ReadModeProps) {
   const [sources, setSources] = useState<SourceData[]>([]);
   const [currentCategory, setCurrentCategory] = useState<string | null>(null);
   const [currentSource, setCurrentSource] = useState<string | null>(null);
@@ -104,11 +105,14 @@ export default function ReadMode({ apiBaseUrl }: ReadModeProps) {
     try {
       const res = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}`);
       const data = await res.json();
-      const sections = data || [];
-      setSectionList(sections);
-      
-      if (sections.length === 1) {
-        loadChapter(sections[0].chapter_number, sourceName);
+      if (Array.isArray(data)) {
+        setSectionList(data);
+        if (data.length === 1) {
+          loadChapter(data[0].chapter_number, sourceName);
+        }
+      } else {
+        setSectionList([]);
+        setError(data?.error || 'Failed to load sections');
       }
     } catch (e) {
       console.error(e);
@@ -128,7 +132,12 @@ export default function ReadMode({ apiBaseUrl }: ReadModeProps) {
       const src = overrideSource || currentSource || '';
       const res = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(src)}&chapter=${chapterNumber}`);
       const data = await res.json();
-      setChapterData(data || []);
+      if (Array.isArray(data)) {
+        setChapterData(data);
+      } else {
+        setChapterData([]);
+        setError(data?.error || 'Failed to load chapter');
+      }
     } catch (e) {
       console.error(e);
       setError('Failed to load chapter');
@@ -435,6 +444,7 @@ export default function ReadMode({ apiBaseUrl }: ReadModeProps) {
                       readingMode="focus"
                       preferredLanguage={preferredLanguage}
                       autoPlayChant={autoPlayChant}
+                      isActive={isActive}
                     />
                   )}
                 </div>
@@ -553,6 +563,7 @@ export default function ReadMode({ apiBaseUrl }: ReadModeProps) {
                     readingMode="study"
                     preferredLanguage={preferredLanguage}
                     autoPlayChant={autoPlayChant}
+                    isActive={isActive}
                   />
                 )}
               </div>

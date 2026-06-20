@@ -12,6 +12,7 @@ interface VerseBlockProps {
   readingMode?: 'study' | 'focus';
   preferredLanguage?: string;
   autoPlayChant?: boolean;
+  isActive?: boolean;
 }
 
 export default function VerseBlock({
@@ -23,7 +24,8 @@ export default function VerseBlock({
   onPrev,
   readingMode = 'study',
   preferredLanguage = 'english',
-  autoPlayChant = false
+  autoPlayChant = false,
+  isActive = true
 }: VerseBlockProps) {
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('english');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -53,15 +55,15 @@ export default function VerseBlock({
       setIsPlaying(false);
     }
 
-    // Auto-play next verse if autoplay is enabled and source is Gita
-    if (autoPlayChant && verse.source_name === 'Bhagavad Gita' && !isAskMode) {
+    // Auto-play next verse if autoplay is enabled, readingMode is focus, and source is Gita
+    if (autoPlayChant && readingMode === 'focus' && isActive && verse.source_name === 'Bhagavad Gita' && !isAskMode) {
       const timer = setTimeout(() => {
         playAudio();
       }, 300);
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verse.id, verse.chapter_number, verse.verse_number, autoPlayChant]);
+  }, [verse.id, verse.chapter_number, verse.verse_number, autoPlayChant, readingMode, isActive]);
 
   // Clean up audio player on unmount
   useEffect(() => {
@@ -72,6 +74,13 @@ export default function VerseBlock({
       }
     };
   }, []);
+
+  // Stop audio if the component becomes inactive (e.g. tab switched)
+  useEffect(() => {
+    if (!isActive) {
+      pauseAudio();
+    }
+  }, [isActive]);
 
   function playAudio() {
     try {

@@ -86,7 +86,7 @@ func (s *Storage) GetSections(sourceID int) ([]models.Section, error) {
 
 func (s *Storage) GetVersesBySection(sectionID int) ([]models.Verse, error) {
 	query := `
-		SELECT v.id, v.section_id, v.verse_number, v.sanskrit_text, v.transliteration, v.word_meanings, src.name, sec.chapter_name, sec.chapter_number
+		SELECT v.id, v.section_id, v.verse_number, COALESCE(v.sanskrit_text, ''), COALESCE(v.transliteration, ''), COALESCE(v.word_meanings, ''), src.name, sec.chapter_name, sec.chapter_number
 		FROM verses v
 		JOIN sections sec ON v.section_id = sec.id
 		JOIN sources src ON sec.source_id = src.id
@@ -170,7 +170,7 @@ func (s *Storage) GetVersesBySection(sectionID int) ([]models.Verse, error) {
 
 func (s *Storage) GetVerse(sourceName string, chapterNumber int, verseNumber int) (*models.Verse, error) {
 	query := `
-		SELECT v.id, v.section_id, v.verse_number, v.sanskrit_text, v.transliteration, v.word_meanings, src.name, sec.chapter_name, sec.chapter_number
+		SELECT v.id, v.section_id, v.verse_number, COALESCE(v.sanskrit_text, ''), COALESCE(v.transliteration, ''), COALESCE(v.word_meanings, ''), src.name, sec.chapter_name, sec.chapter_number
 		FROM verses v
 		JOIN sections sec ON v.section_id = sec.id
 		JOIN sources src ON sec.source_id = src.id
