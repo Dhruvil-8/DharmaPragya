@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Info, X, ExternalLink, Globe } from 'lucide-react';
+import Image from 'next/image';
 
 export default function Header() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -21,10 +22,12 @@ export default function Header() {
         {/* Main Logo & Title */}
         <div className="flex flex-col items-center mt-8 md:mt-4">
           <div className="relative p-1 rounded-full border-2 border-dashed border-saffron-500/30 mb-4 hover:border-saffron-500/60 transition-all duration-500 hover:rotate-12">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
+            <Image 
               src="/logo.png" 
               alt="DharmaPragya Logo" 
+              width={96}
+              height={96}
+              priority
               className="w-20 h-20 md:w-24 md:h-24 rounded-full shadow-md object-cover bg-white" 
             />
           </div>

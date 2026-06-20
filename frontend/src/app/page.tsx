@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Header from '../components/Header';
 import AskMode from '../components/AskMode';
 import ReadMode from '../components/ReadMode';
-import { Sparkles, BookOpen } from 'lucide-react';
+import { HelpCircle, BookOpen } from 'lucide-react';
 
 const API_BASE_URL = '';
 
@@ -28,7 +28,7 @@ export default function HomePage() {
                 : 'text-saffron-700 hover:text-saffron-600 hover:bg-cream-300/40'
               }`}
           >
-            <Sparkles className="w-4 h-4" />
+            <HelpCircle className="w-4 h-4" />
             Ask AI
           </button>
           <button

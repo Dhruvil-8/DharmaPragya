@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { AiResponse, VerseData } from '../types';
 import VerseBlock from './VerseBlock';
-import { Sparkles, Compass, AlertCircle, ArrowRight, HelpCircle, FileText, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { Compass, AlertCircle, ArrowRight, HelpCircle, FileText, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 
 interface AskModeProps {
   apiBaseUrl: string;
@@ -21,6 +21,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voicesList, setVoicesList] = useState<SpeechSynthesisVoice[]>([]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
@@ -48,6 +49,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
   }, []);
 
   const startListening = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Speech recognition is not supported in this browser. Please try Chrome, Edge, or Safari.");
@@ -64,11 +66,13 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
       setIsListening(true);
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       setQuery(prev => (prev ? prev + ' ' : '') + transcript);
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onerror = (event: any) => {
       console.error("Speech recognition error", event.error);
       setIsListening(false);
@@ -292,7 +296,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" />
+                <Compass className="w-4 h-4" />
                 <span>Seek Wisdom</span>
                 <ArrowRight className="w-4 h-4 ml-1" />
               </>
@@ -322,7 +326,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-cream-300/40">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 bg-saffron-50 text-saffron-600 rounded-lg">
-                <Sparkles className="w-5 h-5" />
+                <Compass className="w-5 h-5" />
               </div>
               <h2 className="text-xl font-bold font-cinzel text-saffron-700">Synthesized Answer</h2>
             </div>

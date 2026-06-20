@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { VerseData, SectionData, SourceData } from '../types';
 import VerseBlock from './VerseBlock';
-import { ChevronRight, List, BookMarked, ArrowLeft } from 'lucide-react';
+import { ChevronRight, List, BookMarked, ArrowLeft, BookOpen, Eye, Languages, Volume2, VolumeX, X } from 'lucide-react';
 
 interface ReadModeProps {
   apiBaseUrl: string;
@@ -19,6 +19,25 @@ export default function ReadMode({ apiBaseUrl }: ReadModeProps) {
   const [error, setError] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const [readingMode, setReadingMode] = useState<'study' | 'focus'>('study');
+  const [autoPlayChant, setAutoPlayChant] = useState<boolean>(true);
+  const [preferredLanguage, setPreferredLanguage] = useState<string>('english');
+
+  // Hydrate states from localStorage after initial render to avoid SSR hydration mismatches
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedAutoPlay = localStorage.getItem('autoPlayChant');
+      const savedLang = localStorage.getItem('preferredLanguage');
+      const savedMode = localStorage.getItem('readingMode');
+      
+      Promise.resolve().then(() => {
+        if (savedAutoPlay !== null) setAutoPlayChant(savedAutoPlay === 'true');
+        if (savedLang !== null) setPreferredLanguage(savedLang);
+        if (savedMode !== null) setReadingMode(savedMode as 'study' | 'focus');
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (sources.length === 0) {
@@ -325,56 +344,248 @@ export default function ReadMode({ apiBaseUrl }: ReadModeProps) {
       {/* 4. Active Verse & Chapter Browser View */}
       {!isLoading && currentSection && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <button 
-              onClick={() => { setCurrentSection(null); }} 
-              className="flex items-center gap-1.5 text-xs text-saffron-700 hover:text-saffron-600 font-semibold cursor-pointer group"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-              Back to Chapters
-            </button>
-          </div>
           
-          {/* Active Verse Block wrapper */}
-          <div id="active-verse-view">
-            {chapterData.length > 0 && chapterData[currentVerseIndex] && (
-              <VerseBlock 
-                verse={chapterData[currentVerseIndex]} 
-                index={currentVerseIndex} 
-                totalVerses={chapterData.length} 
-                isAskMode={false} 
-                onNext={nextVerse} 
-                onPrev={prevVerse} 
-              />
-            )}
-          </div>
+          {/* A. Zen Focus Mode Full-Screen Overlay */}
+          {readingMode === 'focus' ? (
+            <div className="fixed inset-0 z-50 bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 flex flex-col overflow-y-auto selection:bg-saffron-200 selection:text-saffron-700 animate-fade-in">
+              <div className="w-full max-w-4xl mx-auto px-4 py-6 md:py-8 flex flex-col flex-grow space-y-6">
+                
+                {/* Pinned Top Bar inside Focus Mode */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 backdrop-blur-md p-4 rounded-2xl border border-cream-400/50 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setReadingMode('study')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-stone-600 hover:text-saffron-700 bg-white border border-cream-400 hover:border-saffron-300 rounded-xl cursor-pointer transition-all shadow-sm"
+                      title="Exit Zen focus mode"
+                    >
+                      <X className="w-4 h-4" />
+                      <span>Exit Focus</span>
+                    </button>
+                    <span className="h-4 w-px bg-stone-300" />
+                    <span className="font-cinzel text-xs font-extrabold text-saffron-800 tracking-wider">
+                      {chapterData[0]?.chapter_name === currentSource ? currentSource : chapterData[0]?.chapter_name}
+                    </span>
+                  </div>
 
-          {/* Quick verse selection grid */}
-          {chapterData.length > 1 && (
-            <div className="bg-white p-6 rounded-2xl border border-cream-400 shadow-sm">
-              <div className="flex items-center gap-1.5 mb-4 border-b border-cream-300/40 pb-2">
-                <List className="w-4 h-4 text-saffron-600" />
-                <h3 className="text-sm font-bold text-saffron-700 tracking-wider uppercase font-cinzel">Navigate Verses</h3>
-              </div>
-              
-              <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2">
-                {chapterData.map((v, idx) => (
-                  <button 
-                    key={v.id} 
-                    onClick={() => goToVerseIndex(idx)} 
-                    title={`Verse ${v.verse_number}`}
-                    className={`aspect-square rounded-lg text-xs font-bold flex items-center justify-center border cursor-pointer transition-all duration-200 ${
-                      idx === currentVerseIndex 
-                        ? 'bg-gradient-to-br from-saffron-500 to-terracotta-600 text-white border-saffron-600 shadow-sm scale-115 z-10' 
-                        : 'bg-white border-cream-400 text-stone-700 hover:bg-saffron-50 hover:border-saffron-300'
-                    }`}
-                  >
-                    {v.verse_number}
-                  </button>
-                ))}
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Language Preference inside Focus */}
+                    <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-xl border border-cream-400 text-xs shadow-sm">
+                      <Languages className="w-3.5 h-3.5 text-saffron-600" />
+                      <select
+                        value={preferredLanguage}
+                        onChange={(e) => {
+                          setPreferredLanguage(e.target.value);
+                          if (typeof window !== 'undefined') localStorage.setItem('preferredLanguage', e.target.value);
+                        }}
+                        className="bg-transparent text-saffron-700 font-bold border-none outline-none pr-5 cursor-pointer text-xs"
+                      >
+                        <option value="english">English</option>
+                        <option value="hindi">हिन्दी (Hindi)</option>
+                        <option value="sanskrit">Sanskrit</option>
+                      </select>
+                    </div>
+
+                    {/* Autoplay setting inside Focus */}
+                    {currentSource === 'Bhagavad Gita' && (
+                      <button
+                        onClick={() => {
+                          const nextVal = !autoPlayChant;
+                          setAutoPlayChant(nextVal);
+                          if (typeof window !== 'undefined') localStorage.setItem('autoPlayChant', String(nextVal));
+                        }}
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border shadow-sm cursor-pointer ${
+                          autoPlayChant 
+                            ? 'bg-saffron-50 border-saffron-200 text-saffron-700' 
+                            : 'bg-stone-50 border-stone-200 text-stone-500'
+                        }`}
+                      >
+                        {autoPlayChant ? <Volume2 className="w-3.5 h-3.5 text-saffron-500" /> : <VolumeX className="w-3.5 h-3.5 text-stone-400" />}
+                        <span>{autoPlayChant ? 'Autoplay On' : 'Autoplay Off'}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Progress Bar inside Focus */}
+                {chapterData.length > 0 && (
+                  <div className="space-y-1">
+                    <div className="w-full bg-cream-400/40 h-1.5 rounded-full overflow-hidden border border-cream-500/20">
+                      <div 
+                        className="bg-gradient-to-r from-saffron-500 to-terracotta-500 h-full transition-all duration-500 ease-out"
+                        style={{ width: `${((currentVerseIndex + 1) / chapterData.length) * 100}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between items-center text-[9px] font-bold text-stone-400 tracking-widest uppercase px-1">
+                      <span>Verse {currentVerseIndex + 1} of {chapterData.length}</span>
+                      <span>{Math.round(((currentVerseIndex + 1) / chapterData.length) * 100)}% read</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Active Verse Card in Focus */}
+                <div className="flex-grow flex items-center justify-center py-4">
+                  {chapterData.length > 0 && chapterData[currentVerseIndex] && (
+                    <VerseBlock 
+                      verse={chapterData[currentVerseIndex]} 
+                      index={currentVerseIndex} 
+                      totalVerses={chapterData.length} 
+                      isAskMode={false} 
+                      onNext={nextVerse} 
+                      onPrev={prevVerse} 
+                      readingMode="focus"
+                      preferredLanguage={preferredLanguage}
+                      autoPlayChant={autoPlayChant}
+                    />
+                  )}
+                </div>
               </div>
             </div>
+          ) : (
+            // B. Standard Study Mode Layout
+            <>
+              {/* Progress Bar in Study Mode */}
+              {chapterData.length > 0 && (
+                <div className="space-y-1.5">
+                  <div className="w-full bg-cream-400/40 h-1.5 rounded-full overflow-hidden border border-cream-500/20">
+                    <div 
+                      className="bg-gradient-to-r from-saffron-500 to-terracotta-500 h-full transition-all duration-500 ease-out"
+                      style={{ width: `${((currentVerseIndex + 1) / chapterData.length) * 100}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] font-bold text-stone-400 tracking-wider uppercase px-1">
+                    <span>Verse {currentVerseIndex + 1} of {chapterData.length}</span>
+                    <span>{Math.round(((currentVerseIndex + 1) / chapterData.length) * 100)}% Complete</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Study Mode Top Menu Bar */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/70 backdrop-blur-sm p-3 rounded-2xl border border-cream-400/50 shadow-sm">
+                <button 
+                  onClick={() => { setCurrentSection(null); }} 
+                  className="flex items-center gap-1.5 text-xs text-saffron-700 hover:text-saffron-600 font-semibold cursor-pointer group px-2 py-1"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+                  Back to Chapters
+                </button>
+
+                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                  <div className="flex bg-cream-300 p-0.5 rounded-xl border border-cream-400/50 text-xs">
+                    <button
+                      onClick={() => {
+                        setReadingMode('study');
+                        if (typeof window !== 'undefined') localStorage.setItem('readingMode', 'study');
+                      }}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                        (readingMode as string) === 'study'
+                          ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white shadow-sm'
+                          : 'text-saffron-700 hover:text-saffron-600'
+                      }`}
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span>Study</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setReadingMode('focus');
+                        if (typeof window !== 'undefined') localStorage.setItem('readingMode', 'focus');
+                      }}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                        (readingMode as string) === 'focus'
+                          ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white shadow-sm'
+                          : 'text-saffron-700 hover:text-saffron-600'
+                      }`}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Focus</span>
+                    </button>
+                  </div>
+
+
+                  {/* Language Selector */}
+                  <div className="flex items-center gap-1.5 bg-cream-300 px-2.5 py-1.5 rounded-xl border border-cream-400/50 text-xs">
+                    <Languages className="w-3.5 h-3.5 text-saffron-600" />
+                    <select
+                      value={preferredLanguage}
+                      onChange={(e) => {
+                        setPreferredLanguage(e.target.value);
+                        if (typeof window !== 'undefined') localStorage.setItem('preferredLanguage', e.target.value);
+                      }}
+                      className="bg-transparent text-saffron-700 font-bold border-none outline-none pr-5 cursor-pointer text-xs"
+                    >
+                      <option value="english">English</option>
+                      <option value="hindi">हिन्दी (Hindi)</option>
+                      <option value="sanskrit">Sanskrit</option>
+                    </select>
+                  </div>
+
+                  {/* Audio Autoplay Switch (Only for Gita) */}
+                  {currentSource === 'Bhagavad Gita' && (
+                    <button
+                      onClick={() => {
+                        const nextVal = !autoPlayChant;
+                        setAutoPlayChant(nextVal);
+                        if (typeof window !== 'undefined') localStorage.setItem('autoPlayChant', String(nextVal));
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                        autoPlayChant 
+                          ? 'bg-saffron-50 border-saffron-200 text-saffron-700' 
+                          : 'bg-stone-50 border-stone-200 text-stone-500'
+                      }`}
+                    >
+                      {autoPlayChant ? <Volume2 className="w-3.5 h-3.5 text-saffron-500" /> : <VolumeX className="w-3.5 h-3.5 text-stone-400" />}
+                      <span>{autoPlayChant ? 'Autoplay On' : 'Autoplay Off'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Active Verse Block */}
+              <div id="active-verse-view">
+                {chapterData.length > 0 && chapterData[currentVerseIndex] && (
+                  <VerseBlock 
+                    verse={chapterData[currentVerseIndex]} 
+                    index={currentVerseIndex} 
+                    totalVerses={chapterData.length} 
+                    isAskMode={false} 
+                    onNext={nextVerse} 
+                    onPrev={prevVerse} 
+                    readingMode="study"
+                    preferredLanguage={preferredLanguage}
+                    autoPlayChant={autoPlayChant}
+                  />
+                )}
+              </div>
+
+              {/* Quick verse selection grid */}
+              {chapterData.length > 1 && (
+                <div className="bg-white p-6 rounded-2xl border border-cream-400 shadow-sm">
+                  <div className="flex items-center gap-1.5 mb-4 border-b border-cream-300/40 pb-2">
+                    <List className="w-4 h-4 text-saffron-600" />
+                    <h3 className="text-sm font-bold text-saffron-700 tracking-wider uppercase font-cinzel">Navigate Verses</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2">
+                    {chapterData.map((v, idx) => (
+                      <button 
+                        key={v.id} 
+                        onClick={() => goToVerseIndex(idx)} 
+                        title={`Verse ${v.verse_number}`}
+                        className={`aspect-square rounded-lg text-xs font-bold flex items-center justify-center border cursor-pointer transition-all duration-200 ${
+                          idx === currentVerseIndex 
+                            ? 'bg-gradient-to-br from-saffron-500 to-terracotta-600 text-white border-saffron-600 shadow-sm scale-115 z-10' 
+                            : 'bg-white border-cream-400 text-stone-700 hover:bg-saffron-50 hover:border-saffron-300'
+                        }`}
+                      >
+                        {v.verse_number}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
+
         </div>
       )}
     </div>
