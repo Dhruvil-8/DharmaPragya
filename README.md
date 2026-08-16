@@ -30,7 +30,7 @@ The scriptures are ingested and stored inside a unified SQLite database schema. 
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Bhagavad Gita** | 701 | Yes | Yes (5 authors) | Yes (2 authors) | Yes (15+ authors / Sanskrit, Hindi, English) |
 | **Rigveda** | 10,552 | Yes | Yes (Griffith) | No | No |
-| **Patanjali Yoga Sutras** | 195 | Yes | Yes (Johnston) | No | No |
+| **Patanjali Yoga Sutras** | 196 | Yes | Yes (International Gita Society) | No | No |
 | **Mahabharata** | 73,436 | Yes | No | No | No |
 | **Valmiki Ramayana** | 18,761 | Yes | No | No | No |
 | **Atharva Veda** | 6,190 | Yes | No | No | No |
@@ -42,7 +42,7 @@ The scriptures are ingested and stored inside a unified SQLite database schema. 
 - **Rigveda**: Ingested from the [VedaWeb Project](https://github.com/VedaWebProject/vedaweb-data).
 - **Mahabharata & Valmiki Ramayana**: Digitized BORI critical editions sourced from the [Bhandarkar Oriental Research Institute Electronic Text (BORI)](https://bombay.indology.info/).
 - **Atharva Veda & Yajur Veda**: Shukla Yajurveda (Madhyandina Samhita) and Atharva Veda (Shaunaka Samhita) JSON datasets sourced from [DharmicData](https://github.com/bhavykhatri/DharmicData).
-- **Patanjali Yoga Sutras**: Ingested and aligned 1-to-1 from [Sanskrit Documents](https://sanskritdocuments.org/doc_yoga/yogasuutra.html) (Sanskrit) and Charles Johnston's translation from [Project Gutenberg](https://dn790000.ca.archive.org/0/items/theyogasutrasofp02526gut/patan10.txt) (English).
+- **Patanjali Yoga Sutras**: Ingested from the [International Gita Society (IGS)](https://www.gita-society.com/wp-content/uploads/PDF/Patanjali-yogasutra.IGS.pdf), with Devanagari Sanskrit, IAST transliteration, and English translations.
 - **Upanishads**: Scraped and split verse-by-verse from raw HTML pages at [Sanskrit Documents](https://sanskritdocuments.org/sanskrit/upanishhat/). Includes *Brihadaranyaka, Chandogya, Taittiriya, Aitareya, Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Shvetashvatara, Kaushitaki, Maitri, Amritabindu, and Tejobindu*.
 
 ## Getting Started
