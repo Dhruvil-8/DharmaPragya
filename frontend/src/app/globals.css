@@ -31,6 +31,10 @@
   --color-cream-300: #faf5eb;
   --color-cream-400: #f5eedc;
   --color-cream-500: #ebdcb9;
+
+  /* Spacing scale for consistent rhythm */
+  --animate-fade-in: fadeIn 0.4s ease-out;
+  --animate-slide-up: slideUp 0.5s ease-out;
 }
 
 :root {
@@ -44,13 +48,37 @@ body {
   font-family: var(--font-sans);
   background-image: radial-gradient(rgba(217, 119, 6, 0.03) 1px, transparent 1px);
   background-size: 24px 24px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Beautiful custom animations and styling */
+/* ─── Smooth page-level animations ─── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); max-height: 0; }
+  to { opacity: 1; transform: translateY(0); max-height: 800px; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ─── Gradient overlay for decorative glow ─── */
 .spiritual-gradient {
   background: linear-gradient(135deg, #fdfbf7 0%, #faf5eb 50%, #f5eedc 100%);
 }
 
+/* ─── Glossy CTA button with sweep animation ─── */
 .glow-btn {
   position: relative;
   overflow: hidden;
@@ -83,14 +111,14 @@ body {
   mask-image: radial-gradient(circle at center, black 30%, transparent 70%);
 }
 
-/* Custom scrollbar for premium aesthetic */
+/* ─── Premium scrollbar ─── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #fdfbf7;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -102,14 +130,16 @@ body {
   background: #d97706;
 }
 
-/* Shimmer animation for loading states */
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #ebdcb9 transparent;
+}
+
+/* ─── Shimmer loading skeleton ─── */
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .shimmer {
@@ -118,7 +148,7 @@ body {
   animation: shimmer 1.5s infinite linear;
 }
 
-/* Authentic Sacred Vedic Audio Wave Pulse Visualizer */
+/* ─── Vedic Audio Wave Pulse Visualizer ─── */
 @keyframes vedicPulse {
   0%, 100% {
     transform: scaleY(0.3);
@@ -144,3 +174,24 @@ body {
 .vedic-bar:nth-child(3) { animation-delay: 0.5s; height: 14px; }
 .vedic-bar:nth-child(4) { animation-delay: 0.2s; height: 20px; }
 .vedic-bar:nth-child(5) { animation-delay: 0.4s; height: 10px; }
+
+/* ─── Card hover lift effect ─── */
+.card-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* ─── Smooth expand/collapse ─── */
+.expand-content {
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+/* ─── Focus ring for accessibility ─── */
+*:focus-visible {
+  outline: 2px solid #d97706;
+  outline-offset: 2px;
+  border-radius: 4px;
+}

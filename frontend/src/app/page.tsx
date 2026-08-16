@@ -124,11 +124,11 @@ function HomePageContent() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-4 md:p-8 bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 text-gray-800 relative overflow-x-hidden selection:bg-saffron-200 selection:text-saffron-700">
-      {/* Decorative background sun glow */}
-      <div className="absolute top-[-10%] left-[50%] translate-x-[-50%] w-[600px] h-[600px] bg-gradient-to-b from-saffron-300/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+    <main className="flex min-h-screen flex-col items-center px-4 py-6 md:px-8 md:py-10 bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 text-stone-900 relative overflow-x-hidden selection:bg-saffron-200 selection:text-saffron-700">
+      {/* Decorative background radial glow */}
+      <div className="absolute top-[-8%] left-[50%] translate-x-[-50%] w-[700px] h-[500px] bg-gradient-to-b from-saffron-300/8 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-5xl z-10 flex flex-col flex-grow">
+      <div className="w-full max-w-4xl z-10 flex flex-col flex-grow">
         <Header onOpenSanctuary={() => setIsSanctuaryOpen(true)} />
 
         {/* Daily Contemplation Shloka Widget */}
@@ -137,8 +137,8 @@ function HomePageContent() {
           onOpenShareModal={handleOpenShareModalFromDaily}
         />
 
-        {/* Tab Segmented Control */}
-        <div className="w-full max-w-md mx-auto mb-8 bg-cream-300 p-1.5 rounded-full border border-cream-400 shadow-sm flex">
+        {/* Tab Segmented Control — Centered pill toggle */}
+        <div className="w-full max-w-sm mx-auto mb-6 bg-cream-300/80 backdrop-blur-sm p-1 rounded-full border border-cream-400/60 flex shadow-sm">
           <button
             onClick={() => {
               setMode('ask');
@@ -148,13 +148,13 @@ function HomePageContent() {
                 window.history.pushState({}, '', url.toString());
               }
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-sm font-bold transition-all duration-300 cursor-pointer ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-5 rounded-full text-[13px] font-bold transition-all duration-300 cursor-pointer ${
               mode === 'ask'
-                ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 text-white shadow-md'
-                : 'text-saffron-950 hover:text-saffron-700 hover:bg-cream-200'
+                ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 text-white shadow-md scale-[1.02]'
+                : 'text-saffron-900 hover:text-saffron-700 hover:bg-cream-200/60'
             }`}
           >
-            <Compass className="w-4 h-4" />
+            <Compass className="w-3.5 h-3.5" />
             <span>Ask AI</span>
           </button>
 
@@ -167,14 +167,14 @@ function HomePageContent() {
                 window.history.pushState({}, '', url.toString());
               }
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-sm font-bold transition-all duration-300 cursor-pointer ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-5 rounded-full text-[13px] font-bold transition-all duration-300 cursor-pointer ${
               mode === 'read'
-                ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 text-white shadow-md'
-                : 'text-saffron-950 hover:text-saffron-700 hover:bg-cream-200'
+                ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 text-white shadow-md scale-[1.02]'
+                : 'text-saffron-900 hover:text-saffron-700 hover:bg-cream-200/60'
             }`}
           >
-            <BookOpen className="w-4 h-4" />
-            <span>Reading Mode</span>
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Read</span>
           </button>
         </div>
 
@@ -194,10 +194,10 @@ function HomePageContent() {
           </div>
         </div>
 
-        {/* Sacred Footer */}
-        <footer className="mt-16 py-8 border-t border-cream-400/50 text-center text-xs text-saffron-950 font-semibold space-y-1.5">
-          <p className="font-cinzel tracking-widest uppercase font-bold text-saffron-950">DharmaPragya</p>
-          <p className="text-[11px] text-stone-700 font-medium">
+        {/* Footer */}
+        <footer className="mt-12 py-6 border-t border-cream-400/40 text-center space-y-1">
+          <p className="font-cinzel text-xs tracking-[0.2em] uppercase font-bold text-saffron-800">DharmaPragya</p>
+          <p className="text-[10px] text-stone-500 font-medium">
             Synthesizing canonical Sanatan Dharma wisdom with modern intelligence.
           </p>
         </footer>

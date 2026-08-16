@@ -26,8 +26,8 @@ export default function Header({ onOpenSanctuary }: HeaderProps) {
 
   return (
     <>
-      <header className="w-full flex items-center justify-between py-2.5 mb-5 border-b border-cream-400/50 select-none">
-        {/* Left: Small Logo & Inline Brand Title & Subtitle */}
+      <header className="w-full flex items-center justify-between py-3 mb-4 border-b border-cream-400/40 select-none">
+        {/* Brand */}
         <div className="flex items-center gap-2.5">
           <Image 
             src="/logo.png" 
@@ -35,44 +35,42 @@ export default function Header({ onOpenSanctuary }: HeaderProps) {
             width={32}
             height={32}
             priority
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-xs object-cover bg-white border border-cream-400 shrink-0" 
+            className="w-7 h-7 rounded-full shadow-xs object-cover bg-white border border-cream-400 shrink-0" 
           />
-          <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
-            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-saffron-700 to-terracotta-800 font-cinzel leading-tight">
+          <div className="flex flex-col">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-saffron-700 to-terracotta-800 font-cinzel leading-none">
               DharmaPragya
             </h1>
-            <span className="text-[9px] sm:text-[10px] md:text-xs text-saffron-900 font-bold tracking-wide uppercase">
+            <span className="text-[9px] text-saffron-700 font-semibold tracking-wider uppercase mt-0.5">
               Wisdom of Sanatan Dharma
             </span>
           </div>
         </div>
 
-        {/* Right: Top Actions (Sanctuary & About) */}
-        <div className="flex items-center gap-2">
-          {/* Saved Verses Bookmark Sanctuary Button */}
+        {/* Actions */}
+        <div className="flex items-center gap-1.5">
           {onOpenSanctuary && (
             <button
               onClick={onOpenSanctuary}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-saffron-700 bg-cream-400/30 hover:bg-cream-400/60 border border-cream-500/20 rounded-full cursor-pointer transition-all duration-300 hover:shadow-xs"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold text-saffron-800 bg-cream-300/50 hover:bg-cream-300 border border-cream-400/50 rounded-full cursor-pointer transition-all duration-200 hover:shadow-xs"
               title="View Saved Verses"
             >
-              <Bookmark className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sanctuary</span>
+              <Bookmark className="w-3 h-3" />
+              <span className="hidden sm:inline">Saved</span>
               {bookmarkCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-saffron-500 text-white">
+                <span className="px-1.5 py-px text-[9px] font-bold rounded-full bg-saffron-500 text-white leading-tight">
                   {bookmarkCount}
                 </span>
               )}
             </button>
           )}
 
-          {/* Top-Right Info Button */}
           <button
             onClick={() => setIsAboutOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold tracking-wider text-saffron-700 bg-cream-400/30 hover:bg-cream-400/60 border border-cream-500/20 rounded-full cursor-pointer hover:text-saffron-600 transition-all duration-300 hover:shadow-xs"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold text-saffron-800 bg-cream-300/50 hover:bg-cream-300 border border-cream-400/50 rounded-full cursor-pointer transition-all duration-200 hover:shadow-xs"
           >
-            <Info className="w-3.5 h-3.5" />
-            <span>ABOUT</span>
+            <Info className="w-3 h-3" />
+            <span className="hidden sm:inline">About</span>
           </button>
         </div>
       </header>

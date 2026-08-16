@@ -208,23 +208,23 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Query Card */}
-      <div className="bg-white/90 backdrop-blur-md p-6 md:p-7 rounded-3xl border border-cream-400 shadow-sm hover:shadow-md transition-all duration-300">
+      <div className="bg-white p-5 md:p-6 rounded-2xl border border-cream-400/60 shadow-sm">
         <form onSubmit={handleSubmit}>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-2 text-saffron-950 font-bold font-cinzel text-base">
-              <Compass className="w-5 h-5 text-saffron-700" />
-              <span>Inquire the Sacred Scriptures</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2 text-saffron-900 font-bold font-cinzel text-sm">
+              <Compass className="w-4 h-4 text-saffron-600" />
+              <span>Ask the Sacred Scriptures</span>
             </div>
             
-            <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+            <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
               <div className="flex items-center gap-1.5">
-                <label className="text-[10px] text-stone-700 font-bold uppercase tracking-wider">Source:</label>
+                <label className="text-[10px] text-stone-600 font-bold uppercase tracking-wider">Source:</label>
                 <select 
                   value={sourceFilter} 
                   onChange={e => setSourceFilter(e.target.value)} 
-                  className="p-1.5 text-xs bg-cream-200 hover:bg-cream-300 border border-cream-400 rounded-xl text-saffron-950 font-bold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
+                  className="p-1.5 text-xs bg-cream-200 hover:bg-cream-300 border border-cream-400/60 rounded-lg text-stone-900 font-semibold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
                 >
                   <option value="All">All Sources</option>
                   <option value="Bhagavad Gita">Bhagavad Gita</option>
@@ -239,7 +239,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
               </div>
 
               <div className="flex items-center gap-1.5">
-                <label className="text-[10px] text-stone-700 font-bold uppercase tracking-wider">Language:</label>
+                <label className="text-[10px] text-stone-600 font-bold uppercase tracking-wider">Language:</label>
                 <select 
                   value={language} 
                   onChange={e => {
@@ -247,7 +247,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                     window.speechSynthesis.cancel();
                     setIsSpeaking(false);
                   }} 
-                  className="p-1.5 text-xs bg-cream-200 hover:bg-cream-300 border border-cream-400 rounded-xl text-saffron-950 font-bold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
+                  className="p-1.5 text-xs bg-cream-200 hover:bg-cream-300 border border-cream-400/60 rounded-lg text-stone-900 font-semibold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
                 >
                   <option value="english">English</option>
                   <option value="hindi">हिन्दी (Hindi)</option>
@@ -267,8 +267,8 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
               value={query} 
               onChange={(e) => setQuery(e.target.value)} 
               placeholder="e.g., How does one achieve peace of mind amidst chaos and duty?" 
-              className="w-full p-4 pr-12 border border-cream-400 hover:border-cream-500 bg-white rounded-2xl text-stone-950 placeholder-stone-500 font-medium focus:outline-none focus:ring-2 focus:ring-saffron-500/20 focus:border-saffron-500 transition-all text-sm leading-relaxed" 
-              rows={3} 
+              className="w-full p-4 pr-12 border border-cream-400/60 hover:border-cream-500 bg-cream-50 rounded-xl text-stone-900 placeholder-stone-400 font-medium focus:outline-none focus:ring-2 focus:ring-saffron-400/20 focus:border-saffron-500 focus:bg-white transition-all text-sm leading-relaxed" 
+              rows={2} 
             />
             <button
               type="button"
@@ -287,7 +287,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
           <button 
             type="submit" 
             disabled={isAiLoading || !query.trim()} 
-            className="w-full mt-3 py-3 px-6 glow-btn cursor-pointer bg-gradient-to-r from-saffron-600 via-saffron-500 to-terracotta-600 hover:from-saffron-500 hover:to-terracotta-500 text-white font-bold text-sm font-cinzel tracking-wider uppercase rounded-2xl shadow-md disabled:from-stone-300 disabled:to-stone-400 disabled:shadow-none disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+            className="w-full mt-3 py-2.5 px-6 glow-btn cursor-pointer bg-gradient-to-r from-saffron-600 via-saffron-500 to-terracotta-600 hover:from-saffron-500 hover:to-terracotta-500 text-white font-bold text-[13px] font-cinzel tracking-wider uppercase rounded-xl shadow-md disabled:from-stone-300 disabled:to-stone-400 disabled:shadow-none disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
           >
             {isAiLoading ? (
               <>
@@ -307,12 +307,12 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
         {/* Curated Philosophical Inquiries (Starter Themes) */}
         {!aiResponse && !isAiLoading && (
           <div className="mt-6 pt-5 border-t border-cream-300 space-y-3">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-saffron-900 uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-saffron-700" />
-              <span>Contemplative Starters</span>
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-saffron-800 uppercase tracking-wider">
+              <Sparkles className="w-3 h-3 text-saffron-600" />
+              <span>Try these questions</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
                 {
                   theme: 'Duty & Action',
@@ -342,17 +342,17 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                     setQuery(item.text);
                     setSourceFilter(item.source);
                   }}
-                  className="p-3.5 bg-cream-200/60 hover:bg-saffron-50 border border-cream-400 hover:border-saffron-400 rounded-xl text-left cursor-pointer transition-all duration-200 group flex flex-col justify-between"
+                  className="p-3 bg-cream-100 hover:bg-saffron-50 border border-cream-400/50 hover:border-saffron-300 rounded-xl text-left cursor-pointer transition-all duration-200 group card-lift flex flex-col justify-between"
                 >
                   <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-saffron-800">
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-saffron-700">
                       {item.theme}
                     </span>
-                    <span className="text-[10px] font-bold text-stone-600">
+                    <span className="text-[9px] font-semibold text-stone-500">
                       {item.source}
                     </span>
                   </div>
-                  <p className="text-xs text-stone-900 font-serif font-medium group-hover:text-saffron-950 transition-colors">
+                  <p className="text-xs text-stone-800 font-serif font-medium group-hover:text-saffron-900 transition-colors leading-relaxed">
                     &quot;{item.text}&quot;
                   </p>
                 </button>
@@ -375,7 +375,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
       {/* Synthesized Answer Output */}
       {aiResponse && (
-        <div className="bg-white p-6 md:p-8 rounded-3xl shadow-md border border-cream-400 border-t-4 border-t-saffron-500 relative overflow-hidden">
+        <div className="bg-white p-5 md:p-7 rounded-2xl shadow-sm border border-cream-400/60 border-t-2 border-t-saffron-500 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
             <FileText className="w-40 h-40 text-stone-900" />
           </div>
