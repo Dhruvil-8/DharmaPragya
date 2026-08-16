@@ -1,52 +1,45 @@
-import React, { useState, useRef, useEffect } from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { DailyShloka } from '../types';
 import { getTodayShloka } from '../lib/dailyShlokas';
 import { Flame, Play, Pause, Compass, Share2, Quote, BookOpen } from 'lucide-react';
-import { ManuscriptCorners } from './VedicOrnaments';
 
 interface DailyContemplationProps {
   onAskQuestion?: (query: string, source: string) => void;
   onOpenShareModal?: (shloka: DailyShloka) => void;
 }
 
-export default function DailyContemplation({ onAskQuestion, onOpenShareModal }: DailyContemplationProps) {
+export default function DailyContemplation({
+  onAskQuestion,
+  onOpenShareModal,
+}: DailyContemplationProps) {
   const [shloka, setShloka] = useState<DailyShloka | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeLang, setActiveLang] = useState<'english' | 'hindi'>('english');
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     setShloka(getTodayShloka());
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, []);
-
-  if (!shloka) return null;
-
   const toggleAudio = () => {
-    if (!shloka.audio_path) return;
-    if (isPlaying) {
-      audioRef.current?.pause();
+    if (!shloka?.audio_path) return;
+
+    if (isPlaying && audio) {
+      audio.pause();
       setIsPlaying(false);
     } else {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(shloka.audio_path);
-        audioRef.current.onended = () => setIsPlaying(false);
-        audioRef.current.onerror = () => setIsPlaying(false);
-      }
-      audioRef.current.play()
-        .then(() => setIsPlaying(true))
-        .catch(e => {
-          console.error("Audio playback error", e);
-          setIsPlaying(false);
-        });
+      const audioInstance = audio || new Audio(shloka.audio_path);
+      if (!audio) setAudio(audioInstance);
+
+      audioInstance.play().then(() => {
+        setIsPlaying(true);
+      }).catch((e) => console.error("Audio playback error:", e));
+
+      audioInstance.onended = () => {
+        setIsPlaying(false);
+      };
     }
   };
 
@@ -57,40 +50,38 @@ export default function DailyContemplation({ onAskQuestion, onOpenShareModal }: 
     }
   };
 
-  return (
-    <div className="w-full manuscript-card diya-card-glow p-6 md:p-8 rounded-3xl border border-saffron-300/50 dark:border-amber-500/40 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden mb-8">
-      <ManuscriptCorners />
-      {/* Subtle sacred ambient background glow */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-b from-saffron-300/10 dark:from-amber-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+  if (!shloka) return null;
 
+  return (
+    <div className="w-full bg-white p-6 md:p-8 rounded-3xl border border-cream-400 shadow-md hover:shadow-lg transition-all duration-300 relative overflow-hidden mb-8">
       {/* Top Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-cream-300 dark:border-[#2d261e]">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-cream-300/60">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-saffron-100 dark:bg-saffron-950/60 text-saffron-600 dark:text-saffron-400">
+          <div className="p-1.5 rounded-lg bg-saffron-100 text-saffron-600">
             <Flame className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-[10px] font-bold tracking-widest text-saffron-600 dark:text-saffron-400 uppercase font-sans">
+            <span className="text-[10px] font-bold tracking-widest text-saffron-600 uppercase font-sans">
               Daily Contemplation
             </span>
-            <h2 className="text-sm font-bold font-cinzel text-saffron-800 dark:text-saffron-200">
+            <h2 className="text-sm font-bold font-cinzel text-saffron-800">
               {shloka.theme}
             </h2>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-cream-300 dark:bg-[#25201b] text-saffron-700 dark:text-saffron-300 border border-cream-400 dark:border-[#3a3229]">
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-cream-300 text-saffron-700 border border-cream-400">
             {shloka.source_name} &bull; Ch. {shloka.chapter_number}, V. {shloka.verse_number}
           </span>
 
           {shloka.audio_path && (
             <button
               onClick={toggleAudio}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs ${
                 isPlaying
                   ? 'bg-gradient-to-r from-terracotta-500 to-terracotta-600 text-white'
-                  : 'bg-cream-300 dark:bg-[#25201b] hover:bg-saffron-100 dark:hover:bg-[#2e2720] text-saffron-700 dark:text-saffron-300 border border-cream-400 dark:border-[#3a3229]'
+                  : 'bg-cream-300 hover:bg-saffron-100 text-saffron-700 border border-cream-400'
               }`}
               title={isPlaying ? "Pause Sacred Chant" : "Listen to Sacred Chant"}
             >
@@ -110,32 +101,32 @@ export default function DailyContemplation({ onAskQuestion, onOpenShareModal }: 
 
       {/* Centerpiece: Devanagari Sanskrit Text with Tiro Devanagari Calligraphy */}
       <div className="text-center py-2 space-y-3">
-        <p className="font-sanskrit text-2xl md:text-3xl font-bold text-stone-800 dark:text-[#f5eedc] leading-relaxed whitespace-pre-wrap">
+        <p className="font-sanskrit text-2xl md:text-3xl font-bold text-stone-800 leading-relaxed whitespace-pre-wrap">
           {shloka.sanskrit_text}
         </p>
 
         {shloka.transliteration && (
-          <p className="font-serif italic text-xs md:text-sm text-stone-500 dark:text-stone-400 max-w-xl mx-auto leading-relaxed">
+          <p className="font-serif italic text-xs md:text-sm text-stone-500 max-w-xl mx-auto leading-relaxed">
             {shloka.transliteration}
           </p>
         )}
       </div>
 
       {/* Translation & Reflection */}
-      <div className="mt-5 pt-4 border-t border-cream-300 dark:border-[#2d261e] space-y-3">
+      <div className="mt-5 pt-4 border-t border-cream-300/60 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-saffron-700 dark:text-saffron-400">
+          <div className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-saffron-700">
             <Quote className="w-3 h-3" />
             <span>Translation</span>
           </div>
 
-          <div className="flex bg-cream-300 dark:bg-[#25201b] p-0.5 rounded-lg border border-cream-400 dark:border-[#3a3229] text-[10px]">
+          <div className="flex bg-cream-300 p-0.5 rounded-lg border border-cream-400 text-[10px]">
             <button
               onClick={() => setActiveLang('english')}
               className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${
                 activeLang === 'english'
                   ? 'bg-saffron-500 text-white shadow-xs'
-                  : 'text-stone-600 dark:text-stone-400 hover:text-saffron-700 dark:hover:text-saffron-300'
+                  : 'text-stone-600 hover:text-saffron-700'
               }`}
             >
               English
@@ -145,7 +136,7 @@ export default function DailyContemplation({ onAskQuestion, onOpenShareModal }: 
               className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${
                 activeLang === 'hindi'
                   ? 'bg-saffron-500 text-white shadow-xs'
-                  : 'text-stone-600 dark:text-stone-400 hover:text-saffron-700 dark:hover:text-saffron-300'
+                  : 'text-stone-600 hover:text-saffron-700'
               }`}
             >
               हिन्दी
@@ -153,27 +144,27 @@ export default function DailyContemplation({ onAskQuestion, onOpenShareModal }: 
           </div>
         </div>
 
-        <p className="font-serif italic text-sm md:text-base text-stone-700 dark:text-stone-300 leading-relaxed">
+        <p className="font-serif italic text-sm md:text-base text-stone-700 leading-relaxed">
           &quot;{activeLang === 'english' ? shloka.translation_english : shloka.translation_hindi}&quot;
         </p>
 
         {/* Practical Modern Contemplation */}
-        <div className="p-3.5 bg-saffron-50/70 dark:bg-saffron-950/30 rounded-xl border border-saffron-200/50 dark:border-saffron-900/40">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-saffron-700 dark:text-saffron-400 mb-1">
+        <div className="p-3.5 bg-saffron-50/70 rounded-xl border border-saffron-200/50">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-saffron-700 mb-1">
             <BookOpen className="w-3 h-3" />
             <span>Modern Living Reflection</span>
           </div>
-          <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed font-sans">
+          <p className="text-xs text-stone-600 leading-relaxed font-sans">
             {shloka.reflection}
           </p>
         </div>
       </div>
 
       {/* Bottom Action Triggers */}
-      <div className="mt-5 pt-3 border-t border-cream-300 dark:border-[#2d261e] flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-5 pt-3 border-t border-cream-300/60 flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={handleAskDharmaPragya}
-          className="flex items-center gap-1.5 text-xs font-semibold text-saffron-700 dark:text-saffron-300 hover:text-saffron-800 dark:hover:text-saffron-200 cursor-pointer group"
+          className="flex items-center gap-1.5 text-xs font-semibold text-saffron-700 hover:text-saffron-800 cursor-pointer group"
         >
           <Compass className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform" />
           <span>Inquire Deeper with AI</span>
@@ -182,7 +173,7 @@ export default function DailyContemplation({ onAskQuestion, onOpenShareModal }: 
         {onOpenShareModal && (
           <button
             onClick={() => onOpenShareModal(shloka)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-saffron-600 dark:hover:text-saffron-400 cursor-pointer"
+            className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 hover:text-saffron-600 cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>Share Daily Card</span>

@@ -5,7 +5,6 @@ export interface CardExportOptions {
   sanskritText: string;
   transliteration?: string;
   translationText: string;
-  theme?: 'day' | 'night';
 }
 
 function wrapText(
@@ -52,47 +51,34 @@ export async function generateVerseCard(options: CardExportOptions): Promise<str
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
-  const isNight = options.theme === 'night';
-
-  // 1. Background Gradient
+  // 1. Background Gradient (Original Warm Cream)
   const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-  if (isNight) {
-    bgGrad.addColorStop(0, '#141210');
-    bgGrad.addColorStop(0.5, '#1a1613');
-    bgGrad.addColorStop(1, '#241e18');
-  } else {
-    bgGrad.addColorStop(0, '#fdfbf7');
-    bgGrad.addColorStop(0.5, '#faf5eb');
-    bgGrad.addColorStop(1, '#f5eedc');
-  }
+  bgGrad.addColorStop(0, '#fdfbf7');
+  bgGrad.addColorStop(0.5, '#faf5eb');
+  bgGrad.addColorStop(1, '#f5eedc');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, width, height);
 
   // 2. Subtle Radial Sun Glow
   const radialGlow = ctx.createRadialGradient(width / 2, height / 2, 50, width / 2, height / 2, 500);
-  if (isNight) {
-    radialGlow.addColorStop(0, 'rgba(217, 119, 6, 0.12)');
-    radialGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  } else {
-    radialGlow.addColorStop(0, 'rgba(251, 191, 36, 0.15)');
-    radialGlow.addColorStop(1, 'rgba(253, 251, 247, 0)');
-  }
+  radialGlow.addColorStop(0, 'rgba(251, 191, 36, 0.15)');
+  radialGlow.addColorStop(1, 'rgba(253, 251, 247, 0)');
   ctx.fillStyle = radialGlow;
   ctx.fillRect(0, 0, width, height);
 
   // 3. Classical Ornate Border
-  ctx.strokeStyle = isNight ? 'rgba(245, 158, 11, 0.35)' : 'rgba(217, 119, 6, 0.4)';
+  ctx.strokeStyle = 'rgba(217, 119, 6, 0.4)';
   ctx.lineWidth = 3;
   ctx.strokeRect(50, 50, width - 100, height - 100);
 
   // Inner thin border
-  ctx.strokeStyle = isNight ? 'rgba(245, 158, 11, 0.15)' : 'rgba(217, 119, 6, 0.2)';
+  ctx.strokeStyle = 'rgba(217, 119, 6, 0.2)';
   ctx.lineWidth = 1;
   ctx.strokeRect(62, 62, width - 124, height - 124);
 
   // Corner decorative flourishes
   const cornerSize = 24;
-  ctx.fillStyle = isNight ? '#f59e0b' : '#d97706';
+  ctx.fillStyle = '#d97706';
   // Top-left
   ctx.fillRect(46, 46, cornerSize, 4);
   ctx.fillRect(46, 46, 4, cornerSize);
@@ -108,7 +94,7 @@ export async function generateVerseCard(options: CardExportOptions): Promise<str
 
   // 4. Header Badge: Scripture Source & Coordinate
   ctx.textAlign = 'center';
-  ctx.fillStyle = isNight ? '#f59e0b' : '#b45309';
+  ctx.fillStyle = '#b45309';
   ctx.font = 'bold 22px "Cinzel", serif, sans-serif';
   ctx.letterSpacing = '4px';
   const headerText = `${options.sourceName.toUpperCase()} — CHAPTER ${options.chapterNumber}, VERSE ${options.verseNumber}`;
@@ -117,7 +103,7 @@ export async function generateVerseCard(options: CardExportOptions): Promise<str
   // Header dividing line
   const lineGrad = ctx.createLinearGradient(width / 2 - 150, 0, width / 2 + 150, 0);
   lineGrad.addColorStop(0, 'rgba(217, 119, 6, 0)');
-  lineGrad.addColorStop(0.5, isNight ? '#f59e0b' : '#d97706');
+  lineGrad.addColorStop(0.5, '#d97706');
   lineGrad.addColorStop(1, 'rgba(217, 119, 6, 0)');
   ctx.strokeStyle = lineGrad;
   ctx.lineWidth = 2;
@@ -128,7 +114,7 @@ export async function generateVerseCard(options: CardExportOptions): Promise<str
 
   // 5. Sanskrit Text (Devanagari)
   ctx.textAlign = 'center';
-  ctx.fillStyle = isNight ? '#fef3c7' : '#2d261e';
+  ctx.fillStyle = '#2d261e';
   ctx.font = 'bold 36px "Tiro Devanagari Sanskrit", "Martel", "Noto Serif Devanagari", serif';
   
   const sanskritLines = options.sanskritText.split('\n');
@@ -144,13 +130,13 @@ export async function generateVerseCard(options: CardExportOptions): Promise<str
   if (options.transliteration) {
     currentY += 20;
     ctx.font = 'italic 22px "Lora", serif';
-    ctx.fillStyle = isNight ? '#d1c7b7' : '#78716c';
+    ctx.fillStyle = '#78716c';
     currentY = wrapText(ctx, options.transliteration, width / 2, currentY, 900, 34, 3);
   }
 
   // 7. Divider before translation
   currentY += 30;
-  ctx.strokeStyle = isNight ? 'rgba(245, 158, 11, 0.2)' : 'rgba(217, 119, 6, 0.2)';
+  ctx.strokeStyle = 'rgba(217, 119, 6, 0.2)';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(width / 2 - 100, currentY);
@@ -160,18 +146,18 @@ export async function generateVerseCard(options: CardExportOptions): Promise<str
   // 8. English Translation
   currentY += 60;
   ctx.font = '28px "Lora", serif';
-  ctx.fillStyle = isNight ? '#f5eedc' : '#44403c';
+  ctx.fillStyle = '#44403c';
   const quotedTranslation = `"${options.translationText}"`;
   currentY = wrapText(ctx, quotedTranslation, width / 2, currentY, 950, 44, 5);
 
   // 9. Footer Brand Seal / Watermark
   ctx.textAlign = 'center';
   ctx.font = 'bold 18px "Cinzel", serif, sans-serif';
-  ctx.fillStyle = isNight ? '#d97706' : '#9a3412';
+  ctx.fillStyle = '#9a3412';
   ctx.fillText('DHARMAPRAGYA', width / 2, height - 100);
 
   ctx.font = '14px "Plus Jakarta Sans", sans-serif';
-  ctx.fillStyle = isNight ? 'rgba(245, 238, 220, 0.5)' : 'rgba(120, 53, 15, 0.6)';
+  ctx.fillStyle = 'rgba(120, 53, 15, 0.6)';
   ctx.fillText('Universal Wisdom of Sanatan Dharma', width / 2, height - 76);
 
   return canvas.toDataURL('image/png');

@@ -1,5 +1,7 @@
 import { BookmarkItem, VerseData } from '../types';
 
+export type { BookmarkItem };
+
 const BOOKMARKS_STORAGE_KEY = 'dharmapragya_bookmarks_v1';
 
 export function getBookmarks(): BookmarkItem[] {

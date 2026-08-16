@@ -124,23 +124,9 @@ function HomePageContent() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-4 md:p-8 bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 dark:from-[#12100e] dark:via-[#161310] dark:to-[#1a1613] text-gray-800 dark:text-[#f5eedc] relative overflow-x-hidden selection:bg-saffron-200 dark:selection:bg-saffron-900 selection:text-saffron-800 dark:selection:text-saffron-200 transition-colors duration-300">
-      {/* Sacred Vedic Background Graphics & Amber Radial Glow */}
-      <div className="absolute top-[-10%] left-[50%] translate-x-[-50%] w-[650px] h-[650px] bg-gradient-to-b from-saffron-300/15 dark:from-amber-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-      {/* Sacred Geometry / Mandala Concentric Rings Motif */}
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 w-[720px] h-[720px] opacity-[0.035] dark:opacity-[0.05] pointer-events-none select-none">
-        <svg viewBox="0 0 100 100" className="w-full h-full stroke-saffron-800 dark:stroke-amber-400 fill-none" strokeWidth="0.5">
-          <circle cx="50" cy="50" r="48" />
-          <circle cx="50" cy="50" r="42" strokeDasharray="1.5 1.5" />
-          <circle cx="50" cy="50" r="34" />
-          <circle cx="50" cy="50" r="26" strokeDasharray="2 1" />
-          <circle cx="50" cy="50" r="16" />
-          <circle cx="50" cy="50" r="6" />
-          <polygon points="50,16 64,50 50,84 36,50" />
-          <polygon points="16,50 50,64 84,50 50,36" />
-        </svg>
-      </div>
+    <main className="flex min-h-screen flex-col items-center p-4 md:p-8 bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 text-gray-800 relative overflow-x-hidden selection:bg-saffron-200 selection:text-saffron-700">
+      {/* Decorative background sun glow */}
+      <div className="absolute top-[-10%] left-[50%] translate-x-[-50%] w-[600px] h-[600px] bg-gradient-to-b from-saffron-300/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-5xl z-10 flex flex-col flex-grow">
         <Header onOpenSanctuary={() => setIsSanctuaryOpen(true)} />
@@ -152,7 +138,7 @@ function HomePageContent() {
         />
 
         {/* Tab Segmented Control */}
-        <div className="w-full max-w-md mx-auto mb-8 bg-cream-400/50 dark:bg-[#1f1a15] backdrop-blur-md p-1.5 rounded-full border border-cream-500/30 dark:border-[#3a3229] flex shadow-xs">
+        <div className="w-full max-w-md mx-auto mb-8 bg-cream-400/50 backdrop-blur-md p-1.5 rounded-full border border-cream-500/20 flex shadow-sm">
           <button
             onClick={() => {
               setMode('ask');
@@ -162,10 +148,10 @@ function HomePageContent() {
                 window.history.pushState({}, '', url.toString());
               }
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-xs font-bold font-cinzel uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer ${
               mode === 'ask'
-                ? 'bg-gradient-to-r from-saffron-600 via-saffron-500 to-terracotta-600 text-white shadow-md'
-                : 'text-saffron-800 dark:text-saffron-300 hover:text-saffron-600 dark:hover:text-saffron-200 hover:bg-cream-300/40 dark:hover:bg-[#25201b]'
+                ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white shadow-md'
+                : 'text-saffron-700 hover:text-saffron-600 hover:bg-cream-300/40'
             }`}
           >
             <Compass className="w-4 h-4" />
@@ -181,10 +167,10 @@ function HomePageContent() {
                 window.history.pushState({}, '', url.toString());
               }
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-xs font-bold font-cinzel uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer ${
               mode === 'read'
-                ? 'bg-gradient-to-r from-saffron-600 via-saffron-500 to-terracotta-600 text-white shadow-md'
-                : 'text-saffron-800 dark:text-saffron-300 hover:text-saffron-600 dark:hover:text-saffron-200 hover:bg-cream-300/40 dark:hover:bg-[#25201b]'
+                ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white shadow-md'
+                : 'text-saffron-700 hover:text-saffron-600 hover:bg-cream-300/40'
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -235,7 +221,7 @@ function HomePageContent() {
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-cream-100 dark:bg-[#141210]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-cream-100" />}>
       <HomePageContent />
     </Suspense>
   );

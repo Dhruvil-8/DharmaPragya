@@ -174,7 +174,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col font-sans bg-cream-100 dark:bg-[#141210] text-gray-800 dark:text-[#f5eedc] transition-colors duration-300">
+      <body className="min-h-full flex flex-col font-sans bg-cream-100 text-gray-800">
         {children}
       </body>
     </html>

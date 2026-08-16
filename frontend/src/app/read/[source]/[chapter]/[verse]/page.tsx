@@ -110,7 +110,7 @@ export default async function ProgrammaticVersePage({ params }: PageProps) {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-4 md:p-8 bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 dark:from-[#12100e] dark:via-[#161310] dark:to-[#1a1613] text-gray-800 dark:text-[#f5eedc] relative overflow-x-hidden selection:bg-saffron-200 selection:text-saffron-800">
+    <main className="flex min-h-screen flex-col items-center p-4 md:p-8 bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 text-gray-800 relative overflow-x-hidden selection:bg-saffron-200 selection:text-saffron-800">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -120,10 +120,10 @@ export default async function ProgrammaticVersePage({ params }: PageProps) {
         <Header />
 
         {/* Breadcrumb & Navigation Bar */}
-        <div className="flex items-center justify-between gap-3 bg-white/70 dark:bg-[#1a1613]/80 backdrop-blur-md p-3.5 rounded-2xl border border-cream-400 dark:border-[#3a3229] shadow-xs">
+        <div className="flex items-center justify-between gap-3 bg-white/80 backdrop-blur-md p-3.5 rounded-2xl border border-cream-400 shadow-xs">
           <Link
             href={`/?mode=read&source=${encodeURIComponent(sourceName)}&chapter=${chapterNum}&verse=${verseNum}`}
-            className="flex items-center gap-1.5 text-xs font-bold text-saffron-800 dark:text-saffron-300 hover:text-saffron-600 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-bold text-saffron-800 hover:text-saffron-600 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Open in Interactive App</span>
@@ -131,7 +131,7 @@ export default async function ProgrammaticVersePage({ params }: PageProps) {
 
           <Link
             href={`/?mode=ask`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-saffron-600 to-terracotta-600 text-white text-xs font-bold shadow-xs hover:opacity-95 transition-opacity"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white text-xs font-bold shadow-xs hover:opacity-95 transition-opacity"
           >
             <Compass className="w-3.5 h-3.5" />
             <span>Inquire with AI</span>
@@ -148,8 +148,8 @@ export default async function ProgrammaticVersePage({ params }: PageProps) {
             readingMode="study"
           />
         ) : (
-          <div className="bg-white dark:bg-[#1a1613] p-10 rounded-3xl border border-cream-400 dark:border-[#3a3229] text-center space-y-4">
-            <h2 className="text-xl font-bold font-cinzel text-saffron-800 dark:text-saffron-300">
+          <div className="bg-white p-10 rounded-3xl border border-cream-400 text-center space-y-4">
+            <h2 className="text-xl font-bold font-cinzel text-saffron-800">
               {sourceName} — Chapter {chapterNum}, Verse {verseNum}
             </h2>
             <p className="text-stone-500 text-xs max-w-md mx-auto">
@@ -166,8 +166,8 @@ export default async function ProgrammaticVersePage({ params }: PageProps) {
         )}
 
         {/* Footer */}
-        <footer className="pt-12 pb-6 text-center text-xs text-stone-500 dark:text-stone-400 space-y-1">
-          <p className="font-cinzel font-bold text-saffron-800 dark:text-saffron-300">DharmaPragya Scripture Index</p>
+        <footer className="pt-12 pb-6 text-center text-xs text-stone-500 space-y-1">
+          <p className="font-cinzel font-bold text-saffron-800">DharmaPragya Scripture Index</p>
           <p>Synthesizing canonical Sanatan Dharma wisdom with modern intelligence.</p>
         </footer>
       </div>
