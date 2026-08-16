@@ -181,15 +181,13 @@ function HomePageContent() {
         {/* Dynamic Mode Content Views */}
         <div className="w-full">
           <div className={mode === 'ask' ? 'block animate-fade-in' : 'hidden'}>
-            <AskMode 
-              targetQuery={targetQuery}
-              targetSource={targetSource}
-              onOpenShareModal={handleOpenShareModalFromVerse}
-            />
+            <AskMode apiBaseUrl={API_BASE_URL} />
           </div>
 
           <div className={mode === 'read' ? 'block animate-fade-in' : 'hidden'}>
             <ReadMode 
+              apiBaseUrl={API_BASE_URL}
+              isActive={mode === 'read'}
               onOpenShareModal={handleOpenShareModalFromVerse}
               targetCoordinate={targetCoordinate}
             />
