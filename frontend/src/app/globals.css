@@ -14,6 +14,9 @@
   --color-saffron-500: #d97706;
   --color-saffron-600: #b45309;
   --color-saffron-700: #78350f;
+  --color-saffron-800: #5c270a;
+  --color-saffron-900: #431b06;
+  --color-saffron-950: #2d1003;
   
   --color-terracotta-50: #fdf8f6;
   --color-terracotta-100: #faebe6;
@@ -32,7 +35,7 @@
 
 :root {
   --background: #fdfbf7;
-  --foreground: #2d261e;
+  --foreground: #1c1917;
 }
 
 body {

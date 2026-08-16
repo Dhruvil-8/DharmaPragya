@@ -257,10 +257,10 @@ export default function VerseBlock({
         {/* Top Info Bar */}
         <div className="px-6 py-4 bg-gradient-to-r from-cream-200 to-cream-100 border-b border-cream-300 flex justify-between items-center">
           <div>
-            <span className="text-[10px] font-extrabold text-saffron-600 bg-saffron-50 px-2.5 py-1 rounded-full border border-saffron-200/20 uppercase tracking-widest">
+            <span className="text-[10px] font-extrabold text-saffron-800 bg-saffron-50 px-2.5 py-1 rounded-full border border-saffron-200/40 uppercase tracking-widest">
               {verse.source_name}
             </span>
-            <span className="text-xs text-stone-500 font-cinzel font-bold ml-2.5">
+            <span className="text-xs text-stone-700 font-cinzel font-bold ml-2.5">
               Ch. {verse.chapter_number}, Verse {verse.verse_number}
             </span>
           </div>
@@ -272,7 +272,7 @@ export default function VerseBlock({
               className={`p-2 rounded-full border transition-all cursor-pointer ${
                 isBookmarked
                   ? 'bg-saffron-500 text-white border-saffron-600 shadow-xs'
-                  : 'bg-white text-stone-400 hover:text-saffron-600 border-cream-400'
+                  : 'bg-white text-stone-600 hover:text-saffron-700 border-cream-400'
               }`}
               title={isBookmarked ? "Remove from Sanctuary" : "Save to Sanctuary"}
             >
@@ -283,7 +283,7 @@ export default function VerseBlock({
             {onOpenShareModal && (
               <button
                 onClick={handleShareClick}
-                className="p-2 rounded-full bg-white text-stone-400 hover:text-saffron-600 border border-cream-400 transition-all cursor-pointer"
+                className="p-2 rounded-full bg-white text-stone-600 hover:text-saffron-700 border border-cream-400 transition-all cursor-pointer"
                 title="Share as Image Card"
               >
                 <Share2 className="w-3.5 h-3.5" />
@@ -298,7 +298,7 @@ export default function VerseBlock({
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-300 cursor-pointer shadow-xs ${
                   isPlaying 
                     ? 'bg-gradient-to-r from-terracotta-500 to-terracotta-600 text-white' 
-                    : 'bg-cream-300 hover:bg-saffron-100 text-saffron-800 border border-cream-400'
+                    : 'bg-cream-300 hover:bg-saffron-100 text-saffron-900 border border-cream-400'
                 }`}
               >
                 {isAudioLoading ? (
@@ -323,10 +323,10 @@ export default function VerseBlock({
 
         {/* Central Scripture Panel */}
         <div className="flex-grow p-6 md:p-10 flex flex-col justify-center text-center space-y-6 md:space-y-8">
-          {/* Devangari Sanskrit Text */}
+          {/* Devanagari Sanskrit Text */}
           <div className="space-y-4">
-            <h4 className="text-[9px] font-bold text-stone-400 tracking-widest uppercase">Sanskrit</h4>
-            <p className="font-sanskrit text-2xl md:text-3xl text-stone-800 font-bold leading-loose tracking-wide whitespace-pre-wrap py-2 select-text">
+            <h4 className="text-[9px] font-bold text-stone-600 tracking-widest uppercase">Sanskrit</h4>
+            <p className="font-sanskrit text-2xl md:text-3xl text-stone-950 font-bold leading-loose tracking-wide whitespace-pre-wrap py-2 select-text">
               {verse.sanskrit_text}
             </p>
           </div>
@@ -334,8 +334,8 @@ export default function VerseBlock({
           {/* Transliteration */}
           {verse.transliteration && (
             <div className="py-2 border-t border-dashed border-cream-300 max-w-xl mx-auto w-full">
-              <h4 className="text-[9px] font-bold text-stone-400 tracking-widest uppercase mb-1">Transliteration</h4>
-              <p className="font-serif italic text-sm md:text-base text-stone-500 leading-relaxed select-text">
+              <h4 className="text-[9px] font-bold text-stone-600 tracking-widest uppercase mb-1">Transliteration</h4>
+              <p className="font-serif italic text-sm md:text-base text-stone-700 font-medium leading-relaxed select-text">
                 {verse.transliteration}
               </p>
             </div>
@@ -343,22 +343,22 @@ export default function VerseBlock({
 
           {/* Preferred Translation (Single choice) */}
           <div className="pt-4 border-t border-cream-300 max-w-xl mx-auto w-full">
-            <h4 className="text-[9px] font-bold text-saffron-600 tracking-widest uppercase mb-2 flex items-center justify-center gap-1">
-              <BookOpen className="w-3 h-3" />
+            <h4 className="text-[9px] font-bold text-saffron-800 tracking-widest uppercase mb-2 flex items-center justify-center gap-1">
+              <BookOpen className="w-3 h-3 text-saffron-700" />
               <span>Translation ({activeLanguage})</span>
             </h4>
             
             {focusTranslation ? (
               <div className="space-y-1.5">
-                <p className="font-serif italic text-stone-700 text-base md:text-lg leading-relaxed select-text">
+                <p className="font-serif italic text-stone-900 font-medium text-base md:text-lg leading-relaxed select-text">
                   &quot;{focusTranslation.text}&quot;
                 </p>
-                <span className="inline-block text-[9px] font-bold text-stone-400 uppercase tracking-widest">
+                <span className="inline-block text-[10px] font-bold text-stone-600 uppercase tracking-widest">
                   — {focusTranslation.author}
                 </span>
               </div>
             ) : (
-              <p className="text-stone-400 italic text-xs">
+              <p className="text-stone-600 italic text-xs">
                 No translation available in {activeLanguage} for this verse.
               </p>
             )}
@@ -372,7 +372,7 @@ export default function VerseBlock({
             {!isAskMode && parsedMeanings.length > 0 ? (
               <button 
                 onClick={() => setShowMeaningsFocus(!showMeaningsFocus)}
-                className="text-xs font-bold text-saffron-700 hover:text-saffron-600 cursor-pointer flex items-center gap-1"
+                className="text-xs font-bold text-saffron-800 hover:text-saffron-950 cursor-pointer flex items-center gap-1"
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>{showMeaningsFocus ? 'Hide' : 'Show'} Word Meanings</span>
@@ -386,18 +386,18 @@ export default function VerseBlock({
               <button
                 onClick={onPrev}
                 disabled={index === 0}
-                className="p-1.5 rounded-lg border border-cream-400 bg-white text-stone-600 hover:text-saffron-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                className="p-1.5 rounded-lg border border-cream-400 bg-white text-stone-700 hover:text-saffron-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors font-bold"
                 title="Previous Verse"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-stone-700 uppercase tracking-wider">
                 {index + 1} / {totalVerses || 1}
               </span>
               <button
                 onClick={onNext}
                 disabled={index === (totalVerses || 0) - 1}
-                className="p-1.5 rounded-lg border border-cream-400 bg-white text-stone-600 hover:text-saffron-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                className="p-1.5 rounded-lg border border-cream-400 bg-white text-stone-700 hover:text-saffron-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors font-bold"
                 title="Next Verse"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -410,8 +410,8 @@ export default function VerseBlock({
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pt-3 border-t border-cream-300 max-h-48 overflow-y-auto pr-1 animate-fade-in select-text">
               {parsedMeanings.map((item, idx) => (
                 <div key={idx} className="bg-white p-2 rounded-xl border border-cream-300 shadow-inner flex flex-col">
-                  <span className="font-serif font-bold text-xs text-saffron-800">{item.word}</span>
-                  <span className="text-[10px] text-stone-500 mt-0.5 leading-tight">{item.meaning}</span>
+                  <span className="font-serif font-bold text-xs text-saffron-900">{item.word}</span>
+                  <span className="text-[10px] text-stone-700 mt-0.5 leading-tight font-medium">{item.meaning}</span>
                 </div>
               ))}
             </div>
@@ -427,14 +427,14 @@ export default function VerseBlock({
       {/* Header Info, Actions & Audio Player */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-cream-300/40">
         <div>
-          <span className="text-[10px] font-bold text-saffron-600 uppercase tracking-widest bg-saffron-50 px-2.5 py-1 rounded-full border border-saffron-200/20">
+          <span className="text-[10px] font-bold text-saffron-800 uppercase tracking-widest bg-saffron-50 px-2.5 py-1 rounded-full border border-saffron-200/40">
             {verse.source_name}
           </span>
           <h3 className="text-lg md:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-saffron-700 to-terracotta-800 font-cinzel mt-1.5">
             {verse.chapter_name}, Verse {verse.verse_number}
           </h3>
           {!isAskMode && totalVerses && (
-            <p className="text-xs text-stone-400 font-semibold uppercase tracking-wider mt-0.5">Verse {index + 1} of {totalVerses}</p>
+            <p className="text-xs text-stone-600 font-bold uppercase tracking-wider mt-0.5">Verse {index + 1} of {totalVerses}</p>
           )}
         </div>
 
@@ -445,7 +445,7 @@ export default function VerseBlock({
             className={`p-2 rounded-xl border transition-all cursor-pointer ${
               isBookmarked
                 ? 'bg-saffron-500 text-white border-saffron-600 shadow-xs'
-                : 'bg-cream-200 text-stone-500 hover:text-saffron-700 border-cream-400'
+                : 'bg-cream-200 text-stone-700 hover:text-saffron-800 border-cream-400'
             }`}
             title={isBookmarked ? "Remove from Sanctuary" : "Save to Sanctuary"}
           >
@@ -456,7 +456,7 @@ export default function VerseBlock({
           {onOpenShareModal && (
             <button
               onClick={handleShareClick}
-              className="p-2 rounded-xl bg-cream-200 text-stone-500 hover:text-saffron-700 border border-cream-400 transition-all cursor-pointer"
+              className="p-2 rounded-xl bg-cream-200 text-stone-700 hover:text-saffron-800 border border-cream-400 transition-all cursor-pointer"
               title="Share as Image Card"
             >
               <Share2 className="w-4 h-4" />
@@ -471,7 +471,7 @@ export default function VerseBlock({
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer shadow-xs ${
                 isPlaying 
                   ? 'bg-gradient-to-r from-terracotta-500 to-terracotta-600 text-white' 
-                  : 'bg-cream-300 hover:bg-saffron-100 border border-cream-400 text-saffron-800'
+                  : 'bg-cream-300 hover:bg-saffron-100 border border-cream-400 text-saffron-900'
               }`}
             >
               {isAudioLoading ? (
@@ -500,15 +500,15 @@ export default function VerseBlock({
 
       {/* Sanskrit Text Centerpiece with Sacred Styling */}
       <div className="my-6 p-6 md:p-8 bg-cream-200/50 rounded-2xl border border-cream-400/60 shadow-inner text-center space-y-4">
-        <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest text-left select-none">SANSKRIT TEXT</h4>
-        <p className="font-sanskrit text-xl md:text-2xl text-stone-800 font-bold leading-loose tracking-wide whitespace-pre-wrap py-2">
+        <h4 className="text-[10px] font-bold text-stone-600 uppercase tracking-widest text-left select-none">SANSKRIT TEXT</h4>
+        <p className="font-sanskrit text-xl md:text-2xl text-stone-950 font-bold leading-loose tracking-wide whitespace-pre-wrap py-2">
           {verse.sanskrit_text}
         </p>
         
         {verse.transliteration && (
           <div className="pt-3 border-t border-cream-300/50">
-            <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest text-left mb-2 select-none">TRANSLITERATION</h4>
-            <p className="font-serif italic text-sm md:text-base text-stone-600 leading-relaxed max-w-2xl mx-auto">
+            <h4 className="text-[10px] font-bold text-stone-600 uppercase tracking-widest text-left mb-2 select-none">TRANSLITERATION</h4>
+            <p className="font-serif italic text-sm md:text-base text-stone-800 font-medium leading-relaxed max-w-2xl mx-auto">
               {verse.transliteration}
             </p>
           </div>
@@ -518,15 +518,15 @@ export default function VerseBlock({
       {/* Structured Word meanings collapsible grid */}
       {!isAskMode && parsedMeanings.length > 0 && (
         <div className="my-6 p-5 bg-cream-300/40 rounded-2xl border border-cream-400/50">
-          <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3 flex items-center gap-1 select-none">
-            <BookOpen className="w-3.5 h-3.5 text-saffron-500" />
+          <h4 className="text-[10px] font-bold text-stone-700 uppercase tracking-widest mb-3 flex items-center gap-1 select-none">
+            <BookOpen className="w-3.5 h-3.5 text-saffron-600" />
             <span>Sanskrit Word Meanings</span>
           </h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-56 overflow-y-auto pr-1">
             {parsedMeanings.map((item, idx) => (
               <div key={idx} className="bg-white p-2.5 rounded-xl border border-cream-400/60 shadow-xs flex flex-col hover:border-saffron-300 transition-colors">
-                <span className="font-serif font-bold text-xs text-saffron-800">{item.word}</span>
-                <span className="text-[10px] text-stone-500 mt-1 leading-tight">{item.meaning}</span>
+                <span className="font-serif font-bold text-xs text-saffron-900">{item.word}</span>
+                <span className="text-[10px] text-stone-700 mt-1 leading-tight font-medium">{item.meaning}</span>
               </div>
             ))}
           </div>
@@ -536,8 +536,8 @@ export default function VerseBlock({
       {/* Language / Translation Tab Controls */}
       {availableLanguages.length > 1 && (
         <div className="flex items-center justify-between flex-wrap gap-3 mb-6 pb-4 border-b border-cream-300/40 select-none">
-          <div className="flex items-center gap-1.5 text-xs text-stone-500 font-semibold">
-            <Languages className="w-4 h-4 text-stone-400" />
+          <div className="flex items-center gap-1.5 text-xs text-stone-700 font-bold">
+            <Languages className="w-4 h-4 text-stone-600" />
             <span>DISPLAY LANGUAGE</span>
           </div>
 
@@ -546,10 +546,10 @@ export default function VerseBlock({
               <button 
                 key={lang} 
                 onClick={() => setSelectedLanguage(lang)} 
-                className={`px-4 py-1.5 text-xs font-semibold rounded-full cursor-pointer transition-all duration-300 ${
+                className={`px-4 py-1.5 text-xs font-bold rounded-full cursor-pointer transition-all duration-300 ${
                   activeLanguage === lang 
                     ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white shadow-xs' 
-                    : 'text-saffron-800 hover:text-saffron-600'
+                    : 'text-saffron-900 hover:text-saffron-700'
                 }`}
               >
                 {lang.charAt(0).toUpperCase() + lang.slice(1)}
@@ -563,7 +563,7 @@ export default function VerseBlock({
       <div className="space-y-6">
         {/* Translations Section */}
         <div className="space-y-3">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-800 uppercase tracking-wider">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 uppercase tracking-wider">
             <BookOpen className="w-3.5 h-3.5" />
             <span>Translations ({activeLanguage})</span>
           </div>
@@ -571,16 +571,16 @@ export default function VerseBlock({
           {hasTranslations ? (
             <div className="grid gap-3">
               {filteredTranslations.map((t, i) => (
-                <div key={i} className="p-4 bg-saffron-50/60 border border-saffron-200/30 hover:border-saffron-300 rounded-2xl transition-all duration-200 shadow-xs">
-                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-saffron-700 bg-saffron-100/60 px-2 py-0.5 rounded border border-saffron-200/40 mb-2">
+                <div key={i} className="p-4 bg-saffron-50/60 border border-saffron-200/40 hover:border-saffron-300 rounded-2xl transition-all duration-200 shadow-xs">
+                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-saffron-800 bg-saffron-100/80 px-2 py-0.5 rounded border border-saffron-200/60 mb-2">
                     {t.author}
                   </span>
-                  <p className="font-serif italic text-stone-700 text-sm leading-relaxed">&quot;{t.text}&quot;</p>
+                  <p className="font-serif italic text-stone-900 font-medium text-sm md:text-base leading-relaxed">&quot;{t.text}&quot;</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-stone-400 italic text-xs p-4 bg-cream-200/20 rounded-xl border border-dashed border-cream-400/40 text-center">
+            <p className="text-stone-600 italic text-xs p-4 bg-cream-200/20 rounded-xl border border-dashed border-cream-400/40 text-center">
               No translation available in {activeLanguage} for this verse.
             </p>
           )}
@@ -589,7 +589,7 @@ export default function VerseBlock({
         {/* Commentaries Section */}
         {hasCommentaries && (
           <div className="space-y-3 pt-2">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-800 uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 uppercase tracking-wider">
               <Volume2 className="w-3.5 h-3.5" />
               <span>Commentaries ({activeLanguage})</span>
             </div>
@@ -597,10 +597,10 @@ export default function VerseBlock({
             <div className="space-y-3">
               {filteredCommentaries.map((c, i) => (
                 <div key={i} className="p-5 bg-stone-50 border border-cream-400/60 rounded-2xl hover:shadow-xs transition-all duration-200">
-                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-stone-600 bg-stone-200/60 px-2 py-0.5 rounded border border-stone-300/40 mb-2">
+                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-stone-700 bg-stone-200/80 px-2 py-0.5 rounded border border-stone-300/60 mb-2">
                     {c.author}
                   </span>
-                  <p className="text-stone-700 text-sm leading-relaxed whitespace-pre-wrap font-serif">&quot;{c.text}&quot;</p>
+                  <p className="text-stone-900 text-sm leading-relaxed whitespace-pre-wrap font-serif font-medium">&quot;{c.text}&quot;</p>
                 </div>
               ))}
             </div>
@@ -614,7 +614,7 @@ export default function VerseBlock({
           <button 
             onClick={onPrev} 
             disabled={index === 0} 
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border border-cream-400 bg-white text-stone-600 hover:text-saffron-700 hover:bg-saffron-50 font-semibold text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-300 shadow-xs"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border border-cream-400 bg-white text-stone-800 hover:text-saffron-900 hover:bg-saffron-50 font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-300 shadow-xs"
           >
             <ChevronLeft className="w-4 h-4" />
             <span>Previous Verse</span>
@@ -623,7 +623,7 @@ export default function VerseBlock({
           <button 
             onClick={onNext} 
             disabled={index === (totalVerses || 0) - 1} 
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border border-cream-400 bg-white text-stone-600 hover:text-saffron-700 hover:bg-saffron-50 font-semibold text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-300 shadow-xs"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border border-cream-400 bg-white text-stone-800 hover:text-saffron-900 hover:bg-saffron-50 font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-300 shadow-xs"
           >
             <span>Next Verse</span>
             <ChevronRight className="w-4 h-4" />

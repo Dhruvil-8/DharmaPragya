@@ -138,7 +138,7 @@ function HomePageContent() {
         />
 
         {/* Tab Segmented Control */}
-        <div className="w-full max-w-md mx-auto mb-8 bg-cream-400/50 backdrop-blur-md p-1.5 rounded-full border border-cream-500/20 flex shadow-sm">
+        <div className="w-full max-w-md mx-auto mb-8 bg-cream-300 p-1.5 rounded-full border border-cream-400 shadow-sm flex">
           <button
             onClick={() => {
               setMode('ask');
@@ -148,10 +148,10 @@ function HomePageContent() {
                 window.history.pushState({}, '', url.toString());
               }
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-sm font-bold transition-all duration-300 cursor-pointer ${
               mode === 'ask'
-                ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white shadow-md'
-                : 'text-saffron-700 hover:text-saffron-600 hover:bg-cream-300/40'
+                ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 text-white shadow-md'
+                : 'text-saffron-950 hover:text-saffron-700 hover:bg-cream-200'
             }`}
           >
             <Compass className="w-4 h-4" />
@@ -167,10 +167,10 @@ function HomePageContent() {
                 window.history.pushState({}, '', url.toString());
               }
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-sm font-bold transition-all duration-300 cursor-pointer ${
               mode === 'read'
-                ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white shadow-md'
-                : 'text-saffron-700 hover:text-saffron-600 hover:bg-cream-300/40'
+                ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 text-white shadow-md'
+                : 'text-saffron-950 hover:text-saffron-700 hover:bg-cream-200'
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -178,15 +178,18 @@ function HomePageContent() {
           </button>
         </div>
 
-        {/* Tab Contents */}
-        <div className="flex-grow transition-all duration-300">
-          <div className={mode === 'ask' ? 'animate-fade-in' : 'hidden'}>
-            <AskMode apiBaseUrl={API_BASE_URL} />
+        {/* Dynamic Mode Content Views */}
+        <div className="w-full">
+          <div className={mode === 'ask' ? 'block animate-fade-in' : 'hidden'}>
+            <AskMode 
+              targetQuery={targetQuery}
+              targetSource={targetSource}
+              onOpenShareModal={handleOpenShareModalFromVerse}
+            />
           </div>
-          <div className={mode === 'read' ? 'animate-fade-in' : 'hidden'}>
-            <ReadMode
-              apiBaseUrl={API_BASE_URL}
-              isActive={mode === 'read'}
+
+          <div className={mode === 'read' ? 'block animate-fade-in' : 'hidden'}>
+            <ReadMode 
               onOpenShareModal={handleOpenShareModalFromVerse}
               targetCoordinate={targetCoordinate}
             />
@@ -194,9 +197,9 @@ function HomePageContent() {
         </div>
 
         {/* Sacred Footer */}
-        <footer className="mt-16 py-8 border-t border-cream-400/30 text-center text-xs text-saffron-800/60 font-medium space-y-1.5">
-          <p className="font-cinzel tracking-widest uppercase font-bold text-saffron-800">DharmaPragya</p>
-          <p className="text-[11px] text-stone-500">
+        <footer className="mt-16 py-8 border-t border-cream-400/50 text-center text-xs text-saffron-950 font-semibold space-y-1.5">
+          <p className="font-cinzel tracking-widest uppercase font-bold text-saffron-950">DharmaPragya</p>
+          <p className="text-[11px] text-stone-700 font-medium">
             Synthesizing canonical Sanatan Dharma wisdom with modern intelligence.
           </p>
         </footer>

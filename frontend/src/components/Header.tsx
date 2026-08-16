@@ -38,10 +38,10 @@ export default function Header({ onOpenSanctuary }: HeaderProps) {
             className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-xs object-cover bg-white border border-cream-400 shrink-0" 
           />
           <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
-            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-saffron-600 to-terracotta-700 font-cinzel leading-tight">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-saffron-700 to-terracotta-800 font-cinzel leading-tight">
               DharmaPragya
             </h1>
-            <span className="text-[9px] sm:text-[10px] md:text-xs text-saffron-800/70 font-medium tracking-wide uppercase">
+            <span className="text-[9px] sm:text-[10px] md:text-xs text-saffron-900 font-bold tracking-wide uppercase">
               Wisdom of Sanatan Dharma
             </span>
           </div>

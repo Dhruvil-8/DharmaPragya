@@ -213,18 +213,18 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
       <div className="bg-white/90 backdrop-blur-md p-6 md:p-7 rounded-3xl border border-cream-400 shadow-sm hover:shadow-md transition-all duration-300">
         <form onSubmit={handleSubmit}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-2 text-saffron-800 font-semibold font-cinzel text-base">
-              <Compass className="w-5 h-5 text-saffron-600" />
+            <div className="flex items-center gap-2 text-saffron-950 font-bold font-cinzel text-base">
+              <Compass className="w-5 h-5 text-saffron-700" />
               <span>Inquire the Sacred Scriptures</span>
             </div>
             
             <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
               <div className="flex items-center gap-1.5">
-                <label className="text-[10px] text-stone-500 font-bold uppercase tracking-wider">Source:</label>
+                <label className="text-[10px] text-stone-700 font-bold uppercase tracking-wider">Source:</label>
                 <select 
                   value={sourceFilter} 
                   onChange={e => setSourceFilter(e.target.value)} 
-                  className="p-1.5 text-xs bg-cream-200/60 hover:bg-cream-200 border border-cream-400/80 rounded-xl text-saffron-800 font-semibold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
+                  className="p-1.5 text-xs bg-cream-200 hover:bg-cream-300 border border-cream-400 rounded-xl text-saffron-950 font-bold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
                 >
                   <option value="All">All Sources</option>
                   <option value="Bhagavad Gita">Bhagavad Gita</option>
@@ -239,7 +239,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
               </div>
 
               <div className="flex items-center gap-1.5">
-                <label className="text-[10px] text-stone-500 font-bold uppercase tracking-wider">Language:</label>
+                <label className="text-[10px] text-stone-700 font-bold uppercase tracking-wider">Language:</label>
                 <select 
                   value={language} 
                   onChange={e => {
@@ -247,7 +247,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                     window.speechSynthesis.cancel();
                     setIsSpeaking(false);
                   }} 
-                  className="p-1.5 text-xs bg-cream-200/60 hover:bg-cream-200 border border-cream-400/80 rounded-xl text-saffron-800 font-semibold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
+                  className="p-1.5 text-xs bg-cream-200 hover:bg-cream-300 border border-cream-400 rounded-xl text-saffron-950 font-bold focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all cursor-pointer"
                 >
                   <option value="english">English</option>
                   <option value="hindi">हिन्दी (Hindi)</option>
@@ -267,7 +267,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
               value={query} 
               onChange={(e) => setQuery(e.target.value)} 
               placeholder="e.g., How does one achieve peace of mind amidst chaos and duty?" 
-              className="w-full p-4 pr-12 border border-cream-400/80 hover:border-cream-500/80 bg-white rounded-2xl text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-saffron-500/20 focus:border-saffron-500/80 transition-all text-sm leading-relaxed" 
+              className="w-full p-4 pr-12 border border-cream-400 hover:border-cream-500 bg-white rounded-2xl text-stone-950 placeholder-stone-500 font-medium focus:outline-none focus:ring-2 focus:ring-saffron-500/20 focus:border-saffron-500 transition-all text-sm leading-relaxed" 
               rows={3} 
             />
             <button
@@ -276,7 +276,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
               className={`absolute right-3.5 bottom-3.5 p-2 rounded-xl transition-all duration-300 cursor-pointer ${
                 isListening 
                   ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-sm' 
-                  : 'text-stone-400 hover:text-saffron-600 hover:bg-cream-200/50'
+                  : 'text-stone-500 hover:text-saffron-700 hover:bg-cream-200'
               }`}
               title={isListening ? "Listening... click to stop" : "Speak query via microphone"}
             >
@@ -307,8 +307,8 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
         {/* Curated Philosophical Inquiries (Starter Themes) */}
         {!aiResponse && !isAiLoading && (
           <div className="mt-6 pt-5 border-t border-cream-300 space-y-3">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-saffron-700 uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-saffron-900 uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 text-saffron-700" />
               <span>Contemplative Starters</span>
             </div>
 
@@ -342,17 +342,17 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                     setQuery(item.text);
                     setSourceFilter(item.source);
                   }}
-                  className="p-3 bg-cream-200/50 hover:bg-saffron-50 border border-cream-400/60 hover:border-saffron-400/60 rounded-xl text-left cursor-pointer transition-all duration-200 group flex flex-col justify-between"
+                  className="p-3.5 bg-cream-200/60 hover:bg-saffron-50 border border-cream-400 hover:border-saffron-400 rounded-xl text-left cursor-pointer transition-all duration-200 group flex flex-col justify-between"
                 >
                   <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-saffron-600">
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-saffron-800">
                       {item.theme}
                     </span>
-                    <span className="text-[9px] font-bold text-stone-400">
+                    <span className="text-[10px] font-bold text-stone-600">
                       {item.source}
                     </span>
                   </div>
-                  <p className="text-xs text-stone-700 font-serif group-hover:text-saffron-900 transition-colors">
+                  <p className="text-xs text-stone-900 font-serif font-medium group-hover:text-saffron-950 transition-colors">
                     &quot;{item.text}&quot;
                   </p>
                 </button>
@@ -382,10 +382,10 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-cream-300/40">
             <div className="flex items-center gap-2.5">
-              <div className="p-1.5 bg-saffron-100 text-saffron-600 rounded-lg">
+              <div className="p-1.5 bg-saffron-100 text-saffron-700 rounded-lg">
                 <Compass className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-bold font-cinzel text-saffron-800">Synthesized Wisdom</h2>
+              <h2 className="text-xl font-bold font-cinzel text-saffron-950">Synthesized Wisdom</h2>
             </div>
             
             {language === 'english' && (
@@ -395,7 +395,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer shadow-xs ${
                   isSpeaking 
                     ? 'bg-gradient-to-r from-terracotta-500 to-terracotta-600 text-white' 
-                    : 'bg-cream-300 hover:bg-saffron-100 border border-cream-400 text-saffron-800'
+                    : 'bg-cream-300 hover:bg-saffron-100 border border-cream-400 text-saffron-900'
                 }`}
                 title={isSpeaking ? "Stop reading" : "Read answer aloud"}
               >
@@ -405,20 +405,20 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
             )}
           </div>
 
-          <div className="text-base leading-relaxed text-stone-800 font-serif">
+          <div className="text-base leading-relaxed text-stone-950 font-serif">
             <ReactMarkdown
               components={{
-                h1: ({ ...props }) => <h1 className="text-2xl font-bold mt-6 mb-3 text-saffron-800 font-cinzel" {...props} />,
-                h2: ({ ...props }) => <h2 className="text-xl font-semibold mt-5 mb-2 text-saffron-800 font-cinzel" {...props} />,
-                h3: ({ ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2 text-saffron-800 font-cinzel" {...props} />,
-                p: ({ ...props }) => <p className="mb-4 text-stone-700 leading-relaxed" {...props} />,
-                ul: ({ ...props }) => <ul className="list-disc pl-5 mb-4 text-stone-700 space-y-1.5 font-sans text-sm" {...props} />,
-                ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-4 text-stone-700 space-y-1.5 font-sans text-sm" {...props} />,
+                h1: ({ ...props }) => <h1 className="text-2xl font-bold mt-6 mb-3 text-saffron-950 font-cinzel" {...props} />,
+                h2: ({ ...props }) => <h2 className="text-xl font-semibold mt-5 mb-2 text-saffron-900 font-cinzel" {...props} />,
+                h3: ({ ...props }) => <h3 className="text-lg font-semibold mt-4 mb-2 text-saffron-900 font-cinzel" {...props} />,
+                p: ({ ...props }) => <p className="mb-4 text-stone-900 leading-relaxed font-normal" {...props} />,
+                ul: ({ ...props }) => <ul className="list-disc pl-5 mb-4 text-stone-900 space-y-1.5 font-sans text-sm" {...props} />,
+                ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-4 text-stone-900 space-y-1.5 font-sans text-sm" {...props} />,
                 li: ({ ...props }) => <li className="mb-1" {...props} />,
-                strong: ({ ...props }) => <strong className="font-semibold text-stone-900 font-sans text-sm" {...props} />,
-                em: ({ ...props }) => <em className="italic text-stone-800" {...props} />,
+                strong: ({ ...props }) => <strong className="font-bold text-stone-950 font-sans text-sm" {...props} />,
+                em: ({ ...props }) => <em className="italic text-stone-900 font-medium" {...props} />,
                 blockquote: ({ ...props }) => (
-                  <blockquote className="border-l-4 border-saffron-500 pl-4 py-1 italic my-4 text-stone-600 bg-cream-200/40 rounded-r-lg" {...props} />
+                  <blockquote className="border-l-4 border-saffron-500 pl-4 py-1.5 italic my-4 text-stone-900 font-medium bg-cream-200/60 rounded-r-lg" {...props} />
                 ),
               }}
             >
@@ -429,7 +429,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
           {/* Interactive Citation Badges */}
           {aiResponse.citations && aiResponse.citations.length > 0 && (
             <div className="mt-6 pt-5 border-t border-cream-300/40">
-              <h4 className="text-[11px] font-bold text-saffron-800 tracking-wider uppercase mb-3">Verified Canonical Citations</h4>
+              <h4 className="text-[11px] font-bold text-saffron-950 tracking-wider uppercase mb-3">Verified Canonical Citations</h4>
               <div className="flex flex-wrap gap-2">
                 {aiResponse.citations.map((cit, idx) => {
                   const targetId = `source-verse-${idx}`;
@@ -437,9 +437,9 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                     <button
                       key={idx}
                       onClick={() => scrollToVerse(targetId)}
-                      className="px-3.5 py-1.5 text-xs bg-cream-300/60 hover:bg-saffron-100 border border-cream-400/60 hover:border-saffron-300 rounded-full text-saffron-800 font-medium cursor-pointer transition-all duration-300 flex items-center gap-1.5 shadow-xs"
+                      className="px-3.5 py-1.5 text-xs bg-cream-300 hover:bg-saffron-100 border border-cream-400 hover:border-saffron-300 rounded-full text-saffron-900 font-bold cursor-pointer transition-all duration-300 flex items-center gap-1.5 shadow-xs"
                     >
-                      <span className="font-bold text-[10px] bg-saffron-500 text-white w-4 h-4 rounded-full flex items-center justify-center shrink-0">
+                      <span className="font-bold text-[10px] bg-saffron-600 text-white w-4 h-4 rounded-full flex items-center justify-center shrink-0">
                         {idx + 1}
                       </span>
                       {cit.source_name} — Ch. {cit.chapter_number}, Verse {cit.verse_number}
@@ -450,8 +450,8 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
             </div>
           )}
 
-          <div className="mt-5 pt-4 border-t border-cream-300/40 flex items-center gap-2 text-stone-400 text-xs italic">
-            <HelpCircle className="w-4 h-4 shrink-0" />
+          <div className="mt-5 pt-4 border-t border-cream-300/40 flex items-center gap-2 text-stone-600 text-xs italic font-medium">
+            <HelpCircle className="w-4 h-4 shrink-0 text-saffron-600" />
             <span>Synthesized answers are drawn strictly from foundational canonical records.</span>
           </div>
         </div>

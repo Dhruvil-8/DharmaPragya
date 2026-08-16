@@ -199,7 +199,7 @@ export default function ReadMode({
     <div className="space-y-6">
       {/* Dynamic Breadcrumbs Navigation */}
       {(currentCategory || currentSource || currentSection) && (
-        <nav className="flex flex-wrap items-center gap-1.5 text-xs text-stone-500 font-medium bg-cream-300/40 px-4 py-2.5 rounded-2xl border border-cream-400/50">
+        <nav className="flex flex-wrap items-center gap-1.5 text-xs text-stone-700 font-bold bg-cream-300 px-4 py-2.5 rounded-2xl border border-cream-400/80 shadow-xs">
           <button 
             type="button"
             onClick={() => { 
@@ -209,14 +209,14 @@ export default function ReadMode({
               setCurrentSection(null); 
               setChapterData([]); 
             }} 
-            className="hover:text-saffron-600 transition-colors cursor-pointer"
+            className="hover:text-saffron-800 transition-colors cursor-pointer"
           >
             Categories
           </button>
           
           {currentCategory && (
             <>
-              <span className="text-stone-400">/</span>
+              <span className="text-stone-500 font-bold">/</span>
               <button 
                 type="button"
                 onClick={() => { 
@@ -225,7 +225,7 @@ export default function ReadMode({
                   setCurrentSection(null); 
                   setChapterData([]); 
                 }} 
-                className={`hover:text-saffron-600 transition-colors cursor-pointer ${!currentSource ? 'text-saffron-800 font-bold' : ''}`}
+                className={`hover:text-saffron-800 transition-colors cursor-pointer ${!currentSource ? 'text-saffron-950 font-bold' : ''}`}
               >
                 {currentCategory}
               </button>
@@ -234,14 +234,14 @@ export default function ReadMode({
 
           {currentSource && (
             <>
-              <span className="text-stone-400">/</span>
+              <span className="text-stone-500 font-bold">/</span>
               <button 
                 type="button"
                 onClick={() => { 
                   setCurrentSection(null); 
                   setChapterData([]); 
                 }} 
-                className={`hover:text-saffron-600 transition-colors cursor-pointer ${!currentSection ? 'text-saffron-800 font-bold' : ''}`}
+                className={`hover:text-saffron-800 transition-colors cursor-pointer ${!currentSection ? 'text-saffron-950 font-bold' : ''}`}
               >
                 {currentSource}
               </button>
@@ -250,8 +250,8 @@ export default function ReadMode({
 
           {currentSection && chapterData.length > 0 && (
             <>
-              <span className="text-stone-400">/</span>
-              <span className="text-saffron-800 font-bold font-cinzel">
+              <span className="text-stone-500 font-bold">/</span>
+              <span className="text-saffron-950 font-bold font-cinzel">
                 {chapterData[0]?.chapter_name === currentSource ? 'Complete Text' : chapterData[0]?.chapter_name}
               </span>
             </>
@@ -264,7 +264,7 @@ export default function ReadMode({
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-16 space-y-4">
           <div className="w-10 h-10 border-2 border-saffron-300 border-t-saffron-600 rounded-full animate-spin" />
-          <div className="text-saffron-800 text-sm font-semibold tracking-wide animate-pulse">Accessing sacred records...</div>
+          <div className="text-saffron-950 text-sm font-bold tracking-wide animate-pulse">Accessing sacred records...</div>
         </div>
       )}
       
@@ -272,8 +272,8 @@ export default function ReadMode({
       {!isLoading && !currentCategory && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <BookMarked className="w-5 h-5 text-saffron-600" />
-            <h2 className="text-xl font-bold font-cinzel text-saffron-800">Select Scripture Category</h2>
+            <BookMarked className="w-5 h-5 text-saffron-700" />
+            <h2 className="text-xl font-bold font-cinzel text-saffron-950">Select Scripture Category</h2>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -281,15 +281,15 @@ export default function ReadMode({
               <button 
                 key={cat} 
                 onClick={() => setCurrentCategory(cat)} 
-                className="group p-6 bg-white border border-cream-400 hover:border-saffron-500/40 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-32 cursor-pointer hover:-translate-y-0.5"
+                className="group p-6 bg-white border border-cream-400 hover:border-saffron-400 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-32 cursor-pointer hover:-translate-y-0.5"
               >
                 <div>
-                  <p className="text-lg font-bold font-cinzel text-saffron-800 group-hover:text-saffron-600 transition-colors">{cat}</p>
-                  <p className="text-xs text-stone-500 mt-1">Foundational spiritual records</p>
+                  <p className="text-lg font-bold font-cinzel text-saffron-950 group-hover:text-saffron-700 transition-colors">{cat}</p>
+                  <p className="text-xs text-stone-700 font-medium mt-1">Foundational spiritual records</p>
                 </div>
                 <div className="flex justify-between items-center w-full">
-                  <span className="text-xs font-bold bg-cream-300 text-saffron-800 px-3 py-1 rounded-full border border-cream-400">{groupedSources[cat].length} sources</span>
-                  <ChevronRight className="w-4 h-4 text-saffron-500 transform group-hover:translate-x-1 transition-transform" />
+                  <span className="text-xs font-bold bg-cream-300 text-saffron-900 px-3 py-1 rounded-full border border-cream-400">{groupedSources[cat].length} sources</span>
+                  <ChevronRight className="w-4 h-4 text-saffron-600 transform group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>
             ))}
@@ -302,9 +302,9 @@ export default function ReadMode({
         <div className="space-y-4">
           <button 
             onClick={() => setCurrentCategory(null)} 
-            className="flex items-center gap-1.5 text-xs text-saffron-800 hover:text-saffron-600 font-semibold cursor-pointer group"
+            className="flex items-center gap-1.5 text-xs text-saffron-900 hover:text-saffron-700 font-bold cursor-pointer group"
           >
-            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-saffron-700" />
             Back to Categories
           </button>
           
@@ -313,15 +313,15 @@ export default function ReadMode({
               <button 
                 key={src.id} 
                 onClick={() => loadSource(src.name)} 
-                className="group p-6 bg-white border border-cream-400 hover:border-saffron-500/40 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-32 cursor-pointer hover:-translate-y-0.5"
+                className="group p-6 bg-white border border-cream-400 hover:border-saffron-400 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-32 cursor-pointer hover:-translate-y-0.5"
               >
                 <div>
-                  <p className="text-lg font-bold font-cinzel text-saffron-800 group-hover:text-saffron-600 transition-colors">{src.name}</p>
-                  <p className="text-xs text-stone-500 mt-1 capitalize">{src.type.toLowerCase().replace('_', ' ')}</p>
+                  <p className="text-lg font-bold font-cinzel text-saffron-950 group-hover:text-saffron-700 transition-colors">{src.name}</p>
+                  <p className="text-xs text-stone-700 font-medium mt-1 capitalize">{src.type.toLowerCase().replace('_', ' ')}</p>
                 </div>
                 <div className="flex justify-between items-center w-full">
-                  <span className="text-xs font-semibold text-stone-400">Explore Chapters</span>
-                  <ChevronRight className="w-4 h-4 text-saffron-500 transform group-hover:translate-x-1 transition-transform" />
+                  <span className="text-xs font-bold text-stone-600">Explore Chapters</span>
+                  <ChevronRight className="w-4 h-4 text-saffron-600 transform group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>
             ))}
@@ -334,9 +334,9 @@ export default function ReadMode({
         <div className="space-y-4">
           <button 
             onClick={() => { setCurrentSource(null); setCurrentGroup(null); }} 
-            className="flex items-center gap-1.5 text-xs text-saffron-800 hover:text-saffron-600 font-semibold cursor-pointer group"
+            className="flex items-center gap-1.5 text-xs text-saffron-900 hover:text-saffron-700 font-bold cursor-pointer group"
           >
-            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-saffron-700" />
             Back to {currentCategory}
           </button>
 
@@ -346,10 +346,10 @@ export default function ReadMode({
                 <button 
                   key={groupName} 
                   onClick={() => setCurrentGroup(groupName)} 
-                  className="group p-4 bg-white border border-cream-400 hover:border-saffron-500/30 rounded-2xl shadow-xs hover:shadow-md transition-all duration-300 text-left cursor-pointer"
+                  className="group p-4 bg-white border border-cream-400 hover:border-saffron-400 rounded-2xl shadow-xs hover:shadow-md transition-all duration-300 text-left cursor-pointer"
                 >
-                  <p className="font-bold text-sm text-saffron-800 group-hover:text-saffron-600 transition-colors font-cinzel">{groupName}</p>
-                  <p className="text-xs text-stone-500 mt-1">{sectionGroups[groupName].length} divisions</p>
+                  <p className="font-bold text-sm text-saffron-950 group-hover:text-saffron-700 transition-colors font-cinzel">{groupName}</p>
+                  <p className="text-xs text-stone-700 font-medium mt-1">{sectionGroups[groupName].length} divisions</p>
                 </button>
               ))}
             </div>
@@ -358,7 +358,7 @@ export default function ReadMode({
               {currentGroup && sectionGroups && (
                 <button 
                   onClick={() => setCurrentGroup(null)} 
-                  className="flex items-center gap-1 text-xs text-saffron-800 hover:text-saffron-600 font-semibold cursor-pointer mb-2"
+                  className="flex items-center gap-1 text-xs text-saffron-900 hover:text-saffron-700 font-bold cursor-pointer mb-2"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   Back to Divisions
@@ -370,12 +370,12 @@ export default function ReadMode({
                   <button 
                     key={sec.id} 
                     onClick={() => loadChapter(sec.chapter_number)} 
-                    className="p-4 bg-white hover:bg-cream-200 border border-cream-400 hover:border-saffron-500/30 rounded-2xl shadow-xs hover:shadow-md transition-all duration-300 text-left cursor-pointer flex justify-between items-center"
+                    className="p-4 bg-white hover:bg-cream-200 border border-cream-400 hover:border-saffron-400 rounded-2xl shadow-xs hover:shadow-md transition-all duration-300 text-left cursor-pointer flex justify-between items-center"
                   >
-                    <span className="font-semibold text-sm text-saffron-800 font-cinzel">
+                    <span className="font-bold text-sm text-saffron-950 font-cinzel">
                       {sec.chapter_name === currentSource ? 'Complete Text' : sec.chapter_name}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-saffron-500/80 shrink-0 ml-2" />
+                    <ChevronRight className="w-4 h-4 text-saffron-600 shrink-0 ml-2" />
                   </button>
                 ))}
               </div>
