@@ -26,9 +26,29 @@ export default function Header({ onOpenSanctuary }: HeaderProps) {
 
   return (
     <>
-      <header className="relative w-full flex flex-col items-center mb-10 pt-4">
-        {/* Top Actions: Sanctuary & About */}
-        <div className="absolute right-0 top-0 mt-2 flex items-center gap-2">
+      <header className="w-full flex items-center justify-between py-2.5 mb-5 border-b border-cream-400/50 select-none">
+        {/* Left: Small Logo & Inline Brand Title & Subtitle */}
+        <div className="flex items-center gap-2.5">
+          <Image 
+            src="/logo.png" 
+            alt="DharmaPragya" 
+            width={32}
+            height={32}
+            priority
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-xs object-cover bg-white border border-cream-400 shrink-0" 
+          />
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:gap-2">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-saffron-600 to-terracotta-700 font-cinzel leading-tight">
+              DharmaPragya
+            </h1>
+            <span className="text-[9px] sm:text-[10px] md:text-xs text-saffron-800/70 font-medium tracking-wide uppercase">
+              Wisdom of Sanatan Dharma
+            </span>
+          </div>
+        </div>
+
+        {/* Right: Top Actions (Sanctuary & About) */}
+        <div className="flex items-center gap-2">
           {/* Saved Verses Bookmark Sanctuary Button */}
           {onOpenSanctuary && (
             <button
@@ -37,7 +57,7 @@ export default function Header({ onOpenSanctuary }: HeaderProps) {
               title="View Saved Verses"
             >
               <Bookmark className="w-3.5 h-3.5" />
-              <span>Sanctuary</span>
+              <span className="hidden sm:inline">Sanctuary</span>
               {bookmarkCount > 0 && (
                 <span className="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-saffron-500 text-white">
                   {bookmarkCount}
@@ -54,27 +74,6 @@ export default function Header({ onOpenSanctuary }: HeaderProps) {
             <Info className="w-3.5 h-3.5" />
             <span>ABOUT</span>
           </button>
-        </div>
-
-        {/* Main Logo & Title */}
-        <div className="flex flex-col items-center mt-8 md:mt-4">
-          <div className="relative p-1 rounded-full border-2 border-dashed border-saffron-500/30 mb-4 hover:border-saffron-500/60 transition-all duration-500 hover:rotate-12">
-            <Image 
-              src="/logo.png" 
-              alt="DharmaPragya Logo" 
-              width={96}
-              height={96}
-              priority
-              className="w-20 h-20 md:w-24 md:h-24 rounded-full shadow-md object-cover bg-white" 
-            />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-normal text-transparent bg-clip-text bg-gradient-to-r from-saffron-600 to-terracotta-700 font-cinzel text-center">
-            DharmaPragya
-          </h1>
-          <div className="h-0.5 w-16 bg-gradient-to-r from-transparent via-saffron-400 to-transparent mt-2 mb-3" />
-          <p className="text-center text-xs md:text-sm text-saffron-700/70 font-medium tracking-wide uppercase max-w-md px-4">
-            Explore the profound wisdom of Sanatan Dharma
-          </p>
         </div>
       </header>
 
