@@ -194,9 +194,9 @@ function HomePageContent() {
         </div>
 
         {/* Sacred Footer */}
-        <footer className="mt-16 py-8 border-t border-cream-400/30 dark:border-[#2d261e] text-center text-xs text-saffron-800/60 dark:text-saffron-300/60 font-medium space-y-1.5">
-          <p className="font-cinzel tracking-widest uppercase font-bold text-saffron-800 dark:text-saffron-300">DharmaPragya</p>
-          <p className="text-[11px] text-stone-500 dark:text-stone-400">
+        <footer className="mt-16 py-8 border-t border-cream-400/30 text-center text-xs text-saffron-800/60 font-medium space-y-1.5">
+          <p className="font-cinzel tracking-widest uppercase font-bold text-saffron-800">DharmaPragya</p>
+          <p className="text-[11px] text-stone-500">
             Synthesizing canonical Sanatan Dharma wisdom with modern intelligence.
           </p>
         </footer>

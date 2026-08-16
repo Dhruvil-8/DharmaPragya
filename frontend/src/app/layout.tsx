@@ -158,12 +158,8 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                const theme = localStorage.getItem('dharmapragya_theme');
-                if (theme === 'dark') {
-                  document.documentElement.classList.add('dark');
-                } else {
-                  document.documentElement.classList.remove('dark');
-                }
+                document.documentElement.classList.remove('dark');
+                localStorage.removeItem('dharmapragya_theme');
               } catch (e) {}
               if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
                 window.addEventListener('load', () => {

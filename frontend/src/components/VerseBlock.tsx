@@ -424,9 +424,6 @@ export default function VerseBlock({
   // 2. RENDER STUDY (NORMAL) MODE BLOCK
   return (
     <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-cream-400 hover:border-saffron-500/20 transition-all duration-300 relative overflow-hidden select-text">
-      {/* Decorative vertical saffron stripe on the left edge */}
-      <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-gradient-to-b from-saffron-500 to-terracotta-600" />
-
       {/* Header Info, Actions & Audio Player */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-cream-300/40">
         <div>
