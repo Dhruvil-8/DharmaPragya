@@ -1,0 +1,84 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DharmaPragya Sacred Scriptures API",
+    "description": "API for querying, retrieving, and synthesizing verified Sanatan Dharma scriptures (Bhagavad Gita, Upanishads, Vedas, Mahabharata, Ramayana, Patanjali Yoga Sutras).",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://dharma-pragya.vercel.app"
+    }
+  ],
+  "paths": {
+    "/api/read": {
+      "get": {
+        "summary": "Read scriptures, chapters, and verses",
+        "description": "Fetch scripture categories, chapter lists, or detailed verses with Sanskrit Devanagari text, transliteration, English/Hindi translations, word meanings, and commentaries.",
+        "parameters": [
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "description": "Name of the scripture (e.g. 'Bhagavad Gita', 'Isha Upanishad', 'Rigveda')",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "chapter",
+            "in": "query",
+            "required": false,
+            "description": "Chapter or section number (e.g. 2 for Chapter 2)",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scriptural data returned successfully"
+          }
+        }
+      }
+    },
+    "/api/ask": {
+      "post": {
+        "summary": "Inquire with Scriptural AI Synthesizer",
+        "description": "Submit a philosophical or life inquiry to receive synthesized insights grounded in verified scripture citations.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "The spiritual or philosophical question."
+                  },
+                  "source_filter": {
+                    "type": "string",
+                    "default": "All",
+                    "description": "Filter by scripture name or 'All'."
+                  },
+                  "language": {
+                    "type": "string",
+                    "default": "english",
+                    "enum": ["english", "hindi"]
+                  }
+                },
+                "required": ["query"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Synthesized AI response with direct citations and verse cards"
+          }
+        }
+      }
+    }
+  }
+}

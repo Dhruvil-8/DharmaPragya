@@ -1,45 +1,194 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Header from '../components/Header';
 import AskMode from '../components/AskMode';
 import ReadMode from '../components/ReadMode';
-import { HelpCircle, BookOpen } from 'lucide-react';
+import DailyContemplation from '../components/DailyContemplation';
+import SavedSanctuary from '../components/SavedSanctuary';
+import ShareCardModal from '../components/ShareCardModal';
+import { Compass, BookOpen } from 'lucide-react';
+import { DailyShloka } from '../types';
 
 const API_BASE_URL = '';
 
-export default function HomePage() {
+function HomePageContent() {
   const [mode, setMode] = useState<'ask' | 'read'>('ask');
+  const [isSanctuaryOpen, setIsSanctuaryOpen] = useState(false);
+  const [shareModalData, setShareModalData] = useState<{
+    isOpen: boolean;
+    details: {
+      sourceName: string;
+      chapterNumber: number;
+      verseNumber: number;
+      sanskritText: string;
+      transliteration?: string;
+      translationText: string;
+    } | null;
+  }>({
+    isOpen: false,
+    details: null,
+  });
+
+  const [targetCoordinate, setTargetCoordinate] = useState<{
+    sourceName: string;
+    chapterNumber: number;
+    verseNumber?: number;
+  } | null>(null);
+
+  // Parse deep-link URL params on initial mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlMode = params.get('mode');
+      const source = params.get('source');
+      const chapter = params.get('chapter');
+      const verse = params.get('verse');
+
+      if (urlMode === 'read' || (source && chapter)) {
+        setMode('read');
+        if (source && chapter) {
+          setTargetCoordinate({
+            sourceName: source,
+            chapterNumber: parseInt(chapter, 10),
+            verseNumber: verse ? parseInt(verse, 10) : undefined,
+          });
+        }
+      } else if (urlMode === 'saved') {
+        setIsSanctuaryOpen(true);
+      }
+    }
+  }, []);
+
+  const handleOpenShareModalFromDaily = (shloka: DailyShloka) => {
+    setShareModalData({
+      isOpen: true,
+      details: {
+        sourceName: shloka.source_name,
+        chapterNumber: shloka.chapter_number,
+        verseNumber: shloka.verse_number,
+        sanskritText: shloka.sanskrit_text,
+        transliteration: shloka.transliteration,
+        translationText: shloka.translation_english,
+      },
+    });
+  };
+
+  const handleOpenShareModalFromVerse = (details: {
+    sourceName: string;
+    chapterNumber: number;
+    verseNumber: number;
+    sanskritText: string;
+    transliteration?: string;
+    translationText: string;
+  }) => {
+    setShareModalData({
+      isOpen: true,
+      details,
+    });
+  };
+
+  const handleSelectVerseFromSanctuary = (sourceName: string, chapterNumber: number, verseNumber: number) => {
+    setMode('read');
+    setTargetCoordinate({
+      sourceName,
+      chapterNumber,
+      verseNumber,
+    });
+    // Update URL without page reload
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('mode', 'read');
+      url.searchParams.set('source', sourceName);
+      url.searchParams.set('chapter', String(chapterNumber));
+      url.searchParams.set('verse', String(verseNumber));
+      window.history.pushState({}, '', url.toString());
+    }
+  };
+
+  const handleAskQuestionFromDaily = (_query: string, source: string) => {
+    setMode('ask');
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Also trigger query in AskMode via DOM event or input
+    const textarea = document.querySelector('textarea');
+    if (textarea) {
+      textarea.value = _query;
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      const select = document.querySelector('select');
+      if (select && source) {
+        select.value = source;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+  };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-4 md:p-8 bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 text-gray-800 relative overflow-x-hidden selection:bg-saffron-200 selection:text-saffron-700">
-      {/* Decorative background sun glow */}
-      <div className="absolute top-[-10%] left-[50%] translate-x-[-50%] w-[600px] h-[600px] bg-gradient-to-b from-saffron-300/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+    <main className="flex min-h-screen flex-col items-center p-4 md:p-8 bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 dark:from-[#12100e] dark:via-[#161310] dark:to-[#1a1613] text-gray-800 dark:text-[#f5eedc] relative overflow-x-hidden selection:bg-saffron-200 dark:selection:bg-saffron-900 selection:text-saffron-800 dark:selection:text-saffron-200 transition-colors duration-300">
+      {/* Sacred Vedic Background Graphics & Amber Radial Glow */}
+      <div className="absolute top-[-10%] left-[50%] translate-x-[-50%] w-[650px] h-[650px] bg-gradient-to-b from-saffron-300/15 dark:from-amber-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+      {/* Sacred Geometry / Mandala Concentric Rings Motif */}
+      <div className="absolute top-12 left-1/2 -translate-x-1/2 w-[720px] h-[720px] opacity-[0.035] dark:opacity-[0.05] pointer-events-none select-none">
+        <svg viewBox="0 0 100 100" className="w-full h-full stroke-saffron-800 dark:stroke-amber-400 fill-none" strokeWidth="0.5">
+          <circle cx="50" cy="50" r="48" />
+          <circle cx="50" cy="50" r="42" strokeDasharray="1.5 1.5" />
+          <circle cx="50" cy="50" r="34" />
+          <circle cx="50" cy="50" r="26" strokeDasharray="2 1" />
+          <circle cx="50" cy="50" r="16" />
+          <circle cx="50" cy="50" r="6" />
+          <polygon points="50,16 64,50 50,84 36,50" />
+          <polygon points="16,50 50,64 84,50 50,36" />
+        </svg>
+      </div>
 
       <div className="w-full max-w-5xl z-10 flex flex-col flex-grow">
-        <Header />
+        <Header onOpenSanctuary={() => setIsSanctuaryOpen(true)} />
+
+        {/* Daily Contemplation Shloka Widget */}
+        <DailyContemplation
+          onAskQuestion={handleAskQuestionFromDaily}
+          onOpenShareModal={handleOpenShareModalFromDaily}
+        />
 
         {/* Tab Segmented Control */}
-        <div className="w-full max-w-md mx-auto mb-8 bg-cream-400/50 backdrop-blur-md p-1.5 rounded-full border border-cream-500/20 flex shadow-sm">
+        <div className="w-full max-w-md mx-auto mb-8 bg-cream-400/50 dark:bg-[#1f1a15] backdrop-blur-md p-1.5 rounded-full border border-cream-500/30 dark:border-[#3a3229] flex shadow-xs">
           <button
-            onClick={() => setMode('ask')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer ${mode === 'ask'
-                ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white shadow-md'
-                : 'text-saffron-700 hover:text-saffron-600 hover:bg-cream-300/40'
-              }`}
+            onClick={() => {
+              setMode('ask');
+              if (typeof window !== 'undefined') {
+                const url = new URL(window.location.href);
+                url.searchParams.set('mode', 'ask');
+                window.history.pushState({}, '', url.toString());
+              }
+            }}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-xs font-bold font-cinzel uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+              mode === 'ask'
+                ? 'bg-gradient-to-r from-saffron-600 via-saffron-500 to-terracotta-600 text-white shadow-md'
+                : 'text-saffron-800 dark:text-saffron-300 hover:text-saffron-600 dark:hover:text-saffron-200 hover:bg-cream-300/40 dark:hover:bg-[#25201b]'
+            }`}
           >
-            <HelpCircle className="w-4 h-4" />
-            Ask AI
+            <Compass className="w-4 h-4" />
+            <span>Ask AI</span>
           </button>
+
           <button
-            onClick={() => setMode('read')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer ${mode === 'read'
-                ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white shadow-md'
-                : 'text-saffron-700 hover:text-saffron-600 hover:bg-cream-300/40'
-              }`}
+            onClick={() => {
+              setMode('read');
+              if (typeof window !== 'undefined') {
+                const url = new URL(window.location.href);
+                url.searchParams.set('mode', 'read');
+                window.history.pushState({}, '', url.toString());
+              }
+            }}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-full text-xs font-bold font-cinzel uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+              mode === 'read'
+                ? 'bg-gradient-to-r from-saffron-600 via-saffron-500 to-terracotta-600 text-white shadow-md'
+                : 'text-saffron-800 dark:text-saffron-300 hover:text-saffron-600 dark:hover:text-saffron-200 hover:bg-cream-300/40 dark:hover:bg-[#25201b]'
+            }`}
           >
             <BookOpen className="w-4 h-4" />
-            Reading Mode
+            <span>Reading Mode</span>
           </button>
         </div>
 
@@ -49,16 +198,45 @@ export default function HomePage() {
             <AskMode apiBaseUrl={API_BASE_URL} />
           </div>
           <div className={mode === 'read' ? 'animate-fade-in' : 'hidden'}>
-            <ReadMode apiBaseUrl={API_BASE_URL} isActive={mode === 'read'} />
+            <ReadMode
+              apiBaseUrl={API_BASE_URL}
+              isActive={mode === 'read'}
+              onOpenShareModal={handleOpenShareModalFromVerse}
+              targetCoordinate={targetCoordinate}
+            />
           </div>
         </div>
 
-        {/* Footer */}
-        <footer className="mt-16 py-8 border-t border-cream-500/20 text-center text-xs text-saffron-700/60 font-medium">
-          <p className="font-cinzel tracking-wider uppercase mb-1">DharmaPragya</p>
-          <p>Synthesizing ancient scriptural wisdom with modern intelligence.</p>
+        {/* Sacred Footer */}
+        <footer className="mt-16 py-8 border-t border-cream-400/30 dark:border-[#2d261e] text-center text-xs text-saffron-800/60 dark:text-saffron-300/60 font-medium space-y-1.5">
+          <p className="font-cinzel tracking-widest uppercase font-bold text-saffron-800 dark:text-saffron-300">DharmaPragya</p>
+          <p className="text-[11px] text-stone-500 dark:text-stone-400">
+            Synthesizing canonical Sanatan Dharma wisdom with modern intelligence.
+          </p>
         </footer>
       </div>
+
+      {/* Personal Saved Sanctuary Drawer */}
+      <SavedSanctuary
+        isOpen={isSanctuaryOpen}
+        onClose={() => setIsSanctuaryOpen(false)}
+        onSelectVerse={handleSelectVerseFromSanctuary}
+      />
+
+      {/* Share / Export Card Modal */}
+      <ShareCardModal
+        isOpen={shareModalData.isOpen}
+        onClose={() => setShareModalData({ isOpen: false, details: null })}
+        verseDetails={shareModalData.details}
+      />
     </main>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-cream-100 dark:bg-[#141210]" />}>
+      <HomePageContent />
+    </Suspense>
   );
 }

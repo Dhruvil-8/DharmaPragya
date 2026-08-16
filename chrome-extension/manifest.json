@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "DharmaPragya - Daily Shloka & Vedic Wisdom",
+  "version": "1.0.0",
+  "description": "Greet each new tab with a sacred Vedic Shloka, audio chanting, and philosophical insight.",
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "action": {
+    "default_popup": "newtab.html",
+    "default_title": "DharmaPragya Daily Shloka"
+  },
+  "icons": {
+    "192": "icon.png"
+  },
+  "permissions": []
+}

@@ -1,0 +1,21 @@
+{
+  "name": "DharmaPragya - Sanatan Dharma Wisdom",
+  "short_name": "DharmaPragya",
+  "description": "Explore the profound wisdom of Sanatan Dharma with AI synthesis and direct scriptural citations.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdfbf7",
+  "theme_color": "#d97706",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

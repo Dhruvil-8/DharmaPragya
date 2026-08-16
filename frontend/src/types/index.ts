@@ -50,3 +50,28 @@ export interface SourceData {
 }
 
 export type Language = 'english' | 'hindi' | 'sanskrit';
+
+export interface BookmarkItem {
+  id: number;
+  source_name: string;
+  chapter_number: number;
+  chapter_name: string;
+  verse_number: number;
+  sanskrit_text: string;
+  transliteration?: string;
+  translation_text?: string;
+  saved_at: number;
+}
+
+export interface DailyShloka {
+  source_name: string;
+  chapter_number: number;
+  verse_number: number;
+  sanskrit_text: string;
+  transliteration: string;
+  translation_english: string;
+  translation_hindi: string;
+  reflection: string;
+  theme: string;
+  audio_path?: string;
+}

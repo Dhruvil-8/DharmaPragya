@@ -4,6 +4,7 @@
   --font-sans: var(--font-plus-jakarta), sans-serif;
   --font-serif: var(--font-lora), serif;
   --font-cinzel: var(--font-cinzel), serif;
+  --font-sanskrit: var(--font-sanskrit), 'Tiro Devanagari Sanskrit', 'Martel', serif;
   
   --color-saffron-50: #fffbeb;
   --color-saffron-100: #fef3c7;
@@ -32,19 +33,37 @@
 :root {
   --background: #fdfbf7;
   --foreground: #2d261e;
+  --card-bg: #ffffff;
+  --border-subtle: #ebdcb9;
+}
+
+html.dark {
+  --background: #141210;
+  --foreground: #f5eedc;
+  --card-bg: #1c1916;
+  --border-subtle: #3a3229;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-sans);
-  background-image: radial-gradient(rgba(217, 119, 6, 0.03) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(217, 119, 6, 0.04) 1px, transparent 1px);
   background-size: 24px 24px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark body {
+  background-image: radial-gradient(rgba(245, 158, 11, 0.05) 1px, transparent 1px);
 }
 
 /* Beautiful custom animations and styling */
 .spiritual-gradient {
   background: linear-gradient(135deg, #fdfbf7 0%, #faf5eb 50%, #f5eedc 100%);
+}
+
+html.dark .spiritual-gradient {
+  background: linear-gradient(135deg, #141210 0%, #1a1613 50%, #241e18 100%);
 }
 
 .glow-btn {
@@ -86,12 +105,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #fdfbf7;
+  background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
   background: #ebdcb9;
   border-radius: 9999px;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #3a3229;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -113,3 +136,65 @@ body {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite linear;
 }
+
+html.dark .shimmer {
+  background: linear-gradient(90deg, #1c1916 25%, #2a241e 50%, #1c1916 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* Authentic Sacred Vedic Audio Wave Pulse Visualizer */
+@keyframes vedicPulse {
+  0%, 100% {
+    transform: scaleY(0.3);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Breathing Temple Diya (Ghee Lamp) Luminescence */
+@keyframes diyaAura {
+  0%, 100% {
+    box-shadow: 0 0 25px -5px rgba(217, 119, 6, 0.12), inset 0 0 15px rgba(217, 119, 6, 0.03);
+    border-color: rgba(217, 119, 6, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 45px 0px rgba(245, 158, 11, 0.22), inset 0 0 20px rgba(245, 158, 11, 0.06);
+    border-color: rgba(245, 158, 11, 0.55);
+  }
+}
+
+.diya-card-glow {
+  animation: diyaAura 4s ease-in-out infinite;
+}
+
+.manuscript-card {
+  position: relative;
+  background-image: 
+    radial-gradient(ellipse at top, rgba(251, 191, 36, 0.04) 0%, transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(253, 251, 247, 0.98) 100%);
+}
+
+html.dark .manuscript-card {
+  background-image: 
+    radial-gradient(ellipse at top, rgba(245, 158, 11, 0.06) 0%, transparent 70%),
+    linear-gradient(180deg, rgba(26, 22, 19, 0.96) 0%, rgba(20, 18, 16, 0.98) 100%);
+}
+
+.vedic-bar {
+  display: inline-block;
+  width: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(to top, #d97706, #fbbf24);
+  animation: vedicPulse 1.2s ease-in-out infinite alternate;
+  transform-origin: bottom;
+}
+
+.vedic-bar:nth-child(1) { animation-delay: 0.1s; height: 12px; }
+.vedic-bar:nth-child(2) { animation-delay: 0.3s; height: 18px; }
+.vedic-bar:nth-child(3) { animation-delay: 0.5s; height: 14px; }
+.vedic-bar:nth-child(4) { animation-delay: 0.2s; height: 20px; }
+.vedic-bar:nth-child(5) { animation-delay: 0.4s; height: 10px; }

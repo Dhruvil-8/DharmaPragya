@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "DharmaPragya",
+  "name_for_model": "dharmapragya_scriptures",
+  "description_for_human": "Explore and query verified Sanatan Dharma scriptures including the Bhagavad Gita, Upanishads, and Vedas.",
+  "description_for_model": "Plugin for retrieving verses, Sanskrit shlokas, translations, word meanings, and commentaries from canonical Hindu scriptures (Bhagavad Gita, Upanishads, Vedas, Yoga Sutras, Mahabharata, Ramayana). Use this whenever user asks for authentic Vedic quotes, Sanskrit verses, or philosophical synthesis.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://dharma-pragya.vercel.app/openapi.json"
+  },
+  "logo_url": "https://dharma-pragya.vercel.app/logo.png",
+  "contact_email": "admin@dharma-pragya.vercel.app",
+  "legal_info_url": "https://dharma-pragya.vercel.app"
+}

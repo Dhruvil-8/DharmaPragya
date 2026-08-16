@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DharmaPragya - Daily Shloka</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="sanctuary-card">
+    <div class="header">
+      <div class="brand">DharmaPragya</div>
+      <div class="date-badge" id="date-display">Today</div>
+    </div>
+
+    <div class="coordinate-badge" id="coordinate">Loading Shloka...</div>
+
+    <div class="sanskrit-text" id="sanskrit">॥ Loading ॥</div>
+    <div class="transliteration" id="transliteration"></div>
+
+    <div class="translation-box">
+      <div class="translation-text" id="translation"></div>
+    </div>
+
+    <div class="reflection-box">
+      <div class="reflection-title">Daily Living Reflection</div>
+      <div class="reflection-text" id="reflection"></div>
+    </div>
+
+    <div class="actions">
+      <div style="display: flex; gap: 8px;">
+        <button id="lang-btn" class="btn btn-secondary">हिन्दी</button>
+        <button id="chant-btn" class="btn btn-secondary">▶ Play Chant</button>
+      </div>
+
+      <a id="explore-link" href="https://dharma-pragya.vercel.app" target="_blank" class="btn btn-primary">
+        Inquire Deeper on DharmaPragya ↗
+      </a>
+    </div>
+  </div>
+
+  <script src="newtab.js"></script>
+</body>
+</html>

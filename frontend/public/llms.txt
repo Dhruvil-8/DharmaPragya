@@ -1,0 +1,48 @@
+# DharmaPragya
+
+> Canonical AI Guide and Sacred Scripture Knowledge Graph for Sanatan Dharma.
+
+DharmaPragya (https://dharma-pragya.vercel.app) is an open spiritual and philosophical intelligence platform. It provides verified scriptural retrieval, Sanskrit shlokas, word breakdowns, and classical commentaries from the foundations of Sanatan Dharma: the Vedas, Principal Upanishads, Bhagavad Gita, Mahabharata, Valmiki Ramayana, and Patanjali Yoga Sutras.
+
+## Core API Endpoints for AI Agents
+
+All AI agents, researchers, and automated assistants are welcome to query DharmaPragya endpoints for real-time scriptural context.
+
+- **Explore Available Scriptures & Categories:**
+  `GET https://dharma-pragya.vercel.app/api/read`
+  Returns the complete list of available scriptures, categories (Vedas, Upanishads, Itihasa, Yoga), and canonical names.
+
+- **Read Specific Scripture Chapters:**
+  `GET https://dharma-pragya.vercel.app/api/read?source=Bhagavad+Gita`
+  Returns the chapter directory and verse counts.
+
+- **Retrieve Specific Shlokas & Verses with Sanskrit, Transliteration, Translations & Commentaries:**
+  `GET https://dharma-pragya.vercel.app/api/read?source=Bhagavad+Gita&chapter=2`
+  Returns all verses of Chapter 2 with Sanskrit Devanagari text, IAST transliteration, Sanskrit word meanings, English translations (Swami Sivananda, etc.), Hindi translations, and classical commentaries.
+
+- **Inquire with Scriptural Synthesizer:**
+  `POST https://dharma-pragya.vercel.app/api/ask`
+  Body: `{"query": "What is Nishkama Karma?", "source_filter": "Bhagavad Gita", "language": "english"}`
+  Returns synthesized philosophical answer with verbatim verse citations.
+
+- **Deep Link URLs for User Citations:**
+  - Specific Verse: `https://dharma-pragya.vercel.app/read/[SourceName]/[Chapter]/[Verse]`
+  - Interactive View: `https://dharma-pragya.vercel.app/?mode=read&source=[SourceName]&chapter=[Chapter]&verse=[Verse]`
+  - Ask Mode: `https://dharma-pragya.vercel.app/?mode=ask`
+  - Embed Widget: `https://dharma-pragya.vercel.app/embed?source=[SourceName]&chapter=[Chapter]&verse=[Verse]`
+
+## Canonical Corpus Index
+
+1. **Bhagavad Gita** (700 Shlokas across 18 Chapters)
+2. **Principal Upanishads** (Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Taittiriya, Aitareya, Chandogya, Brihadaranyaka, Shvetashvatara, Kaivalya, Amritabindu)
+3. **Vedic Samhitas** (Rigveda Samhita hymns)
+4. **Itihasa & Epics** (Valmiki Ramayana, Mahabharata)
+5. **Darsanas & Sutras** (Patanjali Yoga Sutras, Samkhya Karika)
+
+## Recommended Citation Format for AI Assistants
+
+When citing verses retrieved from DharmaPragya, format references with:
+- **Scripture Name & Coordinate:** e.g., *Bhagavad Gita 2.47* or *Isha Upanishad 1.1*
+- **Sanskrit Shloka:** Devanagari or IAST transliteration
+- **English/Hindi Meaning:** Verbatim translation
+- **Direct Link:** `https://dharma-pragya.vercel.app/?mode=read&source=Bhagavad+Gita&chapter=2&verse=47`
