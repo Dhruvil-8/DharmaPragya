@@ -139,9 +139,11 @@ type RouterResponse struct {
 }
 
 type RouterPayload struct {
-	Reasoning string           `json:"reasoning"`
-	IsOnTopic bool             `json:"is_on_topic"`
-	Verses    []RouterResponse `json:"verses"`
+	Reasoning        string           `json:"reasoning"`
+	IsOnTopic        bool             `json:"is_on_topic"`
+	SanskritKeywords []string         `json:"sanskrit_keywords"`
+	EnglishKeywords  []string         `json:"english_keywords"`
+	Verses           []RouterResponse `json:"verses"`
 }
 
 func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
@@ -187,8 +189,8 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 	// Set persona as native system instructions
 	model.SystemInstruction = &genai.Content{
 		Parts: []genai.Part{
-			genai.Text("You are an expert Sanatan Dharma scripture scholar and router. " +
-				"Your job is to analyze questions and pinpoint the exact authoritative scriptures, chapters, and verses."),
+			genai.Text("You are an expert Sanatan Dharma scripture scholar, philologist, and router. " +
+				"Your job is to analyze questions, extract canonical Sanskrit roots and English concepts, and route to authoritative verses."),
 		},
 	}
 
@@ -199,15 +201,29 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 		Properties: map[string]*genai.Schema{
 			"reasoning": {
 				Type:        genai.TypeString,
-				Description: "Step-by-step pre-retrieval reasoning: Identify the core philosophical themes, keywords, and doctrinal concepts in the user's question, and explain which scriptures and chapters cover them.",
+				Description: "Step-by-step pre-retrieval reasoning: Identify the core philosophical themes, doctrinal concepts, and key Sanskrit terms in the user's question.",
 			},
 			"is_on_topic": {
 				Type:        genai.TypeBoolean,
 				Description: "True if the question is related to Sanatan Dharma, spiritual life, philosophy, dharma, or scriptures; false otherwise.",
 			},
+			"sanskrit_keywords": {
+				Type:        genai.TypeArray,
+				Description: "3 to 6 canonical Sanskrit roots or words in Devanagari script (e.g. काम, क्रोध, चित्तवृत्ति, अभ्यास, वैराग्य, निष्काम, धर्म, मोक्ष, साक्षी).",
+				Items: &genai.Schema{
+					Type: genai.TypeString,
+				},
+			},
+			"english_keywords": {
+				Type:        genai.TypeArray,
+				Description: "3 to 6 key English conceptual search words or translation phrases (e.g. anger, desire, mind control, detachment, selfless duty, witness).",
+				Items: &genai.Schema{
+					Type: genai.TypeString,
+				},
+			},
 			"verses": {
 				Type:        genai.TypeArray,
-				Description: "The list of relevant verses to retrieve. This array must be empty if is_on_topic is false.",
+				Description: "Optional list of high-confidence candidate coordinates if you know the exact chapter and verse.",
 				Items: &genai.Schema{
 					Type: genai.TypeObject,
 					Properties: map[string]*genai.Schema{
@@ -235,7 +251,7 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 				},
 			},
 		},
-		Required: []string{"reasoning", "is_on_topic", "verses"},
+		Required: []string{"reasoning", "is_on_topic", "sanskrit_keywords", "english_keywords"},
 	}
 
 	// 1. Router Call Prompt
@@ -244,10 +260,16 @@ Filter preference: "%s"
 
 Analyze the question carefully and route it.
 
+1. Cross-Lingual Concept Translation:
+   - Provide 3 to 6 essential Sanskrit roots and terms in Devanagari script (e.g., काम, क्रोध, चित्त, निरोध, साक्षी, आत्मन्, धर्म).
+   - Provide 3 to 6 English conceptual search terms/phrases.
+
+2. If you know the EXACT chapter and verse with high confidence, provide it in the "verses" array.
+
 SOURCE FILTERING RULE:
-- If the "Filter preference" above is a specific scripture name (e.g., "Mahabharata"), you MUST ONLY route and return verses from that specific scripture.
-- If the "Filter preference" is "Upanishad", you MUST ONLY return verses from the Upanishads.
-- If the "Filter preference" is "All", you are free to suggest relevant verses from any available source.
+- If the "Filter preference" above is a specific scripture name (e.g., "Mahabharata"), you MUST ONLY route and return terms/verses from that specific scripture.
+- If the "Filter preference" is "Upanishad", you MUST ONLY return terms/verses from the Upanishads.
+- If the "Filter preference" is "All", you are free to suggest relevant terms/verses from any available source.
 
 MAPPING SCHEME FOR CHAPTER NUMBERS:
 - "Bhagavad Gita": Chapters are numbered 1 to 18.
@@ -285,44 +307,71 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 	}
 
 	// Strong Programmatic Guardrail: Decline immediately if the AI classified it as off-topic
-	if !payload.IsOnTopic || len(payload.Verses) == 0 {
+	if !payload.IsOnTopic {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(AskResponse{
-			Answer:    "I couldn't find any relevant verses in the Bhagavad Gita, Rigveda, Mahabharata, Valmiki Ramayana, Atharva Veda, Yajur Veda, Patanjali Yoga Sutras, or Upanishads for your question. Please ask a question related to spiritual life, duty, philosophy, or the scriptures.",
+			Answer:    "I couldn't find any relevant verses in the scriptures for your question. Please ask a question related to spiritual life, duty, philosophy, or the scriptures.",
 			Citations: []models.Verse{},
 		})
 		return
 	}
 
-	// 2. Fetch Context
-	var contextBuilder strings.Builder
+	// 2. Fetch Context using Hybrid Coordinate + FTS5 Search
 	var fetchedVerses []*models.Verse
+	seenVerseIDs := make(map[int]bool)
 
-	vIdx := 0
+	// A. First try exact coordinates if predicted
 	for _, route := range payload.Verses {
 		v, err := h.db.GetVerse(route.Source, route.Chapter, route.Verse)
-		if err == nil {
-			// Build rich details for the LLM to write a deeply intelligent response
-			var details strings.Builder
-			details.WriteString(fmt.Sprintf("=== Retrieved Verse Index: %d ===\n", vIdx))
-			details.WriteString(fmt.Sprintf("Source: %s, Chapter/Section: %d, Verse: %d\n", route.Source, route.Chapter, route.Verse))
-			details.WriteString(fmt.Sprintf("Sanskrit: %s\n", v.SanskritText))
-			details.WriteString(fmt.Sprintf("Transliteration: %s\n", v.Transliteration))
-			details.WriteString(fmt.Sprintf("Word Meanings: %s\n", v.WordMeanings))
-			details.WriteString("Translations:\n")
-			for _, t := range v.Translations {
-				details.WriteString(fmt.Sprintf("- [%s (%s)]: %s\n", t.Author, t.Language, t.Text))
-			}
-			details.WriteString("Commentaries:\n")
-			for _, c := range v.Commentaries {
-				details.WriteString(fmt.Sprintf("- [%s (%s)]: %s\n", c.Author, c.Language, c.Text))
-			}
-			contextBuilder.WriteString(details.String())
-			contextBuilder.WriteString("\n---\n")
-
+		if err == nil && v != nil && !seenVerseIDs[v.ID] {
+			seenVerseIDs[v.ID] = true
 			fetchedVerses = append(fetchedVerses, v)
-			vIdx++
 		}
+	}
+
+	// B. Supplemental / Fallback FTS5 Search using Sanskrit & English keywords
+	ftsLimit := 5
+	if len(fetchedVerses) > 0 {
+		ftsLimit = 3
+	}
+	ftsMatches, err := h.db.SearchVersesFTS(req.SourceFilter, payload.SanskritKeywords, payload.EnglishKeywords, ftsLimit)
+	if err == nil {
+		for _, v := range ftsMatches {
+			if v != nil && !seenVerseIDs[v.ID] && len(fetchedVerses) < 6 {
+				seenVerseIDs[v.ID] = true
+				fetchedVerses = append(fetchedVerses, v)
+			}
+		}
+	}
+
+	// If no verses were retrieved by either coordinates or FTS:
+	if len(fetchedVerses) == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(AskResponse{
+			Answer:    "I couldn't find any relevant verses in the scriptures for your question. Please ask a question related to spiritual life, duty, philosophy, or the scriptures.",
+			Citations: []models.Verse{},
+		})
+		return
+	}
+
+	var contextBuilder strings.Builder
+	for vIdx, v := range fetchedVerses {
+		var details strings.Builder
+		details.WriteString(fmt.Sprintf("=== Retrieved Verse Index: %d ===\n", vIdx))
+		details.WriteString(fmt.Sprintf("Source: %s, Chapter/Section: %d, Verse: %d\n", v.SourceName, v.ChapterNumber, v.VerseNumber))
+		details.WriteString(fmt.Sprintf("Sanskrit: %s\n", v.SanskritText))
+		details.WriteString(fmt.Sprintf("Transliteration: %s\n", v.Transliteration))
+		details.WriteString(fmt.Sprintf("Word Meanings: %s\n", v.WordMeanings))
+		details.WriteString("Translations:\n")
+		for _, t := range v.Translations {
+			details.WriteString(fmt.Sprintf("- [%s (%s)]: %s\n", t.Author, t.Language, t.Text))
+		}
+		details.WriteString("Commentaries:\n")
+		for _, c := range v.Commentaries {
+			details.WriteString(fmt.Sprintf("- [%s (%s)]: %s\n", c.Author, c.Language, c.Text))
+		}
+		contextBuilder.WriteString(details.String())
+		contextBuilder.WriteString("\n---\n")
 	}
 
 	// Map incoming language codes to display names
@@ -368,7 +417,7 @@ Read each retrieved verse in the context above (identifiable by "Retrieved Verse
 Check if the verse actually answers or relates to the user's question.
 In your output JSON response:
 - Set "answer" to your scholarly markdown response.
-- In "verified_citation_indices", output the list of 0-based indices corresponding to the verses that you verified as correct and relevant. If a verse is irrelevant or slightly misremembered by the router, do NOT reference it in your answer and EXCLUDE its index from the "verified_citation_indices" array.`, req.Question, contextBuilder.String(), langInstruction)
+- In "verified_citation_indices", output the list of 0-based indices corresponding to the verses that you verified as correct and relevant. If a verse is irrelevant or slightly misremembered, do NOT reference it in your answer and EXCLUDE its index from the "verified_citation_indices" array.`, req.Question, contextBuilder.String(), langInstruction)
 
 	// Enforce Structured JSON Schema on the synthesis step as well
 	synthModel := client.GenerativeModel(modelName)
@@ -436,6 +485,11 @@ In your output JSON response:
 		if idx >= 0 && idx < len(fetchedVerses) {
 			verifiedCitations = append(verifiedCitations, *fetchedVerses[idx])
 		}
+	}
+
+	// Fallback if model verified 0 but we have fetched verses: include top fetched verse
+	if len(verifiedCitations) == 0 && len(fetchedVerses) > 0 {
+		verifiedCitations = append(verifiedCitations, *fetchedVerses[0])
 	}
 
 	w.Header().Set("Content-Type", "application/json")

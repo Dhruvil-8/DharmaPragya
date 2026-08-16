@@ -3,6 +3,8 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"strings"
+	"unicode"
 
 	"dharmapragya/internal/models"
 
@@ -45,7 +47,51 @@ func NewSQLiteStorage(dbPath string) (*Storage, error) {
 		}
 	}
 
-	return &Storage{db: db}, nil
+	s := &Storage{db: db}
+
+	// Ensure FTS5 index exists
+	s.ensureFTSIndex()
+
+	return s, nil
+}
+
+func (s *Storage) ensureFTSIndex() {
+	var count int
+	err := s.db.QueryRow("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='verses_fts'").Scan(&count)
+	if err == nil && count > 0 {
+		return
+	}
+
+	// Create FTS5 virtual table if it doesn't exist
+	_, _ = s.db.Exec(`
+		CREATE VIRTUAL TABLE IF NOT EXISTS verses_fts USING fts5(
+			verse_id UNINDEXED,
+			sanskrit_text,
+			transliteration,
+			english_text,
+			source_name,
+			chapter_number UNINDEXED,
+			verse_number UNINDEXED,
+			tokenize='unicode61 remove_diacritics 2'
+		);
+	`)
+
+	_, _ = s.db.Exec(`
+		INSERT INTO verses_fts (verse_id, sanskrit_text, transliteration, english_text, source_name, chapter_number, verse_number)
+		SELECT 
+			v.id,
+			COALESCE(v.sanskrit_text, ''),
+			COALESCE(v.transliteration, ''),
+			COALESCE(GROUP_CONCAT(t.text, ' '), ''),
+			src.name,
+			s.chapter_number,
+			v.verse_number
+		FROM verses v
+		JOIN sections s ON v.section_id = s.id
+		JOIN sources src ON s.source_id = src.id
+		LEFT JOIN translations t ON t.verse_id = v.id
+		GROUP BY v.id;
+	`)
 }
 
 func (s *Storage) Close() error {
@@ -184,6 +230,9 @@ func (s *Storage) GetVerse(sourceName string, chapterNumber int, verseNumber int
 		return nil, err
 	}
 
+	v.Translations = []models.Translation{}
+	v.Commentaries = []models.Commentary{}
+
 	tRows, err := s.db.Query("SELECT language, text, author FROM translations WHERE verse_id = ?", v.ID)
 	if err == nil {
 		defer tRows.Close()
@@ -205,4 +254,135 @@ func (s *Storage) GetVerse(sourceName string, chapterNumber int, verseNumber int
 	}
 
 	return &v, nil
+}
+
+func (s *Storage) GetVerseByID(verseID int) (*models.Verse, error) {
+	query := `
+		SELECT v.id, v.section_id, v.verse_number, COALESCE(v.sanskrit_text, ''), COALESCE(v.transliteration, ''), COALESCE(v.word_meanings, ''), src.name, sec.chapter_name, sec.chapter_number
+		FROM verses v
+		JOIN sections sec ON v.section_id = sec.id
+		JOIN sources src ON sec.source_id = src.id
+		WHERE v.id = ?
+	`
+	row := s.db.QueryRow(query, verseID)
+
+	var v models.Verse
+	err := row.Scan(&v.ID, &v.SectionID, &v.VerseNumber, &v.SanskritText, &v.Transliteration, &v.WordMeanings, &v.SourceName, &v.ChapterName, &v.ChapterNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	v.Translations = []models.Translation{}
+	v.Commentaries = []models.Commentary{}
+
+	tRows, err := s.db.Query("SELECT language, text, author FROM translations WHERE verse_id = ?", v.ID)
+	if err == nil {
+		defer tRows.Close()
+		for tRows.Next() {
+			var t models.Translation
+			tRows.Scan(&t.Language, &t.Text, &t.Author)
+			v.Translations = append(v.Translations, t)
+		}
+	}
+
+	cRows, err := s.db.Query("SELECT language, text, author FROM commentaries WHERE verse_id = ?", v.ID)
+	if err == nil {
+		defer cRows.Close()
+		for cRows.Next() {
+			var c models.Commentary
+			cRows.Scan(&c.Language, &c.Text, &c.Author)
+			v.Commentaries = append(v.Commentaries, c)
+		}
+	}
+
+	return &v, nil
+}
+
+func sanitizeToken(t string) string {
+	var sb strings.Builder
+	for _, r := range t {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
+}
+
+func (s *Storage) SearchVersesFTS(sourceFilter string, sanskritTerms []string, englishTerms []string, limit int) ([]*models.Verse, error) {
+	var matchClauses []string
+
+	var sanTokens []string
+	for _, t := range sanskritTerms {
+		cleaned := sanitizeToken(t)
+		if len(cleaned) > 0 {
+			sanTokens = append(sanTokens, fmt.Sprintf(`"%s"*`, cleaned))
+		}
+	}
+	if len(sanTokens) > 0 {
+		matchClauses = append(matchClauses, fmt.Sprintf("sanskrit_text: (%s)", strings.Join(sanTokens, " OR ")))
+	}
+
+	var engTokens []string
+	for _, t := range englishTerms {
+		cleaned := sanitizeToken(t)
+		if len(cleaned) > 0 {
+			engTokens = append(engTokens, fmt.Sprintf(`"%s"*`, cleaned))
+		}
+	}
+	if len(engTokens) > 0 {
+		matchClauses = append(matchClauses, fmt.Sprintf("english_text: (%s)", strings.Join(engTokens, " OR ")))
+	}
+
+	if len(matchClauses) == 0 {
+		return nil, nil
+	}
+
+	matchQuery := strings.Join(matchClauses, " OR ")
+
+	query := `
+		SELECT verse_id 
+		FROM verses_fts 
+		WHERE verses_fts MATCH ?
+	`
+	var args []interface{}
+	args = append(args, matchQuery)
+
+	if sourceFilter != "" && !strings.EqualFold(sourceFilter, "all") {
+		if strings.EqualFold(sourceFilter, "upanishad") {
+			query += " AND source_name LIKE '%Upanishad%'"
+		} else {
+			query += " AND source_name = ?"
+			args = append(args, sourceFilter)
+		}
+	}
+
+	query += " ORDER BY rank LIMIT ?"
+	if limit <= 0 {
+		limit = 5
+	}
+	args = append(args, limit)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var verseIDs []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err == nil {
+			verseIDs = append(verseIDs, id)
+		}
+	}
+
+	var verses []*models.Verse
+	for _, id := range verseIDs {
+		v, err := s.GetVerseByID(id)
+		if err == nil && v != nil {
+			verses = append(verses, v)
+		}
+	}
+
+	return verses, nil
 }

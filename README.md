@@ -9,9 +9,15 @@ DharmaPragya is a platform that allows users to explore the wisdom of Sanatan Dh
 ## Core Idea
 The core idea is that anyone should be able to explore the wisdom of Sanatan Dharma by simply asking a question, with answers drawn directly from its sacred foundations: the Vedas, Puranas, and related scriptures.
 
-## Why Not a Vector Database (RAG)?
+## Why Not a Traditional Vector Database (RAG)?
 
-Vector databases often suffer from keyword blindness, broken contextual chunking, and hallucinated citations when dealing with ancient, esoteric scriptures. Instead, this platform relies on Gemini as an intelligent router. The AI mathematically pinpoints the exact authoritative chapter and verse required to answer the question, and the Go backend fetches the **complete, unbroken verse** (along with all its translations and commentaries) from a lightning-fast SQLite database. 
+Traditional vector databases often suffer from keyword blindness, concept blurring on philosophical terms (*Dharma, Karma, Maya*), broken contextual chunking, and hallucinated citations when dealing with ancient, esoteric scriptures. 
+
+Instead, DharmaPragya implements a **Hybrid Semantic & Inverted Index Engine**:
+1. **Cross-Lingual LLM Query Expansion:** Gemini translates user questions into canonical Sanskrit roots (*Dhātus*), Devanagari keywords, and conceptual English phrases.
+2. **SQLite FTS5 Full-Text Search (BM25):** The Go backend searches across 114,000+ verses (Sanskrit text, IAST transliterations, and English translations) using SQLite's native FTS5 index in milliseconds.
+3. **High-Confidence Coordinate Routing & Fallback:** Exact candidate coordinates are merged with FTS search results to eliminate misses.
+4. **Scholarly Verification & Synthesis:** Gemini verifies the retrieved verses in context and provides a deeply cited answer with exact verse citations.
 
 ## Features
 - **Ask AI Mode:** Ask philosophical questions and get synthesized answers with direct verse citations.
@@ -20,7 +26,7 @@ Vector databases often suffer from keyword blindness, broken contextual chunking
 
 ## Technology Stack
 - **Frontend:** Next.js, React, Tailwind CSS
-- **Backend:** Go (Golang), SQLite, Google Gen AI SDK (Gemini)
+- **Backend:** Go (Golang), SQLite (with FTS5), Google Gen AI SDK (Gemini)
 - **Ingestion:** Python
 
 ## Data Sources
