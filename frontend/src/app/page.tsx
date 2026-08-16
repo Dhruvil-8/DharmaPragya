@@ -123,60 +123,32 @@ function HomePageContent() {
     }
   };
 
+  const handleModeChange = (newMode: 'ask' | 'read') => {
+    setMode(newMode);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('mode', newMode);
+      window.history.pushState({}, '', url.toString());
+    }
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center px-4 py-6 md:px-8 md:py-10 bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 text-stone-900 relative overflow-x-hidden selection:bg-saffron-200 selection:text-saffron-700">
       {/* Decorative background radial glow */}
       <div className="absolute top-[-8%] left-[50%] translate-x-[-50%] w-[700px] h-[500px] bg-gradient-to-b from-saffron-300/8 to-transparent rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-4xl z-10 flex flex-col flex-grow">
-        <Header onOpenSanctuary={() => setIsSanctuaryOpen(true)} />
+        <Header 
+          onOpenSanctuary={() => setIsSanctuaryOpen(true)} 
+          mode={mode} 
+          onModeChange={handleModeChange} 
+        />
 
         {/* Daily Contemplation Shloka Widget */}
         <DailyContemplation
           onAskQuestion={handleAskQuestionFromDaily}
           onOpenShareModal={handleOpenShareModalFromDaily}
         />
-
-        {/* Tab Segmented Control — Centered pill toggle */}
-        <div className="w-full max-w-sm mx-auto mb-6 bg-cream-300/80 backdrop-blur-sm p-1 rounded-full border border-cream-400/60 flex shadow-sm">
-          <button
-            onClick={() => {
-              setMode('ask');
-              if (typeof window !== 'undefined') {
-                const url = new URL(window.location.href);
-                url.searchParams.set('mode', 'ask');
-                window.history.pushState({}, '', url.toString());
-              }
-            }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-5 rounded-full text-[13px] font-bold transition-all duration-300 cursor-pointer ${
-              mode === 'ask'
-                ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 text-white shadow-md scale-[1.02]'
-                : 'text-saffron-900 hover:text-saffron-700 hover:bg-cream-200/60'
-            }`}
-          >
-            <Compass className="w-3.5 h-3.5" />
-            <span>Ask AI</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setMode('read');
-              if (typeof window !== 'undefined') {
-                const url = new URL(window.location.href);
-                url.searchParams.set('mode', 'read');
-                window.history.pushState({}, '', url.toString());
-              }
-            }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 px-5 rounded-full text-[13px] font-bold transition-all duration-300 cursor-pointer ${
-              mode === 'read'
-                ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 text-white shadow-md scale-[1.02]'
-                : 'text-saffron-900 hover:text-saffron-700 hover:bg-cream-200/60'
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Read</span>
-          </button>
-        </div>
 
         {/* Dynamic Mode Content Views */}
         <div className="w-full">

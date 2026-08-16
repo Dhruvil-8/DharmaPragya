@@ -1,15 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Info, X, ExternalLink, Globe, Bookmark } from 'lucide-react';
+import { Info, X, ExternalLink, Globe, Bookmark, Compass, BookOpen } from 'lucide-react';
 import Image from 'next/image';
 import { getBookmarks } from '../lib/bookmarks';
 
 interface HeaderProps {
   onOpenSanctuary?: () => void;
+  mode?: 'ask' | 'read';
+  onModeChange?: (mode: 'ask' | 'read') => void;
 }
 
-export default function Header({ onOpenSanctuary }: HeaderProps) {
+export default function Header({ onOpenSanctuary, mode, onModeChange }: HeaderProps) {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [bookmarkCount, setBookmarkCount] = useState(0);
 
@@ -26,9 +28,9 @@ export default function Header({ onOpenSanctuary }: HeaderProps) {
 
   return (
     <>
-      <header className="w-full flex items-center justify-between py-3 mb-4 border-b border-cream-400/40 select-none">
-        {/* Brand */}
-        <div className="flex items-center gap-2.5">
+      <header className="w-full flex items-center justify-between py-2.5 mb-4 border-b border-cream-400/40 select-none gap-2">
+        {/* Left: Brand */}
+        <div className="flex items-center gap-2.5 shrink-0">
           <Image 
             src="/logo.png" 
             alt="DharmaPragya" 
@@ -41,14 +43,43 @@ export default function Header({ onOpenSanctuary }: HeaderProps) {
             <h1 className="text-base sm:text-lg font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-saffron-700 to-terracotta-800 font-cinzel leading-none">
               DharmaPragya
             </h1>
-            <span className="text-[9px] text-saffron-700 font-semibold tracking-wider uppercase mt-0.5">
+            <span className="text-[9px] text-saffron-700 font-semibold tracking-wider uppercase mt-0.5 hidden xs:inline">
               Wisdom of Sanatan Dharma
             </span>
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-1.5">
+        {/* Center: Integrated Mode Segment Switcher */}
+        {mode && onModeChange && (
+          <div className="bg-cream-300/90 p-1 rounded-full border border-cream-400/70 flex shadow-2xs">
+            <button
+              onClick={() => onModeChange('ask')}
+              className={`flex items-center gap-1.5 py-1 px-3 sm:px-4 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
+                mode === 'ask'
+                  ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 text-white shadow-xs'
+                  : 'text-saffron-900 hover:text-saffron-700 hover:bg-cream-200'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>Ask AI</span>
+            </button>
+
+            <button
+              onClick={() => onModeChange('read')}
+              className={`flex items-center gap-1.5 py-1 px-3 sm:px-4 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
+                mode === 'read'
+                  ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 text-white shadow-xs'
+                  : 'text-saffron-900 hover:text-saffron-700 hover:bg-cream-200'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Read</span>
+            </button>
+          </div>
+        )}
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1.5 shrink-0">
           {onOpenSanctuary && (
             <button
               onClick={onOpenSanctuary}
@@ -56,7 +87,7 @@ export default function Header({ onOpenSanctuary }: HeaderProps) {
               title="View Saved Verses"
             >
               <Bookmark className="w-3 h-3" />
-              <span className="hidden sm:inline">Saved</span>
+              <span className="hidden md:inline">Saved</span>
               {bookmarkCount > 0 && (
                 <span className="px-1.5 py-px text-[9px] font-bold rounded-full bg-saffron-500 text-white leading-tight">
                   {bookmarkCount}
@@ -70,7 +101,7 @@ export default function Header({ onOpenSanctuary }: HeaderProps) {
             className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold text-saffron-800 bg-cream-300/50 hover:bg-cream-300 border border-cream-400/50 rounded-full cursor-pointer transition-all duration-200 hover:shadow-xs"
           >
             <Info className="w-3 h-3" />
-            <span className="hidden sm:inline">About</span>
+            <span className="hidden md:inline">About</span>
           </button>
         </div>
       </header>

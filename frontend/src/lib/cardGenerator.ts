@@ -94,71 +94,71 @@ export async function generateVerseCard(options: CardExportOptions): Promise<str
 
   // 4. Header Badge: Scripture Source & Coordinate
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#b45309';
-  ctx.font = 'bold 22px "Cinzel", serif, sans-serif';
-  ctx.letterSpacing = '4px';
-  const headerText = `${options.sourceName.toUpperCase()} — CHAPTER ${options.chapterNumber}, VERSE ${options.verseNumber}`;
+  ctx.fillStyle = '#5c270a';
+  ctx.font = 'bold 24px "Cinzel", serif, sans-serif';
+  ctx.letterSpacing = '3px';
+  const headerText = `${options.sourceName.toUpperCase()} • CHAPTER ${options.chapterNumber}, VERSE ${options.verseNumber}`;
   ctx.fillText(headerText, width / 2, 130);
 
   // Header dividing line
-  const lineGrad = ctx.createLinearGradient(width / 2 - 150, 0, width / 2 + 150, 0);
-  lineGrad.addColorStop(0, 'rgba(217, 119, 6, 0)');
-  lineGrad.addColorStop(0.5, '#d97706');
-  lineGrad.addColorStop(1, 'rgba(217, 119, 6, 0)');
+  const lineGrad = ctx.createLinearGradient(width / 2 - 180, 0, width / 2 + 180, 0);
+  lineGrad.addColorStop(0, 'rgba(180, 83, 9, 0)');
+  lineGrad.addColorStop(0.5, '#b45309');
+  lineGrad.addColorStop(1, 'rgba(180, 83, 9, 0)');
   ctx.strokeStyle = lineGrad;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(width / 2 - 150, 155);
-  ctx.lineTo(width / 2 + 150, 155);
+  ctx.moveTo(width / 2 - 180, 155);
+  ctx.lineTo(width / 2 + 180, 155);
   ctx.stroke();
 
-  // 5. Sanskrit Text (Devanagari)
+  // 5. Sanskrit Text (Devanagari) - Deep high-contrast dark with generous sizing
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#2d261e';
-  ctx.font = 'bold 36px "Tiro Devanagari Sanskrit", "Martel", "Noto Serif Devanagari", serif';
+  ctx.fillStyle = '#1c1917';
+  ctx.font = 'bold 42px "Tiro Devanagari Sanskrit", "Martel", "Noto Serif Devanagari", serif';
   
   const sanskritLines = options.sanskritText.split('\n');
-  let currentY = 240;
+  let currentY = 245;
   for (const sLine of sanskritLines) {
     if (sLine.trim()) {
       ctx.fillText(sLine.trim(), width / 2, currentY);
-      currentY += 56;
+      currentY += 62;
     }
   }
 
-  // 6. Transliteration
+  // 6. Transliteration (Crisp readable dark stone-800)
   if (options.transliteration) {
-    currentY += 20;
-    ctx.font = 'italic 22px "Lora", serif';
-    ctx.fillStyle = '#78716c';
-    currentY = wrapText(ctx, options.transliteration, width / 2, currentY, 900, 34, 3);
+    currentY += 15;
+    ctx.font = 'italic 500 24px "Lora", serif';
+    ctx.fillStyle = '#292524';
+    currentY = wrapText(ctx, options.transliteration, width / 2, currentY, 950, 36, 3);
   }
 
   // 7. Divider before translation
-  currentY += 30;
-  ctx.strokeStyle = 'rgba(217, 119, 6, 0.2)';
-  ctx.lineWidth = 1;
+  currentY += 25;
+  ctx.strokeStyle = 'rgba(180, 83, 9, 0.35)';
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(width / 2 - 100, currentY);
-  ctx.lineTo(width / 2 + 100, currentY);
+  ctx.moveTo(width / 2 - 120, currentY);
+  ctx.lineTo(width / 2 + 120, currentY);
   ctx.stroke();
 
-  // 8. English Translation
-  currentY += 60;
-  ctx.font = '28px "Lora", serif';
-  ctx.fillStyle = '#44403c';
+  // 8. English Translation - High contrast bold dark text
+  currentY += 55;
+  ctx.font = '500 30px "Lora", serif';
+  ctx.fillStyle = '#1c1917';
   const quotedTranslation = `"${options.translationText}"`;
-  currentY = wrapText(ctx, quotedTranslation, width / 2, currentY, 950, 44, 5);
+  currentY = wrapText(ctx, quotedTranslation, width / 2, currentY, 980, 46, 5);
 
   // 9. Footer Brand Seal / Watermark
   ctx.textAlign = 'center';
-  ctx.font = 'bold 18px "Cinzel", serif, sans-serif';
-  ctx.fillStyle = '#9a3412';
-  ctx.fillText('DHARMAPRAGYA', width / 2, height - 100);
+  ctx.font = 'bold 20px "Cinzel", serif, sans-serif';
+  ctx.fillStyle = '#5c270a';
+  ctx.fillText('DHARMAPRAGYA', width / 2, height - 95);
 
-  ctx.font = '14px "Plus Jakarta Sans", sans-serif';
-  ctx.fillStyle = 'rgba(120, 53, 15, 0.6)';
-  ctx.fillText('Universal Wisdom of Sanatan Dharma', width / 2, height - 76);
+  ctx.font = '600 15px "Plus Jakarta Sans", sans-serif';
+  ctx.fillStyle = '#78350f';
+  ctx.fillText('Universal Wisdom of Sanatan Dharma', width / 2, height - 70);
 
   return canvas.toDataURL('image/png');
 }
