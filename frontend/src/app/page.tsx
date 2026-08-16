@@ -4,11 +4,8 @@ import { useState, useEffect, Suspense } from 'react';
 import Header from '../components/Header';
 import AskMode from '../components/AskMode';
 import ReadMode from '../components/ReadMode';
-import DailyContemplation from '../components/DailyContemplation';
 import SavedSanctuary from '../components/SavedSanctuary';
 import ShareCardModal from '../components/ShareCardModal';
-import { Compass, BookOpen } from 'lucide-react';
-import { DailyShloka } from '../types';
 
 const API_BASE_URL = '';
 
@@ -60,20 +57,6 @@ function HomePageContent() {
     }
   }, []);
 
-  const handleOpenShareModalFromDaily = (shloka: DailyShloka) => {
-    setShareModalData({
-      isOpen: true,
-      details: {
-        sourceName: shloka.source_name,
-        chapterNumber: shloka.chapter_number,
-        verseNumber: shloka.verse_number,
-        sanskritText: shloka.sanskrit_text,
-        transliteration: shloka.transliteration,
-        translationText: shloka.translation_english,
-      },
-    });
-  };
-
   const handleOpenShareModalFromVerse = (details: {
     sourceName: string;
     chapterNumber: number;
@@ -106,23 +89,6 @@ function HomePageContent() {
     }
   };
 
-  const handleAskQuestionFromDaily = (_query: string, source: string) => {
-    setMode('ask');
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Also trigger query in AskMode via DOM event or input
-    const textarea = document.querySelector('textarea');
-    if (textarea) {
-      textarea.value = _query;
-      textarea.dispatchEvent(new Event('input', { bubbles: true }));
-      const select = document.querySelector('select');
-      if (select && source) {
-        select.value = source;
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-    }
-  };
-
   const handleModeChange = (newMode: 'ask' | 'read') => {
     setMode(newMode);
     if (typeof window !== 'undefined') {
@@ -142,12 +108,6 @@ function HomePageContent() {
           onOpenSanctuary={() => setIsSanctuaryOpen(true)} 
           mode={mode} 
           onModeChange={handleModeChange} 
-        />
-
-        {/* Daily Contemplation Shloka Widget */}
-        <DailyContemplation
-          onAskQuestion={handleAskQuestionFromDaily}
-          onOpenShareModal={handleOpenShareModalFromDaily}
         />
 
         {/* Dynamic Mode Content Views */}

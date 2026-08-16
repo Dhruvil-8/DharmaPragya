@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { VerseData } from '../../types';
-import { getTodayShloka } from '../../lib/dailyShlokas';
 import { Play, Pause, ExternalLink, BookOpen } from 'lucide-react';
 
 function EmbedContent() {
@@ -15,46 +14,20 @@ function EmbedContent() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const source = params.get('source');
-      const chapter = params.get('chapter');
-      const verseNum = params.get('verse');
+      const source = params.get('source') || 'Bhagavad Gita';
+      const chapter = params.get('chapter') || '2';
+      const verseNum = params.get('verse') || '47';
 
-      if (source && chapter) {
-        fetch(`/api/read?source=${encodeURIComponent(source)}&chapter=${chapter}`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (Array.isArray(data)) {
-              if (verseNum) {
-                const found = data.find((v: VerseData) => v.verse_number === parseInt(verseNum, 10));
-                setVerse(found || data[0]);
-              } else {
-                setVerse(data[0]);
-              }
-            }
-          })
-          .catch((err) => console.error('Embed fetch error:', err))
-          .finally(() => setIsLoading(false));
-      } else {
-        // Default to Today's Daily Shloka if no params provided
-        const today = getTodayShloka();
-        setVerse({
-          id: 0,
-          section_id: 0,
-          source_name: today.source_name,
-          chapter_number: today.chapter_number,
-          chapter_name: today.source_name,
-          verse_number: today.verse_number,
-          sanskrit_text: today.sanskrit_text,
-          transliteration: today.transliteration,
-          word_meanings: '',
-          translations: [
-            { author: 'Swami Sivananda', language: 'english', text: today.translation_english },
-            { author: 'Swami Ramsukhdas', language: 'hindi', text: today.translation_hindi },
-          ],
-          commentaries: [],
-        });
-        setIsLoading(false);
-      }
+      fetch(`/api/read?source=${encodeURIComponent(source)}&chapter=${chapter}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            const found = data.find((v: VerseData) => v.verse_number === parseInt(verseNum, 10));
+            setVerse(found || data[0]);
+          }
+        })
+        .catch((err) => console.error('Embed fetch error:', err))
+        .finally(() => setIsLoading(false));
     }
   }, []);
 
