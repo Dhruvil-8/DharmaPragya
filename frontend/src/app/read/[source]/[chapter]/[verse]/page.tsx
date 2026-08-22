@@ -120,22 +120,42 @@ export default async function ProgrammaticVersePage({ params }: PageProps) {
         <Header />
 
         {/* Breadcrumb & Navigation Bar */}
-        <div className="flex items-center justify-between gap-3 bg-white/80 backdrop-blur-md p-3.5 rounded-2xl border border-cream-400 shadow-xs">
-          <Link
-            href={`/?mode=read&source=${encodeURIComponent(sourceName)}&chapter=${chapterNum}&verse=${verseNum}`}
-            className="flex items-center gap-1.5 text-xs font-bold text-saffron-800 hover:text-saffron-600 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Open in Interactive App</span>
-          </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white/80 backdrop-blur-md p-3.5 rounded-2xl border border-cream-400 shadow-2xs">
+          <div className="flex items-center gap-1.5 text-xs text-stone-700 font-bold">
+            <Link href="/read" className="hover:text-saffron-800 transition-colors">
+              Scriptures
+            </Link>
+            <span className="text-stone-400">/</span>
+            <Link href={`/read/${encodeURIComponent(sourceName)}`} className="hover:text-saffron-800 transition-colors">
+              {sourceName}
+            </Link>
+            <span className="text-stone-400">/</span>
+            <Link href={`/read/${encodeURIComponent(sourceName)}/${chapterNum}`} className="hover:text-saffron-800 transition-colors">
+              Ch. {chapterNum}
+            </Link>
+            <span className="text-stone-400">/</span>
+            <span className="text-saffron-950 font-cinzel font-bold">
+              Verse {verseNum}
+            </span>
+          </div>
 
-          <Link
-            href={`/?mode=ask`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white text-xs font-bold shadow-xs hover:opacity-95 transition-opacity"
-          >
-            <Compass className="w-3.5 h-3.5" />
-            <span>Inquire with AI</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/?mode=read&source=${encodeURIComponent(sourceName)}&chapter=${chapterNum}&verse=${verseNum}`}
+              className="flex items-center gap-1.5 text-xs font-bold text-saffron-800 hover:text-saffron-600 transition-colors"
+            >
+              <span>Interactive App</span>
+              <ExternalLink className="w-3 h-3" />
+            </Link>
+
+            <Link
+              href="/?mode=ask"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-saffron-600 to-terracotta-600 text-white text-xs font-bold shadow-xs hover:opacity-95 transition-opacity"
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>Ask AI</span>
+            </Link>
+          </div>
         </div>
 
         {/* Verse Component */}

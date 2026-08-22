@@ -5,6 +5,22 @@ export interface Citation {
   text: string;
 }
 
+export interface ChatHistoryMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface ConversationalMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  citations?: VerseData[];
+  statusMessage?: string;
+  isStreaming?: boolean;
+  isError?: boolean;
+  timestamp: number;
+}
+
 export interface AiResponse {
   answer: string;
   citations: VerseData[] | null;

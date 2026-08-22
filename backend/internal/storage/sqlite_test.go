@@ -44,3 +44,34 @@ func TestSearchVersesFTS(t *testing.T) {
 	t.Logf("Found %d results for Mahabharata search. Top verse: %s Ch %d V %d",
 		len(results3), results3[0].SourceName, results3[0].ChapterNumber, results3[0].VerseNumber)
 }
+
+func TestDirectSearch(t *testing.T) {
+	s, err := NewSQLiteStorage("../../data/scriptures.db")
+	if err != nil {
+		t.Fatalf("Failed to open database: %v", err)
+	}
+	defer s.Close()
+
+	// 1. Test coordinate search: "2.47"
+	coordResults, err := s.DirectSearch("2.47", "", 5)
+	if err != nil {
+		t.Fatalf("DirectSearch coordinate failed: %v", err)
+	}
+	if len(coordResults) == 0 {
+		t.Fatalf("Expected coordinate results for 2.47, got 0")
+	}
+	t.Logf("Coordinate search 2.47 found: %s Ch %d V %d -> %s",
+		coordResults[0].SourceName, coordResults[0].ChapterNumber, coordResults[0].VerseNumber, coordResults[0].SanskritText)
+
+	// 2. Test keyword search: "duty"
+	keywordResults, err := s.DirectSearch("duty", "Bhagavad Gita", 5)
+	if err != nil {
+		t.Fatalf("DirectSearch keyword failed: %v", err)
+	}
+	if len(keywordResults) == 0 {
+		t.Fatalf("Expected keyword results for duty, got 0")
+	}
+	t.Logf("Keyword search 'duty' found %d results. Top: %s Ch %d V %d",
+		len(keywordResults), keywordResults[0].SourceName, keywordResults[0].ChapterNumber, keywordResults[0].VerseNumber)
+}
+

@@ -3,6 +3,7 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -386,3 +387,145 @@ func (s *Storage) SearchVersesFTS(sourceFilter string, sanskritTerms []string, e
 
 	return verses, nil
 }
+
+func parseCoordinates(query string) (string, int, int, bool) {
+	q := strings.TrimSpace(query)
+	
+	// Check for pattern like "2.47" or "2:47"
+	parts := strings.FieldsFunc(q, func(r rune) bool {
+		return r == '.' || r == ':' || r == ' ' || r == '/' || r == '-'
+	})
+	
+	if len(parts) == 2 {
+		ch, err1 := strconv.Atoi(parts[0])
+		v, err2 := strconv.Atoi(parts[1])
+		if err1 == nil && err2 == nil && ch > 0 && v > 0 {
+			return "", ch, v, true
+		}
+	} else if len(parts) >= 3 {
+		// e.g. "Gita 2 47" or "Gita 2.47"
+		ch, err1 := strconv.Atoi(parts[len(parts)-2])
+		v, err2 := strconv.Atoi(parts[len(parts)-1])
+		if err1 == nil && err2 == nil && ch > 0 && v > 0 {
+			srcName := strings.Join(parts[:len(parts)-2], " ")
+			return srcName, ch, v, true
+		}
+	}
+	return "", 0, 0, false
+}
+
+func (s *Storage) DirectSearch(query string, sourceFilter string, limit int) ([]*models.Verse, error) {
+	if limit <= 0 {
+		limit = 15
+	}
+	trimmed := strings.TrimSpace(query)
+	if trimmed == "" {
+		return nil, nil
+	}
+
+	var results []*models.Verse
+	seenIDs := make(map[int]bool)
+
+	// 1. Coordinate lookup check
+	srcHint, ch, v, isCoord := parseCoordinates(trimmed)
+	if isCoord {
+		var candidateSources []string
+		if sourceFilter != "" && !strings.EqualFold(sourceFilter, "all") {
+			candidateSources = append(candidateSources, sourceFilter)
+		} else if srcHint != "" {
+			// Try to match srcHint to sources
+			sources, _ := s.GetSources()
+			for _, src := range sources {
+				if strings.Contains(strings.ToLower(src.Name), strings.ToLower(srcHint)) {
+					candidateSources = append(candidateSources, src.Name)
+				}
+			}
+		} else {
+			candidateSources = []string{"Bhagavad Gita", "Patanjali Yoga Sutras", "Isha Upanishad", "Rigveda"}
+		}
+
+		for _, src := range candidateSources {
+			verse, err := s.GetVerse(src, ch, v)
+			if err == nil && verse != nil && !seenIDs[verse.ID] {
+				seenIDs[verse.ID] = true
+				results = append(results, verse)
+				if len(results) >= limit {
+					return results, nil
+				}
+			}
+		}
+	}
+
+	// 2. Full-Text Search across FTS5 table
+	words := strings.Fields(trimmed)
+	var tokens []string
+	for _, w := range words {
+		cleaned := sanitizeToken(w)
+		if len(cleaned) > 0 {
+			tokens = append(tokens, fmt.Sprintf(`"%s"*`, cleaned))
+		}
+	}
+
+	if len(tokens) == 0 {
+		return results, nil
+	}
+
+	matchQuery := strings.Join(tokens, " AND ")
+
+	sqlQuery := `
+		SELECT verse_id 
+		FROM verses_fts 
+		WHERE verses_fts MATCH ?
+	`
+	var args []interface{}
+	args = append(args, matchQuery)
+
+	if sourceFilter != "" && !strings.EqualFold(sourceFilter, "all") {
+		if strings.EqualFold(sourceFilter, "upanishad") {
+			sqlQuery += " AND source_name LIKE '%Upanishad%'"
+		} else {
+			sqlQuery += " AND source_name = ?"
+			args = append(args, sourceFilter)
+		}
+	}
+
+	sqlQuery += " ORDER BY rank LIMIT ?"
+	args = append(args, limit)
+
+	rows, err := s.db.Query(sqlQuery, args...)
+	if err != nil {
+		// Fallback to OR query if AND query returns error or no matches
+		orMatchQuery := strings.Join(tokens, " OR ")
+		args[0] = orMatchQuery
+		rows, err = s.db.Query(sqlQuery, args...)
+		if err != nil {
+			return results, nil
+		}
+	}
+	defer rows.Close()
+
+	var verseIDs []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err == nil {
+			verseIDs = append(verseIDs, id)
+		}
+	}
+
+	for _, id := range verseIDs {
+		if seenIDs[id] {
+			continue
+		}
+		verse, err := s.GetVerseByID(id)
+		if err == nil && verse != nil {
+			seenIDs[id] = true
+			results = append(results, verse)
+			if len(results) >= limit {
+				break
+			}
+		}
+	}
+
+	return results, nil
+}
+

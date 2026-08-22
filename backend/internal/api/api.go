@@ -14,6 +14,7 @@ import (
 	"dharmapragya/internal/storage"
 
 	"github.com/google/generative-ai-go/genai"
+	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
@@ -121,10 +122,17 @@ func (h *Handler) ReadVerses(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(v)
 }
 
+type ChatMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
 type AskRequest struct {
-	Question     string `json:"question"`
-	SourceFilter string `json:"source_filter"`
-	Language     string `json:"language"`
+	Question     string        `json:"question"`
+	SourceFilter string        `json:"source_filter"`
+	Language     string        `json:"language"`
+	History      []ChatMessage `json:"history"`
+	Stream       bool          `json:"stream"`
 }
 
 type AskResponse struct {
@@ -144,6 +152,46 @@ type RouterPayload struct {
 	SanskritKeywords []string         `json:"sanskrit_keywords"`
 	EnglishKeywords  []string         `json:"english_keywords"`
 	Verses           []RouterResponse `json:"verses"`
+}
+
+func (h *Handler) SearchVerses(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	if !validateToken(r) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	q := r.URL.Query().Get("q")
+	source := r.URL.Query().Get("source")
+	limitStr := r.URL.Query().Get("limit")
+	limit := 15
+	if limitStr != "" {
+		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+
+	if strings.TrimSpace(q) == "" {
+		json.NewEncoder(w).Encode([]*models.Verse{})
+		return
+	}
+
+	results, err := h.db.DirectSearch(q, source, limit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if results == nil {
+		results = []*models.Verse{}
+	}
+
+	json.NewEncoder(w).Encode(results)
 }
 
 func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
@@ -166,16 +214,55 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isStreaming := req.Stream || strings.Contains(r.Header.Get("Accept"), "text/event-stream")
+	var flusher http.Flusher
+	if isStreaming {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.Header().Set("X-Accel-Buffering", "no")
+		if f, ok := w.(http.Flusher); ok {
+			flusher = f
+			flusher.Flush()
+		}
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+	}
+
+	sendSSE := func(eventType string, data interface{}) {
+		if !isStreaming {
+			return
+		}
+		b, err := json.Marshal(data)
+		if err != nil {
+			return
+		}
+		fmt.Fprintf(w, "event: %s\ndata: %s\n\n", eventType, string(b))
+		if flusher != nil {
+			flusher.Flush()
+		}
+	}
+
+	sendSSE("status", map[string]string{"status": "routing", "message": "Analyzing query and routing sacred scriptures..."})
+
 	apiKey := os.Getenv("GOOGLE_API_KEY")
 	if apiKey == "" {
-		http.Error(w, "GOOGLE_API_KEY not set", http.StatusInternalServerError)
+		if isStreaming {
+			sendSSE("error", map[string]string{"error": "GOOGLE_API_KEY not set"})
+		} else {
+			http.Error(w, "GOOGLE_API_KEY not set", http.StatusInternalServerError)
+		}
 		return
 	}
 
 	ctx := context.Background()
 	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if isStreaming {
+			sendSSE("error", map[string]string{"error": err.Error()})
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 	defer client.Close()
@@ -254,11 +341,24 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 		Required: []string{"reasoning", "is_on_topic", "sanskrit_keywords", "english_keywords"},
 	}
 
-	// 1. Router Call Prompt
-	prompt := fmt.Sprintf(`User Question: "%s"
+	// 1. Build Multi-Turn History Context for Router Prompt
+	var historyContext strings.Builder
+	if len(req.History) > 0 {
+		historyContext.WriteString("\nPREVIOUS CONVERSATION CONTEXT (For follow-up understanding):\n")
+		for _, msg := range req.History {
+			roleName := "User"
+			if msg.Role == "assistant" || msg.Role == "model" {
+				roleName = "AI Scholar"
+			}
+			historyContext.WriteString(fmt.Sprintf("%s: %s\n", roleName, msg.Content))
+		}
+		historyContext.WriteString("\n")
+	}
+
+	prompt := fmt.Sprintf(`%sCurrent User Question: "%s"
 Filter preference: "%s"
 
-Analyze the question carefully and route it.
+Analyze the question carefully and route it to relevant scriptures.
 
 1. Cross-Lingual Concept Translation:
    - Provide 3 to 6 essential Sanskrit roots and terms in Devanagari script (e.g., काम, क्रोध, चित्त, निरोध, साक्षी, आत्मन्, धर्म).
@@ -279,16 +379,24 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 - "Atharva Veda": Calculate chapter as (Kaanda * 1000) + Sukta. E.g., Kaanda 1, Sukta 1 is chapter 1001. Kaanda 20, Sukta 143 is chapter 20143.
 - "Yajur Veda": Chapters/Adhyayas are numbered 1 to 40 directly.
 - "Patanjali Yoga Sutras": Chapters (Padas) are numbered 1 to 4 directly.
-- Upanishads: For all Upanishads (e.g., "Isha Upanishad"), chapter is ALWAYS 1.`, req.Question, req.SourceFilter)
+- Upanishads: For all Upanishads (e.g., "Isha Upanishad"), chapter is ALWAYS 1.`, historyContext.String(), req.Question, req.SourceFilter)
 
 	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if isStreaming {
+			sendSSE("error", map[string]string{"error": err.Error()})
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
 	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
-		http.Error(w, "Failed to route: Empty AI candidate response", http.StatusInternalServerError)
+		if isStreaming {
+			sendSSE("error", map[string]string{"error": "Failed to route: Empty AI candidate response"})
+		} else {
+			http.Error(w, "Failed to route: Empty AI candidate response", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -306,13 +414,19 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 		log.Printf("[AskAI Router reasoning]: %s", payload.Reasoning)
 	}
 
-	// Strong Programmatic Guardrail: Decline immediately if the AI classified it as off-topic
+	// Strong Programmatic Guardrail: Decline immediately if off-topic
 	if !payload.IsOnTopic {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(AskResponse{
-			Answer:    "I couldn't find any relevant verses in the scriptures for your question. Please ask a question related to spiritual life, duty, philosophy, or the scriptures.",
-			Citations: []models.Verse{},
-		})
+		offTopicMsg := "I couldn't find any relevant verses in the scriptures for your question. Please ask a question related to spiritual life, duty, philosophy, or the scriptures."
+		if isStreaming {
+			sendSSE("chunk", map[string]string{"text": offTopicMsg})
+			sendSSE("citations", map[string]interface{}{"citations": []models.Verse{}})
+			sendSSE("done", map[string]string{"status": "completed"})
+		} else {
+			json.NewEncoder(w).Encode(AskResponse{
+				Answer:    offTopicMsg,
+				Citations: []models.Verse{},
+			})
+		}
 		return
 	}
 
@@ -344,14 +458,33 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 		}
 	}
 
-	// If no verses were retrieved by either coordinates or FTS:
+	// If no verses were retrieved
 	if len(fetchedVerses) == 0 {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(AskResponse{
-			Answer:    "I couldn't find any relevant verses in the scriptures for your question. Please ask a question related to spiritual life, duty, philosophy, or the scriptures.",
-			Citations: []models.Verse{},
-		})
+		noVerseMsg := "I couldn't find any relevant verses in the scriptures for your question. Please ask a question related to spiritual life, duty, philosophy, or the scriptures."
+		if isStreaming {
+			sendSSE("chunk", map[string]string{"text": noVerseMsg})
+			sendSSE("citations", map[string]interface{}{"citations": []models.Verse{}})
+			sendSSE("done", map[string]string{"status": "completed"})
+		} else {
+			json.NewEncoder(w).Encode(AskResponse{
+				Answer:    noVerseMsg,
+				Citations: []models.Verse{},
+			})
+		}
 		return
+	}
+
+	// Prepare citation list for client
+	var citationsList []models.Verse
+	for _, vPtr := range fetchedVerses {
+		if vPtr != nil {
+			citationsList = append(citationsList, *vPtr)
+		}
+	}
+
+	if isStreaming {
+		sendSSE("citations", map[string]interface{}{"citations": citationsList})
+		sendSSE("status", map[string]string{"status": "synthesizing", "message": "Synthesizing sacred wisdom..."})
 	}
 
 	var contextBuilder strings.Builder
@@ -392,12 +525,24 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 
 	var langInstruction string
 	if strings.ToLower(targetLang) != "english" {
-		langInstruction = fmt.Sprintf("\n\nCRITICAL LANGUAGE REQUIREMENT: YOU MUST WRITE THE ENTIRE RESPONSE (specifically the \"answer\" field in the JSON response) IN THE %s LANGUAGE. Keep all translations, explanations, and synthesized answers completely fluent, scholarly, grammatically correct, and natural in %s. Do not write in English; translate all sentences into %s.", strings.ToUpper(targetLang), targetLang, targetLang)
+		langInstruction = fmt.Sprintf("\n\nCRITICAL LANGUAGE REQUIREMENT: YOU MUST WRITE THE ENTIRE RESPONSE IN THE %s LANGUAGE. Keep all translations, explanations, and synthesized answers completely fluent, scholarly, grammatically correct, and natural in %s. Do not write in English; translate all sentences into %s.", strings.ToUpper(targetLang), targetLang, targetLang)
 	}
 
-	// 3. Synthesize with post-retrieval reasoning and verification instructions
-	synthPrompt := fmt.Sprintf(`You are an expert scholar and wise teacher of Sanatan Dharma. 
-User Question: "%s"
+	// Build Synthesis Prompt
+	var synthPrompt strings.Builder
+	synthPrompt.WriteString("You are an expert scholar and wise teacher of Sanatan Dharma.\n")
+	if len(req.History) > 0 {
+		synthPrompt.WriteString("\nPREVIOUS CONVERSATION CONTEXT:\n")
+		for _, msg := range req.History {
+			role := "User"
+			if msg.Role == "assistant" || msg.Role == "model" {
+				role = "AI Scholar"
+			}
+			synthPrompt.WriteString(fmt.Sprintf("%s: %s\n", role, msg.Content))
+		}
+	}
+	synthPrompt.WriteString(fmt.Sprintf(`
+Current User Question: "%s"
 
 Here are the retrieved verses, word-by-word meanings, and authoritative commentaries:
 %s
@@ -411,15 +556,38 @@ Structure your response as follows:
 - Perform a thorough post-retrieval analysis: Break down the Sanskrit word-by-word meanings of the key terms, and explain how they construct the philosophical framework answering the question.
 - Connect the translations and different commentaries (e.g. Sankaracharya, Ramanuja, Sivananda), explaining how different schools of thought interpret these specific verses.
 - Keep the tone respectful, authoritative, and traditional. Do not mention "database", "retrieved verses", or technical terms. Write as a unified master class.
+- When referencing scriptures, cite them naturally (e.g. Bhagavad Gita Ch. 2, Verse 47).
+`, req.Question, contextBuilder.String(), langInstruction))
 
-VERIFICATION RULE:
-Read each retrieved verse in the context above (identifiable by "Retrieved Verse Index: X"). Translate the Sanskrit internally if no English translation is present in the database.
-Check if the verse actually answers or relates to the user's question.
-In your output JSON response:
-- Set "answer" to your scholarly markdown response.
-- In "verified_citation_indices", output the list of 0-based indices corresponding to the verses that you verified as correct and relevant. If a verse is irrelevant or slightly misremembered, do NOT reference it in your answer and EXCLUDE its index from the "verified_citation_indices" array.`, req.Question, contextBuilder.String(), langInstruction)
+	if isStreaming {
+		// Streaming mode: Generate markdown stream directly
+		synthModel := client.GenerativeModel(modelName)
+		iter := synthModel.GenerateContentStream(ctx, genai.Text(synthPrompt.String()))
+		for {
+			chunkResp, err := iter.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				log.Printf("Synthesis streaming error: %v", err)
+				break
+			}
+			for _, cand := range chunkResp.Candidates {
+				if cand.Content != nil {
+					for _, part := range cand.Content.Parts {
+						txt := fmt.Sprintf("%v", part)
+						if txt != "" {
+							sendSSE("chunk", map[string]string{"text": txt})
+						}
+					}
+				}
+			}
+		}
+		sendSSE("done", map[string]string{"status": "completed"})
+		return
+	}
 
-	// Enforce Structured JSON Schema on the synthesis step as well
+	// Non-streaming fallback: Structured JSON schema verification
 	synthModel := client.GenerativeModel(modelName)
 	synthModel.ResponseMIMEType = "application/json"
 	synthModel.ResponseSchema = &genai.Schema{
@@ -440,7 +608,7 @@ In your output JSON response:
 		Required: []string{"answer", "verified_citation_indices"},
 	}
 
-	synthResp, err := synthModel.GenerateContent(ctx, genai.Text(synthPrompt))
+	synthResp, err := synthModel.GenerateContent(ctx, genai.Text(synthPrompt.String()))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -466,20 +634,13 @@ In your output JSON response:
 	err = json.Unmarshal([]byte(synthText), &synthPayload)
 	if err != nil {
 		log.Printf("Synthesis JSON parse error: %v, text: %s", err, synthText)
-		// Fallback: If parse fails, return raw text as answer and all fetched citations
-		var fallbackCitations []models.Verse
-		for _, vPtr := range fetchedVerses {
-			fallbackCitations = append(fallbackCitations, *vPtr)
-		}
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(AskResponse{
 			Answer:    synthText,
-			Citations: fallbackCitations,
+			Citations: citationsList,
 		})
 		return
 	}
 
-	// Filter citations to only show verified ones
 	var verifiedCitations []models.Verse
 	for _, idx := range synthPayload.VerifiedCitationIndices {
 		if idx >= 0 && idx < len(fetchedVerses) {
@@ -487,7 +648,6 @@ In your output JSON response:
 		}
 	}
 
-	// Fallback if model verified 0 but we have fetched verses: include top fetched verse
 	if len(verifiedCitations) == 0 && len(fetchedVerses) > 0 {
 		verifiedCitations = append(verifiedCitations, *fetchedVerses[0])
 	}

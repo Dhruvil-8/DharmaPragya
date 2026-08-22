@@ -23,6 +23,7 @@ func main() {
 	handler := api.NewHandler(db)
 
 	http.HandleFunc("/api/read", handler.ReadVerses)
+	http.HandleFunc("/api/search", handler.SearchVerses)
 	http.HandleFunc("/api/ask", handler.AskAI)
 	
 	// Serve static audio files (publicly accessible for HTML5 audio streaming)

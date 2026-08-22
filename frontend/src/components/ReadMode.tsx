@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { VerseData, SectionData, SourceData } from '../types';
 import VerseBlock from './VerseBlock';
-import { ChevronRight, List, BookMarked, ArrowLeft, BookOpen, Eye, Languages, Volume2, VolumeX, X } from 'lucide-react';
+import { ChevronRight, List, BookMarked, ArrowLeft, BookOpen, Eye, Languages, Volume2, VolumeX, X, Search, Command } from 'lucide-react';
 
 interface ReadModeProps {
   apiBaseUrl: string;
@@ -42,6 +42,67 @@ export default function ReadMode({
   const [readingMode, setReadingMode] = useState<'study' | 'focus'>('study');
   const [autoPlayChant, setAutoPlayChant] = useState<boolean>(true);
   const [preferredLanguage, setPreferredLanguage] = useState<string>('english');
+
+  // Direct Scripture Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<VerseData[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setSearchResults(data);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (err) {
+        console.error('Search error:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery, apiBaseUrl]);
+
+  // Global Keyboard Shortcut (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setIsSearchOpen(true);
+      }
+      if (e.key === 'Escape') {
+        setIsSearchOpen(false);
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Hydrate states from localStorage after initial render to avoid SSR hydration mismatches
   useEffect(() => {
@@ -195,8 +256,117 @@ export default function ReadMode({
   const prevVerse = () => goToVerseIndex(currentVerseIndex - 1);
   const nextVerse = () => goToVerseIndex(currentVerseIndex + 1);
 
+  const handleSelectSearchResult = (verse: VerseData) => {
+    const cat = categorize(verse.source_name);
+    setCurrentCategory(cat);
+    setCurrentSource(verse.source_name);
+    loadChapter(verse.chapter_number, verse.source_name, verse.verse_number);
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('mode', 'read');
+      url.searchParams.set('source', verse.source_name);
+      url.searchParams.set('chapter', String(verse.chapter_number));
+      url.searchParams.set('verse', String(verse.verse_number));
+      window.history.pushState({}, '', url.toString());
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* 0. Direct Scripture Search & Jump Command Bar */}
+      <div ref={searchContainerRef} className="relative z-30">
+        <div className="relative flex items-center bg-white rounded-2xl border border-cream-400/80 shadow-xs focus-within:border-saffron-500 focus-within:ring-2 focus-within:ring-saffron-400/20 transition-all">
+          <Search className="w-4 h-4 text-saffron-700 ml-3.5 shrink-0" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setIsSearchOpen(true);
+            }}
+            onFocus={() => setIsSearchOpen(true)}
+            placeholder="Search verses, keywords, or references (e.g. 'karma', 'Gita 2.47', 'चित्त', '10.129')..."
+            className="w-full py-3 px-3 text-xs sm:text-sm text-stone-900 placeholder-stone-400 font-medium bg-transparent focus:outline-none"
+          />
+          {isSearching && (
+            <div className="w-4 h-4 border-2 border-saffron-600/30 border-t-saffron-600 rounded-full animate-spin mr-3 shrink-0" />
+          )}
+          {searchQuery && !isSearching && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSearchResults([]);
+              }}
+              className="p-1 text-stone-400 hover:text-stone-600 mr-2 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <div className="hidden sm:flex items-center gap-1 mr-3 px-2 py-0.5 rounded-md bg-cream-200 border border-cream-300 text-[10px] font-mono text-stone-500 select-none">
+            <Command className="w-3 h-3" />
+            <span>K</span>
+          </div>
+        </div>
+
+        {/* Live Search Results Dropdown Popover */}
+        {isSearchOpen && (searchQuery.trim().length >= 2 || searchResults.length > 0) && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-cream-400/80 shadow-xl overflow-hidden max-h-96 overflow-y-auto animate-fade-in z-50">
+            <div className="p-3 bg-cream-100 border-b border-cream-300 flex items-center justify-between text-[11px] font-bold text-stone-600 uppercase tracking-wider">
+              <span>{isSearching ? 'Searching sacred scriptures...' : `${searchResults.length} verses found`}</span>
+              <span className="text-[10px] text-stone-400 font-normal">Click verse to jump</span>
+            </div>
+
+            {searchResults.length === 0 && !isSearching && (
+              <div className="p-8 text-center text-xs text-stone-500 space-y-1">
+                <p className="font-semibold text-stone-700">No matching verses found</p>
+                <p>Try searching for a different keyword root, transliteration, or coordinate (e.g. &quot;2.47&quot;).</p>
+              </div>
+            )}
+
+            {searchResults.map((verse) => {
+              const previewTranslation = verse.translations?.[0]?.text || '';
+              return (
+                <button
+                  key={`${verse.source_name}-${verse.id}`}
+                  type="button"
+                  onClick={() => handleSelectSearchResult(verse)}
+                  className="w-full p-3.5 text-left border-b border-cream-200 hover:bg-saffron-50/70 transition-colors cursor-pointer flex flex-col gap-1 group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-saffron-800 bg-saffron-100 px-2 py-0.5 rounded border border-saffron-200">
+                      {verse.source_name}
+                    </span>
+                    <span className="text-xs font-bold font-cinzel text-stone-600 group-hover:text-saffron-800">
+                      Ch. {verse.chapter_number}, Verse {verse.verse_number}
+                    </span>
+                  </div>
+
+                  <p className="font-sanskrit text-sm font-semibold text-stone-900 line-clamp-1 mt-0.5">
+                    {verse.sanskrit_text}
+                  </p>
+
+                  {verse.transliteration && (
+                    <p className="font-serif italic text-xs text-stone-600 line-clamp-1">
+                      {verse.transliteration}
+                    </p>
+                  )}
+
+                  {previewTranslation && (
+                    <p className="text-xs text-stone-500 font-serif line-clamp-1">
+                      &quot;{previewTranslation}&quot;
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Dynamic Breadcrumbs Navigation */}
       {(currentCategory || currentSource || currentSection) && (
         <nav className="flex flex-wrap items-center gap-1.5 text-xs text-stone-700 font-bold bg-cream-300 px-4 py-2.5 rounded-2xl border border-cream-400/80 shadow-xs">

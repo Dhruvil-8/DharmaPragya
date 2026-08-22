@@ -1,0 +1,33 @@
+import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: Request) {
+  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8080';
+  const secret = process.env.FRONTEND_SECRET || '';
+
+  const { searchParams } = new URL(req.url);
+  const queryString = searchParams.toString();
+  const url = queryString ? `${backendUrl}/api/search?${queryString}` : `${backendUrl}/api/search`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'X-App-Token': secret,
+      },
+    });
+
+    const data = await res.json();
+
+    const headers = new Headers();
+    const cacheControl = res.headers.get('cache-control');
+    if (cacheControl) {
+      headers.set('Cache-Control', cacheControl);
+    }
+
+    return NextResponse.json(data, { headers });
+  } catch (error) {
+    console.error('Search API route fetch error:', error);
+    return NextResponse.json({ error: 'Failed to search scriptures from backend' }, { status: 500 });
+  }
+}
