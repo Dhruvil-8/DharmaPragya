@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ConversationalMessage, ChatHistoryMessage, VerseData } from '../types';
 import VerseBlock from './VerseBlock';
-import { Compass, AlertCircle, ArrowRight, HelpCircle, FileText, Mic, MicOff, Volume2, VolumeX, Sparkles, RefreshCw, User, Bot, CheckCircle2 } from 'lucide-react';
+import { Compass, AlertCircle, ArrowRight, HelpCircle, FileText, Mic, MicOff, Volume2, VolumeX, Sparkles, RefreshCw, User, Bot, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface AskModeProps {
   apiBaseUrl: string;
@@ -19,6 +19,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
   const [isListening, setIsListening] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [voicesList, setVoicesList] = useState<SpeechSynthesisVoice[]>([]);
+  const [expandedVerseMap, setExpandedVerseMap] = useState<Record<string, boolean>>({});
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
@@ -26,14 +27,8 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   };
-
-  useEffect(() => {
-    if (messages.length > 0) {
-      scrollToBottom();
-    }
-  }, [messages]);
 
   useEffect(() => {
     const updateVoices = () => {
@@ -171,6 +166,14 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
     setSpeakingMessageId(null);
     setMessages([]);
     setError(null);
+    setExpandedVerseMap({});
+  };
+
+  const toggleVerseSection = (msgIdx: number) => {
+    setExpandedVerseMap(prev => ({
+      ...prev,
+      [msgIdx]: !prev[msgIdx]
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,6 +216,11 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
     setMessages(prev => [...prev, userMessage, initialAssistantMessage]);
     setIsAiLoading(true);
+
+    // Scroll to new user message smoothly
+    setTimeout(() => {
+      scrollToBottom();
+    }, 50);
 
     try {
       const response = await fetch(`${apiBaseUrl}/api/ask`, {
@@ -345,20 +353,23 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
     }
   };
 
-  const scrollToVerse = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      element.classList.add('ring-2', 'ring-saffron-500', 'ring-offset-2');
-      setTimeout(() => {
-        element.classList.remove('ring-2', 'ring-saffron-500', 'ring-offset-2');
-      }, 2000);
-    }
+  const scrollToVerse = (id: string, msgIdx: number) => {
+    setExpandedVerseMap(prev => ({ ...prev, [msgIdx]: true }));
+    setTimeout(() => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('ring-2', 'ring-saffron-500', 'ring-offset-2');
+        setTimeout(() => {
+          element.classList.remove('ring-2', 'ring-saffron-500', 'ring-offset-2');
+        }, 2000);
+      }
+    }, 100);
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      {/* 1. Header Bar with Thread Reset & Filters */}
+    <div className="space-y-6 max-w-4xl mx-auto pb-36">
+      {/* 1. Header Bar with Thread Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-cream-400/60 shadow-xs">
         <div className="flex items-center gap-2 text-saffron-900 font-bold font-cinzel text-sm">
           <Compass className="w-4 h-4 text-saffron-600" />
@@ -414,7 +425,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
             </select>
           </div>
 
-          {/* Clear / New Thread Button */}
+          {/* Clear Thread Button */}
           {messages.length > 0 && (
             <button
               type="button"
@@ -431,7 +442,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
       {/* 2. Conversational Message Thread */}
       {messages.length > 0 ? (
-        <div className="space-y-6 pb-2">
+        <div className="space-y-6">
           {messages.map((msg, msgIdx) => {
             if (msg.role === 'user') {
               return (
@@ -446,9 +457,11 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
               );
             }
 
+            const isVersesExpanded = expandedVerseMap[msgIdx] || false;
+
             // Assistant Synthesis Card
             return (
-              <div key={msg.id} className="flex items-start gap-3 pr-4 animate-fade-in">
+              <div key={msg.id} className="flex items-start gap-3 pr-2 animate-fade-in">
                 <div className="w-8 h-8 rounded-xl bg-saffron-100 text-saffron-800 border border-saffron-300 flex items-center justify-center shrink-0 shadow-xs mt-1">
                   <Bot className="w-4.5 h-4.5" />
                 </div>
@@ -462,7 +475,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                       {msg.isStreaming && (
                         <span className="flex items-center gap-1 text-[10px] font-bold text-saffron-700 bg-saffron-50 px-2 py-0.5 rounded-full animate-pulse border border-saffron-200">
                           <span className="w-1.5 h-1.5 rounded-full bg-saffron-600 animate-ping" />
-                          Streaming...
+                          Synthesizing...
                         </span>
                       )}
                     </div>
@@ -518,16 +531,30 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
                   {/* Interactive Verified Citation Badges */}
                   {msg.citations && msg.citations.length > 0 && (
-                    <div className="pt-3 border-t border-cream-300/40">
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-saffron-950 tracking-wider uppercase mb-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-saffron-600" />
-                        <span>Retrieved Citations</span>
+                    <div className="pt-3 border-t border-cream-300/40 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-saffron-950 tracking-wider uppercase">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-saffron-600" />
+                          <span>Canonical Citations ({msg.citations.length})</span>
+                        </div>
+
+                        {!msg.isStreaming && (
+                          <button
+                            type="button"
+                            onClick={() => toggleVerseSection(msgIdx)}
+                            className="flex items-center gap-1 text-[11px] font-bold text-saffron-800 hover:text-saffron-950 cursor-pointer transition-colors"
+                          >
+                            <span>{isVersesExpanded ? 'Hide Scripture Verses' : 'View Scripture Verses'}</span>
+                            {isVersesExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                          </button>
+                        )}
                       </div>
+
                       <div className="flex flex-wrap gap-2">
                         {msg.citations.map((cit, citIdx) => (
                           <button
                             key={citIdx}
-                            onClick={() => scrollToVerse(`citation-card-${msgIdx}-${citIdx}`)}
+                            onClick={() => scrollToVerse(`citation-card-${msgIdx}-${citIdx}`, msgIdx)}
                             className="px-3 py-1 text-xs bg-cream-200 hover:bg-saffron-100 border border-cream-400 hover:border-saffron-300 rounded-full text-saffron-900 font-bold cursor-pointer transition-all duration-200 flex items-center gap-1.5 shadow-2xs"
                           >
                             <span className="text-[9px] bg-saffron-600 text-white w-4 h-4 rounded-full flex items-center justify-center shrink-0">
@@ -540,9 +567,9 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                     </div>
                   )}
 
-                  {/* Expanded Full Verse Record Blocks */}
-                  {msg.citations && msg.citations.length > 0 && !msg.isStreaming && (
-                    <div className="pt-4 border-t border-cream-300/40 space-y-4">
+                  {/* Clean Scripture Reference Blocks (Commentaries Excluded) */}
+                  {msg.citations && msg.citations.length > 0 && !msg.isStreaming && isVersesExpanded && (
+                    <div className="pt-4 border-t border-cream-300/40 space-y-4 animate-fade-in">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-saffron-600" />
                         <h4 className="text-xs font-bold uppercase tracking-wider text-saffron-900 font-cinzel">
@@ -568,7 +595,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
           <div ref={messagesEndRef} />
         </div>
       ) : (
-        /* 3. Starter Inquiries View (When conversation is empty) */
+        /* 3. Starter Inquiries View (When empty) */
         <div className="bg-white p-6 md:p-8 rounded-3xl border border-cream-400/60 shadow-sm space-y-6">
           <div className="text-center space-y-2 max-w-lg mx-auto">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-saffron-500 to-terracotta-600 text-white flex items-center justify-center mx-auto shadow-sm">
@@ -578,7 +605,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
               Seek the Eternal Wisdom
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 font-serif leading-relaxed">
-              Ask deep questions on life, mind mastery, karma, duty, and spiritual consciousness. DharmaPragya synthesizes answers directly with verse citations.
+              Ask deep questions on life, mind mastery, karma, duty, and spiritual consciousness. DharmaPragya synthesizes answers directly with verified verse citations.
             </p>
           </div>
 
@@ -649,65 +676,67 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
         </div>
       )}
 
-      {/* 5. Sticky Bottom Query Input Bar */}
-      <div className="sticky bottom-4 z-20 bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-3xl border border-cream-400/80 shadow-lg">
-        <form onSubmit={handleSubmit} className="space-y-2">
-          <div className="relative flex items-center">
-            <textarea
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(e);
+      {/* 5. Fixed Bottom Ask Box Dock */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-cream-100 via-cream-100/95 to-transparent pt-4 pb-4 px-4">
+        <div className="max-w-4xl mx-auto bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-3xl border border-cream-400/80 shadow-xl">
+          <form onSubmit={handleSubmit} className="space-y-2">
+            <div className="relative flex items-center">
+              <textarea
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+                placeholder={
+                  messages.length > 0
+                    ? "Ask a follow-up inquiry (e.g. 'Can you explain the 2nd verse in more detail?')..."
+                    : "Ask the sacred scriptures (e.g. 'How does one attain mental peace amidst adversity?')..."
                 }
-              }}
-              placeholder={
-                messages.length > 0
-                  ? "Ask a follow-up inquiry (e.g. 'Can you explain the 2nd verse in more detail?')..."
-                  : "Ask the sacred scriptures (e.g. 'How does one attain mental peace amidst adversity?')..."
-              }
-              className="w-full p-3.5 pr-24 border border-cream-400/80 hover:border-cream-500 bg-cream-50 rounded-2xl text-stone-900 placeholder-stone-400 font-medium focus:outline-none focus:ring-2 focus:ring-saffron-400/20 focus:border-saffron-500 focus:bg-white transition-all text-xs sm:text-sm leading-relaxed resize-none min-h-[52px] max-h-32"
-              rows={1}
-            />
+                className="w-full p-3.5 pr-24 border border-cream-400/80 hover:border-cream-500 bg-cream-50 rounded-2xl text-stone-900 placeholder-stone-400 font-medium focus:outline-none focus:ring-2 focus:ring-saffron-400/20 focus:border-saffron-500 focus:bg-white transition-all text-xs sm:text-sm leading-relaxed resize-none min-h-[50px] max-h-28"
+                rows={1}
+              />
 
-            <div className="absolute right-2.5 flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={isListening ? stopListening : startListening}
-                className={`p-2 rounded-xl transition-all duration-300 cursor-pointer ${
-                  isListening
-                    ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-xs'
-                    : 'text-stone-500 hover:text-saffron-700 hover:bg-cream-200'
-                }`}
-                title={isListening ? "Listening... click to stop" : "Speak query via microphone"}
-              >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </button>
+              <div className="absolute right-2.5 flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={isListening ? stopListening : startListening}
+                  className={`p-2 rounded-xl transition-all duration-300 cursor-pointer ${
+                    isListening
+                      ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-xs'
+                      : 'text-stone-500 hover:text-saffron-700 hover:bg-cream-200'
+                  }`}
+                  title={isListening ? "Listening... click to stop" : "Speak query via microphone"}
+                >
+                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
 
-              <button
-                type="submit"
-                disabled={isAiLoading || !query.trim()}
-                className="p-2 rounded-xl bg-gradient-to-r from-saffron-600 to-terracotta-600 hover:from-saffron-500 hover:to-terracotta-500 text-white disabled:from-stone-300 disabled:to-stone-400 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
-                title="Send inquiry"
-              >
-                {isAiLoading ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <ArrowRight className="w-4 h-4" />
-                )}
-              </button>
+                <button
+                  type="submit"
+                  disabled={isAiLoading || !query.trim()}
+                  className="p-2 rounded-xl bg-gradient-to-r from-saffron-600 to-terracotta-600 hover:from-saffron-500 hover:to-terracotta-500 text-white disabled:from-stone-300 disabled:to-stone-400 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
+                  title="Send inquiry"
+                >
+                  {isAiLoading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center justify-between px-1 text-[10px] text-stone-500 font-medium">
-            <span className="flex items-center gap-1">
-              <HelpCircle className="w-3 h-3 text-saffron-600" />
-              <span>Press <kbd className="bg-cream-200 px-1 py-0.5 rounded text-[9px] font-mono">Enter</kbd> to ask &bull; <kbd className="bg-cream-200 px-1 py-0.5 rounded text-[9px] font-mono">Shift + Enter</kbd> for newline</span>
-            </span>
-            <span>Real-time Canonical Synthesis</span>
-          </div>
-        </form>
+            <div className="flex items-center justify-between px-1 text-[10px] text-stone-500 font-medium">
+              <span className="flex items-center gap-1">
+                <HelpCircle className="w-3 h-3 text-saffron-600" />
+                <span>Press <kbd className="bg-cream-200 px-1 py-0.5 rounded text-[9px] font-mono">Enter</kbd> to ask &bull; <kbd className="bg-cream-200 px-1 py-0.5 rounded text-[9px] font-mono">Shift + Enter</kbd> for newline</span>
+              </span>
+              <span>Real-time Canonical Synthesis</span>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

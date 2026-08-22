@@ -586,8 +586,8 @@ export default function VerseBlock({
           )}
         </div>
 
-        {/* Commentaries Section */}
-        {hasCommentaries && (
+        {/* Commentaries Section (Only in Study / Reading Mode) */}
+        {hasCommentaries && !isAskMode && (
           <div className="space-y-3 pt-2">
             <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 uppercase tracking-wider">
               <Volume2 className="w-3.5 h-3.5" />
