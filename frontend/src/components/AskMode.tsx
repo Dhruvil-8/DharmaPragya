@@ -2,17 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ConversationalMessage, ChatHistoryMessage, VerseData } from '../types';
 import VerseBlock from './VerseBlock';
-import { Compass, AlertCircle, ArrowRight, HelpCircle, FileText, Mic, MicOff, Volume2, VolumeX, Sparkles, RefreshCw, User, Bot, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Compass, AlertCircle, ArrowRight, FileText, Mic, MicOff, Volume2, VolumeX, Sparkles, RefreshCw, User, Bot, CheckCircle2, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 
 interface AskModeProps {
   apiBaseUrl: string;
 }
+
+const MAX_QUERIES_PER_SESSION = 10;
 
 export default function AskMode({ apiBaseUrl }: AskModeProps) {
   const [query, setQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState('All');
   const [language, setLanguage] = useState('english');
   const [messages, setMessages] = useState<ConversationalMessage[]>([]);
+  const [sessionQueryCount, setSessionQueryCount] = useState(0);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,9 +28,35 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
   const recognitionRef = useRef<any>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const isUserAtBottomRef = useRef(true);
+  const scrollThrottleRef = useRef<number | null>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  const isLimitReached = sessionQueryCount >= MAX_QUERIES_PER_SESSION;
+  const remainingQueries = Math.max(0, MAX_QUERIES_PER_SESSION - sessionQueryCount);
+
+  // Track if user is scrolled near the bottom
+  useEffect(() => {
+    const handleScroll = () => {
+      const threshold = 180;
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - threshold;
+      isUserAtBottomRef.current = atBottom;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const smoothScrollToBottom = () => {
+    if (scrollThrottleRef.current) return;
+    scrollThrottleRef.current = window.setTimeout(() => {
+      if (isUserAtBottomRef.current) {
+        window.scrollTo({
+          top: document.documentElement.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
+      scrollThrottleRef.current = null;
+    }, 80);
   };
 
   useEffect(() => {
@@ -50,10 +79,14 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
+      if (scrollThrottleRef.current) {
+        clearTimeout(scrollThrottleRef.current);
+      }
     };
   }, []);
 
   const startListening = () => {
+    if (isLimitReached) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -165,8 +198,10 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
     window.speechSynthesis.cancel();
     setSpeakingMessageId(null);
     setMessages([]);
+    setSessionQueryCount(0);
     setError(null);
     setExpandedVerseMap({});
+    isUserAtBottomRef.current = true;
   };
 
   const toggleVerseSection = (msgIdx: number) => {
@@ -179,7 +214,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const currentQuery = query.trim();
-    if (!currentQuery || isAiLoading) return;
+    if (!currentQuery || isAiLoading || isLimitReached) return;
 
     setError(null);
     setQuery('');
@@ -208,6 +243,9 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
       timestamp: Date.now(),
     };
 
+    // Increment session inquiry count
+    setSessionQueryCount(prev => prev + 1);
+
     // Prepare history for backend multi-turn
     const historyPayload: ChatHistoryMessage[] = messages.map(m => ({
       role: m.role,
@@ -216,11 +254,15 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
     setMessages(prev => [...prev, userMessage, initialAssistantMessage]);
     setIsAiLoading(true);
+    isUserAtBottomRef.current = true;
 
-    // Scroll to new user message smoothly
+    // Smooth scroll down to new inquiry
     setTimeout(() => {
-      scrollToBottom();
-    }, 50);
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: 'smooth',
+      });
+    }, 60);
 
     try {
       const response = await fetch(`${apiBaseUrl}/api/ask`, {
@@ -287,6 +329,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                       : msg
                   )
                 );
+                smoothScrollToBottom();
               } else if (eventType === 'citations') {
                 accumulatedCitations = parsed.citations || [];
                 setMessages(prev =>
@@ -296,6 +339,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                       : msg
                   )
                 );
+                smoothScrollToBottom();
               } else if (eventType === 'chunk') {
                 accumulatedAnswer += parsed.text || '';
                 setMessages(prev =>
@@ -305,6 +349,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                       : msg
                   )
                 );
+                smoothScrollToBottom();
               } else if (eventType === 'error') {
                 throw new Error(parsed.error || 'AI Synthesis error');
               } else if (eventType === 'done') {
@@ -315,6 +360,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                       : msg
                   )
                 );
+                smoothScrollToBottom();
               }
             } catch (err) {
               console.warn('SSE Chunk JSON parse warning:', err, dataStr);
@@ -368,17 +414,23 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-36">
-      {/* 1. Header Bar with Thread Controls */}
+    <div className="space-y-6 max-w-4xl mx-auto pb-32">
+      {/* 1. Header Bar with Thread & Session Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-cream-400/60 shadow-xs">
         <div className="flex items-center gap-2 text-saffron-900 font-bold font-cinzel text-sm">
           <Compass className="w-4 h-4 text-saffron-600" />
           <span>Vedic Scripture Dialogue</span>
-          {messages.length > 0 && (
-            <span className="text-[10px] bg-saffron-100 text-saffron-800 px-2 py-0.5 rounded-full font-bold">
-              {Math.floor(messages.length / 2)} {Math.floor(messages.length / 2) === 1 ? 'Turn' : 'Turns'}
-            </span>
-          )}
+          <span
+            className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
+              isLimitReached
+                ? 'bg-red-100 text-red-800 border-red-200'
+                : remainingQueries <= 3
+                ? 'bg-amber-100 text-amber-900 border-amber-300'
+                : 'bg-saffron-100 text-saffron-800 border-saffron-200'
+            }`}
+          >
+            {isLimitReached ? 'Session Limit Reached (10/10)' : `${remainingQueries} / ${MAX_QUERIES_PER_SESSION} inquiries remaining`}
+          </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -425,13 +477,13 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
             </select>
           </div>
 
-          {/* Clear Thread Button */}
-          {messages.length > 0 && (
+          {/* Reset Session / New Inquiry Button */}
+          {(messages.length > 0 || sessionQueryCount > 0) && (
             <button
               type="button"
               onClick={handleClearThread}
               className="flex items-center gap-1 px-3 py-1 bg-cream-200 hover:bg-cream-300 text-stone-700 hover:text-saffron-800 rounded-xl border border-cream-400/60 text-xs font-bold transition-all cursor-pointer shadow-2xs"
-              title="Start a fresh conversation thread"
+              title="Start a fresh conversation thread (resets query limit to 10)"
             >
               <RefreshCw className="w-3 h-3" />
               <span>New Inquiry</span>
@@ -665,7 +717,24 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
         </div>
       )}
 
-      {/* 4. Global Error Alert */}
+      {/* 4. Limit Reached Alert Banner */}
+      {isLimitReached && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-xs animate-fade-in">
+          <div className="flex items-center gap-2.5 text-xs">
+            <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>You have reached the limit of 10 inquiries for this session. Start a new inquiry to reset.</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleClearThread}
+            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-2xs"
+          >
+            Start New Session
+          </button>
+        </div>
+      )}
+
+      {/* 5. Global Error Alert */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl flex items-start gap-3 shadow-xs animate-fade-in" role="alert">
           <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
@@ -676,13 +745,14 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
         </div>
       )}
 
-      {/* 5. Fixed Bottom Ask Box Dock */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-cream-100 via-cream-100/95 to-transparent pt-4 pb-4 px-4">
-        <div className="max-w-4xl mx-auto bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-3xl border border-cream-400/80 shadow-xl">
-          <form onSubmit={handleSubmit} className="space-y-2">
+      {/* 6. Fixed Bottom Ask Box Dock */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-cream-100 via-cream-100/95 to-transparent pt-3 pb-4 px-4">
+        <div className="max-w-4xl mx-auto bg-white/95 backdrop-blur-md p-2.5 sm:p-3 rounded-3xl border border-cream-400/80 shadow-xl">
+          <form onSubmit={handleSubmit}>
             <div className="relative flex items-center">
               <textarea
                 value={query}
+                disabled={isLimitReached}
                 onChange={e => setQuery(e.target.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -691,19 +761,22 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                   }
                 }}
                 placeholder={
-                  messages.length > 0
+                  isLimitReached
+                    ? "Session limit reached. Click 'New Inquiry' above to continue..."
+                    : messages.length > 0
                     ? "Ask a follow-up inquiry (e.g. 'Can you explain the 2nd verse in more detail?')..."
                     : "Ask the sacred scriptures (e.g. 'How does one attain mental peace amidst adversity?')..."
                 }
-                className="w-full p-3.5 pr-24 border border-cream-400/80 hover:border-cream-500 bg-cream-50 rounded-2xl text-stone-900 placeholder-stone-400 font-medium focus:outline-none focus:ring-2 focus:ring-saffron-400/20 focus:border-saffron-500 focus:bg-white transition-all text-xs sm:text-sm leading-relaxed resize-none min-h-[50px] max-h-28"
+                className="w-full p-3 pr-24 border border-cream-400/80 hover:border-cream-500 bg-cream-50 rounded-2xl text-stone-900 placeholder-stone-400 font-medium focus:outline-none focus:ring-2 focus:ring-saffron-400/20 focus:border-saffron-500 focus:bg-white transition-all text-xs sm:text-sm leading-relaxed resize-none min-h-[48px] max-h-28 disabled:opacity-60 disabled:cursor-not-allowed"
                 rows={1}
               />
 
               <div className="absolute right-2.5 flex items-center gap-1.5">
                 <button
                   type="button"
+                  disabled={isLimitReached}
                   onClick={isListening ? stopListening : startListening}
-                  className={`p-2 rounded-xl transition-all duration-300 cursor-pointer ${
+                  className={`p-2 rounded-xl transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     isListening
                       ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-xs'
                       : 'text-stone-500 hover:text-saffron-700 hover:bg-cream-200'
@@ -715,7 +788,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
                 <button
                   type="submit"
-                  disabled={isAiLoading || !query.trim()}
+                  disabled={isAiLoading || !query.trim() || isLimitReached}
                   className="p-2 rounded-xl bg-gradient-to-r from-saffron-600 to-terracotta-600 hover:from-saffron-500 hover:to-terracotta-500 text-white disabled:from-stone-300 disabled:to-stone-400 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
                   title="Send inquiry"
                 >
@@ -726,14 +799,6 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                   )}
                 </button>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between px-1 text-[10px] text-stone-500 font-medium">
-              <span className="flex items-center gap-1">
-                <HelpCircle className="w-3 h-3 text-saffron-600" />
-                <span>Press <kbd className="bg-cream-200 px-1 py-0.5 rounded text-[9px] font-mono">Enter</kbd> to ask &bull; <kbd className="bg-cream-200 px-1 py-0.5 rounded text-[9px] font-mono">Shift + Enter</kbd> for newline</span>
-              </span>
-              <span>Real-time Canonical Synthesis</span>
             </div>
           </form>
         </div>
