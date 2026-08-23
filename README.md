@@ -49,7 +49,7 @@ The scriptures and Vedic Samhitas are stored across unified SQLite databases (`s
 | **15 Principal Upanishads** | 2,900+ | Yes | No | No | Brihadaranyaka, Chandogya, Taittiriya, Aitareya, Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Shvetashvatara, Kaushitaki, Maitri, Amritabindu, Tejobindu |
 
 ### Provenance Credits:
-- **The Four Vedas**: Ingested from the Digitisation of Vedas project by Virendra & Team ([VedaKosh.Com](http://www.VedaKosh.Com)), with guidance from Prof. Dr. Naresh Kumar Dhiman and grammar review by Acharya Chandradutta Sharma.
+- **The Four Vedas**: Digitized Vedic Samhitas, Padapatha, and Bhashyas sourced from [VedaKosh.com](http://www.VedaKosh.com).
 - **Bhagavad Gita**: Sourced from the open-source [Gita GitHub Project](https://github.com/gita/gita), credited to the [IIT Kanpur Gita Supersite](https://www.gitasupersite.iitk.ac.in/).
 - **Mahabharata & Valmiki Ramayana**: Digitized BORI critical editions sourced from the [Bhandarkar Oriental Research Institute Electronic Text (BORI)](https://bombay.indology.info/).
 - **The Mahapuranas & Upanishads**: Digitized, encoded, and structured from [Sanskrit Documents](https://sanskritdocuments.org)
