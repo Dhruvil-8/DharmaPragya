@@ -182,23 +182,21 @@ export default function Header({ onOpenSanctuary, mode, onModeChange, onHomeClic
       {/* About Drawer Modal */}
       {isAboutOpen && (
         <div 
-          className="fixed inset-0 z-50 overflow-hidden"
+          className="fixed inset-0 z-[100] overflow-hidden flex justify-end"
           role="dialog"
           aria-modal="true"
           aria-labelledby="about-modal-title"
         >
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-stone-900/50 dark:bg-black/80 backdrop-blur-sm transition-opacity duration-300"
+            className="fixed inset-0 bg-stone-900/60 dark:bg-black/80 backdrop-blur-sm transition-opacity duration-300"
             onClick={() => setIsAboutOpen(false)}
           />
 
-          {/* Drawer Container (100% responsive, no right-side clipping on mobile) */}
-          <div className="absolute inset-y-0 right-0 max-w-full flex pl-0 sm:pl-6 pointer-events-none">
-            <div className="w-screen max-w-lg pointer-events-auto transform transition-all duration-300 ease-out">
-              <div className="h-full flex flex-col bg-cream-100 dark:bg-[#0b0f19] border-l border-cream-400 dark:border-amber-500/20 shadow-2xl overflow-hidden">
-                {/* Header */}
-                <div className="px-6 py-5 bg-gradient-to-r from-cream-300 to-cream-200 dark:from-[#111827] dark:to-[#0b0f19] border-b border-cream-400/50 dark:border-amber-500/20 flex items-center justify-between shrink-0">
+          {/* Responsive Drawer Panel */}
+          <div className="relative w-full max-w-lg h-full bg-cream-100 dark:bg-[#0b0f19] border-l border-cream-400 dark:border-amber-500/20 shadow-2xl flex flex-col z-10">
+            {/* Header */}
+            <div className="px-6 py-5 bg-gradient-to-r from-cream-300 to-cream-200 dark:from-[#111827] dark:to-[#0b0f19] border-b border-cream-400/50 dark:border-amber-500/20 flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-saffron-500 to-terracotta-600 flex items-center justify-center text-white shadow-xs">
                       <Sparkles className="w-4 h-4" />
@@ -373,8 +371,6 @@ export default function Header({ onOpenSanctuary, mode, onModeChange, onHomeClic
                 <div className="px-6 py-4 bg-cream-200/60 dark:bg-slate-900/90 border-t border-cream-400/40 dark:border-amber-500/20 text-center text-[10px] text-stone-500 dark:text-slate-400 font-medium shrink-0">
                   DharmaPragya Platform &copy; {new Date().getFullYear()} &bull; Open Knowledge
                 </div>
-              </div>
-            </div>
           </div>
         </div>
       )}

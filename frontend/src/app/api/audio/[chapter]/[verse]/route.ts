@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+const DEFAULT_BACKEND_URL = 'https://dhruvil8-dharmapragya.hf.space';
+const DEFAULT_SECRET = '5b8d2a4c7e91f34a8f2d6b7c1e9a4d3f6c8b1a2e7f9d4c5b3a8e6f1d2c7b9a4e';
+
 export async function GET(req: Request, { params }: { params: Promise<{ chapter: string, verse: string }> }) {
-  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8080';
-  const secret = process.env.FRONTEND_SECRET || 'dev-secret';
+  const backendUrl = process.env.BACKEND_URL || DEFAULT_BACKEND_URL;
+  const secret = process.env.FRONTEND_SECRET || DEFAULT_SECRET;
   const { chapter, verse } = await params;
 
   // Clean the verse to remove any trailing .mp3 to avoid duplicate extensions
