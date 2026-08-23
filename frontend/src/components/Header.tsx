@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Info, X, Globe, Bookmark, Compass, BookOpen, Sun, Moon, 
   Sparkles, Scroll, Database, ExternalLink, ShieldCheck, Layers 
@@ -19,8 +20,10 @@ export default function Header({ onOpenSanctuary, mode, onModeChange, onHomeClic
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [bookmarkCount, setBookmarkCount] = useState(0);
   const [isDark, setIsDark] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     setBookmarkCount(getBookmarks().length);
 
     const handleBookmarksUpdate = () => {
@@ -179,10 +182,10 @@ export default function Header({ onOpenSanctuary, mode, onModeChange, onHomeClic
         </div>
       </div>
 
-      {/* About Drawer Modal */}
-      {isAboutOpen && (
+      {/* About Drawer Modal (Portaled to document.body) */}
+      {isAboutOpen && mounted && createPortal(
         <div 
-          className="fixed inset-0 z-[100] overflow-hidden flex justify-end"
+          className="fixed inset-0 z-[9999] overflow-hidden flex justify-end"
           role="dialog"
           aria-modal="true"
           aria-labelledby="about-modal-title"
@@ -372,7 +375,8 @@ export default function Header({ onOpenSanctuary, mode, onModeChange, onHomeClic
                   DharmaPragya Platform &copy; {new Date().getFullYear()} &bull; Open Knowledge
                 </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
