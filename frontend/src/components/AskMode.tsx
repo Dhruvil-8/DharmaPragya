@@ -78,6 +78,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
     }
 
     return () => {
+      clearSpeechHeartbeat();
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
         window.speechSynthesis.onvoiceschanged = null;
@@ -153,18 +154,33 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
     setIsListening(false);
   };
 
+  const speechIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearSpeechHeartbeat = () => {
+    if (speechIntervalRef.current) {
+      clearInterval(speechIntervalRef.current);
+      speechIntervalRef.current = null;
+    }
+  };
+
   const speakAnswer = (messageId: string, markdownText: string) => {
+    if (language !== 'english') {
+      return;
+    }
+
     if (typeof window === 'undefined' || !window.speechSynthesis) {
       alert("Text-to-speech is not supported in this browser.");
       return;
     }
 
     if (speakingMessageId === messageId) {
+      clearSpeechHeartbeat();
       window.speechSynthesis.cancel();
       setSpeakingMessageId(null);
       return;
     }
 
+    clearSpeechHeartbeat();
     window.speechSynthesis.cancel();
 
     const cleanText = markdownText
@@ -181,38 +197,43 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utteranceRef.current = utterance;
 
-    const langCodeMap: Record<string, string> = {
-      english: 'en',
-      hindi: 'hi',
-      gujarati: 'gu',
-      marathi: 'mr',
-      tamil: 'ta',
-      telugu: 'te',
-      bengali: 'bn',
-      kannada: 'kn',
-    };
+    const availableVoices = voicesList.length > 0 ? voicesList : window.speechSynthesis.getVoices();
 
-    const targetPrefix = langCodeMap[language] || 'en';
-    const matchedVoice = voicesList.find(
-      v => v.lang.toLowerCase().startsWith(targetPrefix) || v.lang.toLowerCase().includes(targetPrefix)
-    );
+    // Prefer high-quality English voices (en-IN for accurate Indic philosophical pronunciation, or standard en)
+    const englishVoice = 
+      availableVoices.find(v => v.lang.toLowerCase() === 'en-in') ||
+      availableVoices.find(v => v.lang.toLowerCase().includes('en-in')) ||
+      availableVoices.find(v => v.lang.toLowerCase().startsWith('en-')) ||
+      availableVoices.find(v => v.lang.toLowerCase().startsWith('en')) ||
+      availableVoices[0];
 
-    if (matchedVoice) {
-      utterance.voice = matchedVoice;
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+      utterance.lang = englishVoice.lang;
+    } else {
+      utterance.lang = 'en-US';
     }
-    utterance.lang = matchedVoice ? matchedVoice.lang : (targetPrefix === 'hi' ? 'hi-IN' : 'en-IN');
     utterance.rate = 0.95;
     utterance.pitch = 1.0;
 
     utterance.onstart = () => {
       setSpeakingMessageId(messageId);
+      // Keep Chrome text-to-speech alive for long synthesized spiritual texts
+      speechIntervalRef.current = setInterval(() => {
+        if (typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.speaking) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        }
+      }, 10000);
     };
 
     utterance.onend = () => {
+      clearSpeechHeartbeat();
       setSpeakingMessageId(null);
     };
 
     utterance.onerror = () => {
+      clearSpeechHeartbeat();
       setSpeakingMessageId(null);
     };
 
@@ -227,6 +248,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
   };
 
   const handleClearThread = () => {
+    clearSpeechHeartbeat();
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -589,7 +611,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
                       )}
                     </div>
 
-                    {msg.content && !msg.isStreaming && (
+                    {msg.content && !msg.isStreaming && language === 'english' && (
                       <button
                         type="button"
                         onClick={() => speakAnswer(msg.id, msg.content)}

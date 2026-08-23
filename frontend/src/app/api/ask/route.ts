@@ -29,8 +29,17 @@ export async function POST(req: Request) {
       body: JSON.stringify(body),
     });
 
+    if (!res.ok) {
+      const errorText = await res.text();
+      return new Response(errorText, {
+        status: res.status,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     if (isStreamRequested && res.body) {
       return new Response(res.body, {
+        status: res.status,
         headers: {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache, no-transform',

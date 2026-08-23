@@ -324,12 +324,13 @@ export default function ReadMode({
 
     const matchedVeda = vedas.find(v => 
       v.name_english.toLowerCase().includes(targetCoordinate.sourceName.toLowerCase()) ||
-      v.id.toLowerCase() === targetCoordinate.sourceName.toLowerCase()
+      v.id.toLowerCase() === targetCoordinate.sourceName.toLowerCase() ||
+      targetCoordinate.sourceName.toLowerCase().includes(v.id.toLowerCase())
     );
 
     if (matchedVeda) {
       setCurrentCategory('VEDAS');
-      loadVedaSource(matchedVeda, targetCoordinate.chapterNumber);
+      loadVedaSource(matchedVeda, targetCoordinate.chapterNumber, targetCoordinate.verseNumber);
       return;
     }
 
@@ -345,7 +346,7 @@ export default function ReadMode({
   }, [targetCoordinate, sources, vedas]);
 
   // ---------------- Veda Handlers ----------------
-  const loadVedaSource = async (veda: VedaInfo, targetDivision?: number) => {
+  const loadVedaSource = async (veda: VedaInfo, targetDivision?: number, targetMantraNum?: number) => {
     setIsLoading(true);
     setError(null);
     setCurrentVeda(veda);
@@ -358,7 +359,7 @@ export default function ReadMode({
       const data = await res.json();
       setVedaSections(Array.isArray(data) ? data : []);
       if (targetDivision) {
-        await loadVedaChapter(veda.id, targetDivision);
+        await loadVedaChapter(veda.id, targetDivision, targetMantraNum);
       } else if (Array.isArray(data) && data.length > 0) {
         await loadVedaChapter(veda.id, data[0].section_number);
       }
@@ -370,7 +371,7 @@ export default function ReadMode({
     }
   };
 
-  const loadVedaChapter = async (vedaID: string, division1: number) => {
+  const loadVedaChapter = async (vedaID: string, division1: number, targetMantraNum?: number) => {
     setIsLoading(true);
     setError(null);
     setCurrentVedaSection(division1);
@@ -378,9 +379,18 @@ export default function ReadMode({
     try {
       const res = await fetch(`${apiBaseUrl}/api/veda/read?veda=${vedaID}&div1=${division1}`);
       const data = await res.json();
-      setVedaMantras(Array.isArray(data) ? data : []);
+      const mantrasArray = Array.isArray(data) ? data : [];
+      setVedaMantras(mantrasArray);
       setIsTocDrawerOpen(false);
-      if (typeof window !== 'undefined') {
+
+      if (targetMantraNum && mantrasArray.length > 0) {
+        const mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_3 === targetMantraNum || m.krama_number === targetMantraNum);
+        setCurrentMantraIndex(mIdx >= 0 ? mIdx : 0);
+        setTimeout(() => {
+          const el = document.getElementById(`verse-anchor-${targetMantraNum}`) || document.getElementById(`verse-anchor-${mIdx + 1}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 200);
+      } else if (typeof window !== 'undefined') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (err: unknown) {

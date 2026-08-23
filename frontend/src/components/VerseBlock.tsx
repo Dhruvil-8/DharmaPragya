@@ -121,7 +121,9 @@ function VerseBlock({
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current = null;
       setIsPlaying(false);
+      setIsAudioLoading(false);
     }
 
     if (autoPlayChant && readingMode === 'focus' && isActive && verse.source_name === 'Bhagavad Gita' && !isAskMode) {
@@ -162,40 +164,37 @@ function VerseBlock({
 
   const playAudio = () => {
     if (verse.source_name === 'Bhagavad Gita') {
-      if (!audioRef.current) {
-        setIsAudioLoading(true);
-        const audio = new Audio(audioPath);
-        audioRef.current = audio;
-
-        audio.onplaying = () => {
-          setIsAudioLoading(false);
-          setIsPlaying(true);
-        };
-
-        audio.onpause = () => {
-          setIsPlaying(false);
-        };
-
-        audio.onended = () => {
-          setIsPlaying(false);
-        };
-
-        audio.onerror = () => {
-          setIsAudioLoading(false);
-          setIsPlaying(false);
-        };
-
-        audio.play().catch(e => {
-          console.warn("Audio autoplay blocked or unavailable:", e);
-          setIsAudioLoading(false);
-          setIsPlaying(false);
-        });
-      } else {
-        audioRef.current.play().catch(e => {
-          console.warn("Audio play error:", e);
-          setIsPlaying(false);
-        });
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
+      setIsAudioLoading(true);
+      const audio = new Audio(audioPath);
+      audioRef.current = audio;
+
+      audio.onplaying = () => {
+        setIsAudioLoading(false);
+        setIsPlaying(true);
+      };
+
+      audio.onpause = () => {
+        setIsPlaying(false);
+      };
+
+      audio.onended = () => {
+        setIsPlaying(false);
+      };
+
+      audio.onerror = () => {
+        setIsAudioLoading(false);
+        setIsPlaying(false);
+      };
+
+      audio.play().catch(e => {
+        console.warn("Audio autoplay blocked or unavailable:", e);
+        setIsAudioLoading(false);
+        setIsPlaying(false);
+      });
     }
   };
 
