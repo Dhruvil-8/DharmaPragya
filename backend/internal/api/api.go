@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -29,7 +28,7 @@ func NewHandler(db *storage.Storage) *Handler {
 func enableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-App-Token")
 }
 
 func validateToken(r *http.Request) bool {
@@ -241,7 +240,7 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
 	if err != nil {
 		if isStreaming {
@@ -305,6 +304,8 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 							Enum: []string{
 								"Bhagavad Gita", "Rigveda", "Mahabharata", "Valmiki Ramayana",
 								"Atharva Veda", "Yajur Veda", "Patanjali Yoga Sutras",
+								"Shiva Mahapurana", "Shrimad Bhagavata Purana", "Garuda Purana",
+								"Brahma Purana", "Devi Bhagavata Mahapurana", "Harivamsha Purana",
 								"Isha Upanishad", "Kena Upanishad", "Katha Upanishad", "Prashna Upanishad",
 								"Mundaka Upanishad", "Mandukya Upanishad", "Taittiriya Upanishad", "Aitareya Upanishad",
 								"Chandogya Upanishad", "Brihadaranyaka Upanishad", "Shvetashvatara Upanishad",
@@ -365,6 +366,7 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 - "Atharva Veda": Calculate chapter as (Kaanda * 1000) + Sukta. E.g., Kaanda 1, Sukta 1 is chapter 1001. Kaanda 20, Sukta 143 is chapter 20143.
 - "Yajur Veda": Chapters/Adhyayas are numbered 1 to 40 directly.
 - "Patanjali Yoga Sutras": Chapters (Padas) are numbered 1 to 4 directly.
+- "Puranas" ("Shiva Mahapurana", "Shrimad Bhagavata Purana", "Garuda Purana", "Brahma Purana", "Devi Bhagavata Mahapurana", "Harivamsha Purana"): Adhyayas / Chapters are numbered directly as indexed.
 - Upanishads: For all Upanishads (e.g., "Isha Upanishad"), chapter is ALWAYS 1.`, historyContext.String(), req.Question, req.SourceFilter)
 
 	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
