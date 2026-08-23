@@ -6,12 +6,19 @@ import AskMode from '../components/AskMode';
 import ReadMode from '../components/ReadMode';
 import SavedSanctuary from '../components/SavedSanctuary';
 import ShareCardModal from '../components/ShareCardModal';
+import { VerseData } from '../types';
 
 const API_BASE_URL = '';
 
 function HomePageContent() {
   const [mode, setMode] = useState<'ask' | 'read'>('ask');
   const [isSanctuaryOpen, setIsSanctuaryOpen] = useState(false);
+  const [askInitialPrompt, setAskInitialPrompt] = useState<{
+    query: string;
+    sourceFilter?: string;
+    timestamp: number;
+  } | null>(null);
+
   const [shareModalData, setShareModalData] = useState<{
     isOpen: boolean;
     details: {
@@ -78,7 +85,6 @@ function HomePageContent() {
       chapterNumber,
       verseNumber,
     });
-    // Update URL without page reload
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('mode', 'read');
@@ -98,22 +104,55 @@ function HomePageContent() {
     }
   };
 
+  const handleHomeClick = () => {
+    setMode('ask');
+    setTargetCoordinate(null);
+    if (typeof window !== 'undefined') {
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.pushState({}, '', cleanUrl);
+    }
+  };
+
+  const handleAskAboutVerse = (verse: VerseData) => {
+    setMode('ask');
+    const promptQuery = `Explain the philosophical meaning, spiritual context, and life application of ${verse.source_name} Chapter ${verse.chapter_number}, Verse ${verse.verse_number}: "${verse.sanskrit_text}"`;
+    setAskInitialPrompt({
+      query: promptQuery,
+      sourceFilter: verse.source_name,
+      timestamp: Date.now(),
+    });
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('mode', 'ask');
+      window.history.pushState({}, '', url.toString());
+    }
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center px-4 py-6 md:px-8 md:py-10 bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 text-stone-900 relative overflow-x-hidden selection:bg-saffron-200 selection:text-saffron-700">
+    <main className="flex min-h-screen flex-col items-center bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 dark:from-[#070A0F] dark:via-[#0B0F19] dark:to-[#070A0F] text-stone-900 dark:text-slate-100 relative overflow-x-hidden selection:bg-saffron-200 dark:selection:bg-amber-900/50 selection:text-saffron-700 dark:selection:text-amber-200 transition-colors duration-300">
       {/* Decorative background radial glow */}
-      <div className="absolute top-[-8%] left-[50%] translate-x-[-50%] w-[700px] h-[500px] bg-gradient-to-b from-saffron-300/8 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-[-8%] left-[50%] translate-x-[-50%] w-[700px] h-[500px] bg-gradient-to-b from-saffron-300/8 dark:from-amber-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-4xl z-10 flex flex-col flex-grow">
-        <Header 
-          onOpenSanctuary={() => setIsSanctuaryOpen(true)} 
-          mode={mode} 
-          onModeChange={handleModeChange} 
-        />
+      {/* 100% Fixed Header with Backdrop Blur */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-cream-100/95 dark:bg-[#070A0F]/95 backdrop-blur-md border-b border-cream-300/60 dark:border-amber-900/30 py-2.5 px-4 sm:px-8 shadow-xs transition-colors">
+        <div className="max-w-4xl mx-auto w-full">
+          <Header 
+            onOpenSanctuary={() => setIsSanctuaryOpen(true)} 
+            mode={mode} 
+            onModeChange={handleModeChange}
+            onHomeClick={handleHomeClick}
+          />
+        </div>
+      </header>
 
+      <div className="w-full max-w-4xl z-10 flex flex-col flex-grow px-4 pt-18 pb-6 md:px-8">
         {/* Dynamic Mode Content Views */}
         <div className="w-full">
           <div className={mode === 'ask' ? 'block animate-fade-in' : 'hidden'}>
-            <AskMode apiBaseUrl={API_BASE_URL} />
+            <AskMode 
+              apiBaseUrl={API_BASE_URL} 
+              initialPrompt={askInitialPrompt}
+            />
           </div>
 
           <div className={mode === 'read' ? 'block animate-fade-in' : 'hidden'}>
@@ -121,16 +160,17 @@ function HomePageContent() {
               apiBaseUrl={API_BASE_URL}
               isActive={mode === 'read'}
               onOpenShareModal={handleOpenShareModalFromVerse}
+              onAskAboutVerse={handleAskAboutVerse}
               targetCoordinate={targetCoordinate}
             />
           </div>
         </div>
 
         {/* Footer */}
-        <footer className="mt-12 py-6 border-t border-cream-400/40 text-center space-y-1">
-          <p className="font-cinzel text-xs tracking-[0.2em] uppercase font-bold text-saffron-800">DharmaPragya</p>
-          <p className="text-[10px] text-stone-500 font-medium">
-            Synthesizing canonical Sanatan Dharma wisdom with modern intelligence.
+        <footer className="mt-12 py-6 border-t border-cream-400/40 dark:border-amber-900/30 text-center space-y-1">
+          <p className="font-cinzel text-xs tracking-[0.2em] uppercase font-bold text-saffron-800 dark:text-amber-400">DharmaPragya</p>
+          <p className="text-[10px] text-stone-500 dark:text-slate-500 font-medium">
+            Synthesizing timeless Sanatan Dharma wisdom with modern intelligence.
           </p>
         </footer>
       </div>
@@ -154,7 +194,7 @@ function HomePageContent() {
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-cream-100" />}>
+    <Suspense fallback={<div className="min-h-screen bg-cream-100 dark:bg-[#070A0F]" />}>
       <HomePageContent />
     </Suspense>
   );

@@ -1,3 +1,17 @@
+export type Language = 'english' | 'hindi' | 'sanskrit' | 'gujarati';
+
+export interface BookmarkItem {
+  id: number;
+  source_name: string;
+  chapter_number: number;
+  chapter_name: string;
+  verse_number: number;
+  sanskrit_text: string;
+  transliteration?: string;
+  translation_text?: string;
+  saved_at: number;
+}
+
 export interface Citation {
   source: string;
   chapter: number;
@@ -65,29 +79,69 @@ export interface SourceData {
   type: string;
 }
 
-export type Language = 'english' | 'hindi' | 'sanskrit';
-
-export interface BookmarkItem {
-  id: number;
-  source_name: string;
-  chapter_number: number;
-  chapter_name: string;
-  verse_number: number;
-  sanskrit_text: string;
-  transliteration?: string;
-  translation_text?: string;
-  saved_at: number;
+// Dedicated Vedic Types
+export interface VedaInfo {
+  id: string;
+  name_sanskrit: string;
+  name_english: string;
+  shakha: string;
+  total_mantras: number;
+  description: string;
 }
 
-export interface DailyShloka {
-  source_name: string;
-  chapter_number: number;
-  verse_number: number;
-  sanskrit_text: string;
-  transliteration: string;
-  translation_english: string;
-  translation_hindi: string;
-  reflection: string;
-  theme: string;
-  audio_path?: string;
+export interface VedaSection {
+  id: number;
+  veda_id: string;
+  section_type: string;
+  section_number: number;
+  section_name: string;
+  total_subdivisions: number;
+  total_mantras: number;
+}
+
+export interface VedaWordMeaning {
+  commentator: string;
+  language: string;
+  padartha_text: string;
+}
+
+export interface VedaBhashya {
+  author: string;
+  language: string;
+  mantra_vishaya?: string;
+  anvaya?: string;
+  bhavartha?: string;
+  tika?: string;
+}
+
+export interface VedaMantra {
+  id: string;
+  veda_id: string;
+  veda_name: string;
+  krama_number: number;
+  division_1: number;
+  division_2: number;
+  division_3: number;
+  division_4?: number;
+  coordinate_str: string;
+  ashtaka_coordinate?: string;
+  kauthuma_coordinate?: string;
+  ranayaniya_coordinate?: string;
+  sanskrit_svara: string;
+  sanskrit_plain: string;
+  padapatha_svara?: string;
+  padapatha_plain?: string;
+  transliteration_iast?: string;
+  rishi?: string;
+  devata?: string;
+  chhandas?: string;
+  svara?: string;
+  gana?: string;
+  ganaparva?: string;
+  rigveda_ref?: string;
+  yajurveda_ref?: string;
+  atharvaveda_ref?: string;
+  is_repetition: number;
+  word_meanings: VedaWordMeaning[];
+  bhashyas: VedaBhashya[];
 }

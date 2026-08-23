@@ -1,3 +1,5 @@
+import { formatSanskritVerseLines } from './sanskritUtils';
+
 export interface CardExportOptions {
   sourceName: string;
   chapterNumber: number;
@@ -5,6 +7,7 @@ export interface CardExportOptions {
   sanskritText: string;
   transliteration?: string;
   translationText: string;
+  directUrl?: string;
 }
 
 function wrapText(
@@ -44,14 +47,14 @@ function wrapText(
 
 export async function generateVerseCard(options: CardExportOptions): Promise<string> {
   const width = 1200;
-  const height = 1200; // Square format optimal for WhatsApp & Instagram
+  const height = 1200; // Square format optimal for social sharing
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D context not available');
 
-  // 1. Background Gradient (Original Warm Cream)
+  // 1. Background Gradient (Warm Sacred Cream)
   const bgGrad = ctx.createLinearGradient(0, 0, width, height);
   bgGrad.addColorStop(0, '#fdfbf7');
   bgGrad.addColorStop(0.5, '#faf5eb');
@@ -60,19 +63,19 @@ export async function generateVerseCard(options: CardExportOptions): Promise<str
   ctx.fillRect(0, 0, width, height);
 
   // 2. Subtle Radial Sun Glow
-  const radialGlow = ctx.createRadialGradient(width / 2, height / 2, 50, width / 2, height / 2, 500);
-  radialGlow.addColorStop(0, 'rgba(251, 191, 36, 0.15)');
+  const radialGlow = ctx.createRadialGradient(width / 2, height / 2, 50, width / 2, height / 2, 520);
+  radialGlow.addColorStop(0, 'rgba(251, 191, 36, 0.18)');
   radialGlow.addColorStop(1, 'rgba(253, 251, 247, 0)');
   ctx.fillStyle = radialGlow;
   ctx.fillRect(0, 0, width, height);
 
   // 3. Classical Ornate Border
-  ctx.strokeStyle = 'rgba(217, 119, 6, 0.4)';
+  ctx.strokeStyle = 'rgba(217, 119, 6, 0.45)';
   ctx.lineWidth = 3;
   ctx.strokeRect(50, 50, width - 100, height - 100);
 
   // Inner thin border
-  ctx.strokeStyle = 'rgba(217, 119, 6, 0.2)';
+  ctx.strokeStyle = 'rgba(217, 119, 6, 0.25)';
   ctx.lineWidth = 1;
   ctx.strokeRect(62, 62, width - 124, height - 124);
 
@@ -112,30 +115,63 @@ export async function generateVerseCard(options: CardExportOptions): Promise<str
   ctx.lineTo(width / 2 + 180, 155);
   ctx.stroke();
 
-  // 5. Sanskrit Text (Devanagari) - Deep high-contrast dark with generous sizing
+  // 5. Intelligent Sanskrit Meter Segmentation by Danda
+  const sanskritLines = formatSanskritVerseLines(options.sanskritText);
+  const totalSanskritChars = options.sanskritText.length;
+  const isLargeVerse = totalSanskritChars > 110 || sanskritLines.length > 2;
+
+  // Dynamic Typography Scaling
+  const skFontSize = isLargeVerse ? 34 : 40;
+  const skLineHeight = isLargeVerse ? 52 : 62;
+  const maxContentWidth = 1020;
+
   ctx.textAlign = 'center';
   ctx.fillStyle = '#1c1917';
-  ctx.font = 'bold 42px "Tiro Devanagari Sanskrit", "Martel", "Noto Serif Devanagari", serif';
-  
-  const sanskritLines = options.sanskritText.split('\n');
-  let currentY = 245;
-  for (const sLine of sanskritLines) {
-    if (sLine.trim()) {
-      ctx.fillText(sLine.trim(), width / 2, currentY);
-      currentY += 62;
+  ctx.font = `bold ${skFontSize}px "Tiro Devanagari Sanskrit", "Martel", "Noto Serif Devanagari", "Devanagari MT", serif`;
+
+  let currentY = isLargeVerse ? 225 : 245;
+
+  for (const rawLine of sanskritLines) {
+    const trimmedLine = rawLine.trim();
+    if (!trimmedLine) continue;
+
+    // Check if line width exceeds canvas bounds and wrap if needed
+    const metrics = ctx.measureText(trimmedLine);
+    if (metrics.width <= maxContentWidth) {
+      ctx.fillText(trimmedLine, width / 2, currentY);
+      currentY += skLineHeight;
+    } else {
+      // Wrap long hemistich
+      const words = trimmedLine.split(' ');
+      let subLine = '';
+      for (let n = 0; n < words.length; n++) {
+        const testSub = subLine ? subLine + ' ' + words[n] : words[n];
+        if (ctx.measureText(testSub).width > maxContentWidth && n > 0) {
+          ctx.fillText(subLine, width / 2, currentY);
+          subLine = words[n];
+          currentY += skLineHeight;
+        } else {
+          subLine = testSub;
+        }
+      }
+      if (subLine) {
+        ctx.fillText(subLine, width / 2, currentY);
+        currentY += skLineHeight;
+      }
     }
   }
 
-  // 6. Transliteration (Crisp readable dark stone-800)
+  // 6. Transliteration (IAST)
   if (options.transliteration) {
-    currentY += 15;
-    ctx.font = 'italic 500 24px "Lora", serif';
+    currentY += 12;
+    ctx.font = isLargeVerse ? 'italic 500 21px "Lora", serif' : 'italic 500 24px "Lora", serif';
     ctx.fillStyle = '#292524';
-    currentY = wrapText(ctx, options.transliteration, width / 2, currentY, 950, 36, 3);
+    const transLineHeight = isLargeVerse ? 32 : 36;
+    currentY = wrapText(ctx, options.transliteration, width / 2, currentY, 960, transLineHeight, 3);
   }
 
   // 7. Divider before translation
-  currentY += 25;
+  currentY += 18;
   ctx.strokeStyle = 'rgba(180, 83, 9, 0.35)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -143,22 +179,33 @@ export async function generateVerseCard(options: CardExportOptions): Promise<str
   ctx.lineTo(width / 2 + 120, currentY);
   ctx.stroke();
 
-  // 8. English Translation - High contrast bold dark text
-  currentY += 55;
-  ctx.font = '500 30px "Lora", serif';
+  // 8. Translation - Dynamic scaling to fit canvas perfectly
+  currentY += isLargeVerse ? 42 : 50;
+  const transFontSize = isLargeVerse ? 25 : 29;
+  const transLineHeight = isLargeVerse ? 38 : 44;
+  ctx.font = `500 ${transFontSize}px "Lora", serif`;
   ctx.fillStyle = '#1c1917';
   const quotedTranslation = `"${options.translationText}"`;
-  currentY = wrapText(ctx, quotedTranslation, width / 2, currentY, 980, 46, 5);
+  currentY = wrapText(ctx, quotedTranslation, width / 2, currentY, 980, transLineHeight, isLargeVerse ? 6 : 5);
 
-  // 9. Footer Brand Seal / Watermark
+  // 9. Footer Brand Seal & Direct URL Link Badge
   ctx.textAlign = 'center';
-  ctx.font = 'bold 20px "Cinzel", serif, sans-serif';
+  ctx.font = 'bold 22px "Cinzel", serif, sans-serif';
   ctx.fillStyle = '#5c270a';
-  ctx.fillText('DHARMAPRAGYA', width / 2, height - 95);
+  ctx.fillText('DHARMAPRAGYA', width / 2, height - 105);
 
-  ctx.font = '600 15px "Plus Jakarta Sans", sans-serif';
+  ctx.font = '600 14px "Plus Jakarta Sans", sans-serif';
   ctx.fillStyle = '#78350f';
-  ctx.fillText('Universal Wisdom of Sanatan Dharma', width / 2, height - 70);
+  ctx.fillText('Universal Wisdom of Sanatan Dharma', width / 2, height - 80);
+
+  // Direct redirection URL badge
+  const displayUrl = options.directUrl 
+    ? options.directUrl.replace(/^https?:\/\//, '')
+    : `dharmapragya.app • Read Ch. ${options.chapterNumber}, V. ${options.verseNumber}`;
+  
+  ctx.font = 'bold 13px "Courier New", monospace, sans-serif';
+  ctx.fillStyle = '#b45309';
+  ctx.fillText(`🔗 ${displayUrl}`, width / 2, height - 58);
 
   return canvas.toDataURL('image/png');
 }
@@ -172,7 +219,7 @@ export function downloadImage(dataUrl: string, filename: string): void {
   document.body.removeChild(a);
 }
 
-export async function shareImageFile(dataUrl: string, title: string, text: string): Promise<boolean> {
+export async function shareImageFile(dataUrl: string, title: string, text: string, url?: string): Promise<boolean> {
   if (typeof navigator === 'undefined' || !navigator.share) return false;
   try {
     const res = await fetch(dataUrl);
@@ -182,6 +229,7 @@ export async function shareImageFile(dataUrl: string, title: string, text: strin
       await navigator.share({
         title,
         text,
+        url,
         files: [file],
       });
       return true;

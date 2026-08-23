@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: var(--font-plus-jakarta), sans-serif;
   --font-serif: var(--font-lora), serif;
@@ -40,6 +42,17 @@
 :root {
   --background: #fdfbf7;
   --foreground: #1c1917;
+  --card-bg: #ffffff;
+  --card-border: #f5eedc;
+  --accent-gold: #d97706;
+}
+
+.dark {
+  --background: #070a0f;
+  --foreground: #f8fafc;
+  --card-bg: #0d121d;
+  --card-border: rgba(245, 158, 11, 0.15);
+  --accent-gold: #f59e0b;
 }
 
 body {
@@ -50,6 +63,14 @@ body {
   background-size: 24px 24px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body,
+html.dark body {
+  background-color: #070a0f;
+  color: #f8fafc;
+  background-image: radial-gradient(rgba(245, 158, 11, 0.05) 1px, transparent 1px);
 }
 
 /* ─── Smooth page-level animations ─── */
@@ -76,6 +97,10 @@ body {
 /* ─── Gradient overlay for decorative glow ─── */
 .spiritual-gradient {
   background: linear-gradient(135deg, #fdfbf7 0%, #faf5eb 50%, #f5eedc 100%);
+}
+
+.dark .spiritual-gradient {
+  background: linear-gradient(135deg, #070a0f 0%, #0d121d 50%, #131b2e 100%);
 }
 
 /* ─── Glossy CTA button with sweep animation ─── */
@@ -130,10 +155,22 @@ body {
   background: #d97706;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #f59e0b;
+}
+
 /* Firefox scrollbar */
 * {
   scrollbar-width: thin;
   scrollbar-color: #ebdcb9 transparent;
+}
+
+.dark * {
+  scrollbar-color: #1e293b transparent;
 }
 
 /* ─── Shimmer loading skeleton ─── */
@@ -144,6 +181,12 @@ body {
 
 .shimmer {
   background: linear-gradient(90deg, #f5eedc 25%, #faf5eb 50%, #f5eedc 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.dark .shimmer {
+  background: linear-gradient(90deg, #0d121d 25%, #161f30 50%, #0d121d 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite linear;
 }
@@ -169,6 +212,10 @@ body {
   transform-origin: bottom;
 }
 
+.dark .vedic-bar {
+  background: linear-gradient(to top, #f59e0b, #fde68a);
+}
+
 .vedic-bar:nth-child(1) { animation-delay: 0.1s; height: 12px; }
 .vedic-bar:nth-child(2) { animation-delay: 0.3s; height: 18px; }
 .vedic-bar:nth-child(3) { animation-delay: 0.5s; height: 14px; }
@@ -177,11 +224,14 @@ body {
 
 /* ─── Card hover lift effect ─── */
 .card-lift {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 .card-lift:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+.dark .card-lift:hover {
+  box-shadow: 0 8px 30px rgba(245, 158, 11, 0.08);
 }
 
 /* ─── Smooth expand/collapse ─── */
@@ -194,4 +244,8 @@ body {
   outline: 2px solid #d97706;
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+.dark *:focus-visible {
+  outline: 2px solid #f59e0b;
 }

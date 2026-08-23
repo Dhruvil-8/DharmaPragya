@@ -6,64 +6,92 @@ DharmaPragya is a platform that allows users to explore the wisdom of Sanatan Dh
 
 **Note:** This project is an extension and scalable evolution of the original [SrimadBhgavadGita](https://github.com/Dhruvil-8/SrimadBhgavadGita) repository.
 
+---
+
 ## Core Idea
 The core idea is that anyone should be able to explore the wisdom of Sanatan Dharma by simply asking a question, with answers drawn directly from its sacred foundations: the Vedas, Puranas, and related scriptures.
 
-## Features
-- **Ask AI Mode:** Ask philosophical questions and get synthesized answers with direct verse citations.
-- **Reading Mode:** Browse and read scriptures with multi-language translations and commentaries
-- **Scalable Architecture:** A modern, component-based Next.js frontend paired with a high-performance Go API backend.
+---
+
+## Key Features
+- **Ask AI Mode:** Ask philosophical questions with intelligent routing across scriptures and multi-layer synthesis with verified citations.
+- **Reading Mode:** Browse sacred scriptures with Devanagari Sanskrit, IAST transliteration, word-by-word Anvaya, multiple translations, and classical commentaries.
+- **Authentic Recitation:** Stream authentic Sanskrit audio recitation for the Srimad Bhagavad Gita.
+
+---
 
 ## Technology Stack
-- **Frontend:** Next.js, React, Tailwind CSS
-- **Backend:** Go (Golang), SQLite (with FTS5), Google Gen AI SDK (Gemini)
-- **Ingestion:** Python
+- **Frontend:** Next.js (App Router), React, TypeScript, Tailwind CSS, Lucide Icons
+- **Backend:** Go (Golang), Dual SQLite Storage (`scriptures.db` + `vedas.db`), FTS5 Full-Text Search, Google Gen AI SDK (Gemini)
+
+---
 
 ## Data Sources
-The scriptures are ingested and stored inside a unified SQLite database schema. Below is the current mapping status of translations and commentaries:
 
-| Scripture Source | Verses | Sanskrit Text | English Translation | Hindi Translation | Commentaries |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Bhagavad Gita** | 701 | Yes | Yes (5 authors) | Yes (2 authors) | Yes (15+ authors / Sanskrit, Hindi, English) |
-| **Rigveda** | 10,552 | Yes | Yes (Griffith) | No | No |
-| **Patanjali Yoga Sutras** | 196 | Yes | Yes (International Gita Society) | No | No |
-| **Mahabharata** | 73,436 | Yes | No | No | No |
-| **Valmiki Ramayana** | 18,761 | Yes | No | No | No |
-| **Atharva Veda** | 6,190 | Yes | No | No | No |
-| **Yajur Veda** | 1,967 | Yes | No | No | No |
-| **15 Upanishads** | 2,900+ | Yes | No | No | No |
+The scriptures and Vedic Samhitas are stored across unified SQLite databases (`scriptures.db` and `vedas.db`). Below is the current mapping status:
 
-### Sourcing & Ingestion details:
-- **Bhagavad Gita**: Ingested from the open-source [Gita GitHub Project](https://github.com/gita/gita), credited to the [IIT Kanpur Gita Supersite](https://www.gitasupersite.iitk.ac.in/).
-- **Rigveda**: Ingested from the [VedaWeb Project](https://github.com/VedaWebProject/vedaweb-data).
+| Scripture Source | Verses / Mantras | Sanskrit Text | English Translation | Hindi Translation | Commentaries / Bhashyas |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Rigveda Samhita** | 10,552 | Yes (Svara & Plain) | Yes (Griffith) | Yes (Padartha & Bhavartha) | Dayananda Saraswati, Aryamuni, Brahmamuni, Shivashankar Sharma |
+| **Yajurveda Samhita** | 1,975 | Yes (Svara & Plain) | No | Yes (Dayananda) | Maharshi Dayananda Saraswati |
+| **Samaveda Samhita** | 1,875 | Yes (Svara & Plain) | No | Yes (Padartha & Bhavartha) | Vishaya, Padartha, Rigveda Cross-References |
+| **Atharvaveda Samhita** | 5,977 | Yes (Svara & Plain) | No | Yes (Bhavartha) | Vishaya, Bhashyartha, Bhavartha, Tippani |
+| **Bhagavad Gita** | 701 | Yes | Yes (5 authors) | Yes (2 authors) | Yes (15+ classical commentators in Sanskrit, Hindi, English) |
+| **Patanjali Yoga Sutras** | 196 | Yes | Yes (IGS) | No | Devanagari Sanskrit, IAST, English word meanings |
+| **Mahabharata (BORI Critical Edition)** | 73,436 | Yes | No | No | Complete 18 Parvas (1,995 Adhyayas) |
+| **Valmiki Ramayana (Critical Edition)** | 18,761 | Yes | No | No | Complete 6 Kandas (606 Sargas) |
+| **Garuda Purana** | 11,970 | Yes | No | No | Purva Khanda (Achara) & Uttara Khanda (Preta Kalpa) — 317 Adhyayas |
+| **Devi Bhagavata Mahapurana** | 18,758 | Yes | No | No | Complete 12 Skandhas (includes Devi Gita) — 105 Adhyayas |
+| **Brahma Purana** | 14,052 | Yes | No | No | Complete 246 Adhyayas (Tübingen Purana Project) |
+| **Shrimad Bhagavata Purana** | 15,409 | Yes | No | No | Mahatmyam & Complete 12 Skandhas — 302 Adhyayas |
+| **Shiva Mahapurana** | 26,307 | Yes | No | No | Mahatmyam & Complete 7 Samhitas (12 Khandas) — 339 Adhyayas |
+| **Harivamsha Purana** | 16,711 | Yes | No | No | Complete 3 Parvas (Harivamsha, Vishnu, Bhavishya) — 324 Adhyayas |
+| **15 Principal Upanishads** | 2,900+ | Yes | No | No | Brihadaranyaka, Chandogya, Taittiriya, Aitareya, Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Shvetashvatara, Kaushitaki, Maitri, Amritabindu, Tejobindu |
+
+### Provenance Credits:
+- **The Four Vedas**: Ingested from the Digitisation of Vedas project by Virendra & Team ([VedaKosh.Com](http://www.VedaKosh.Com)), with guidance from Prof. Dr. Naresh Kumar Dhiman and grammar review by Acharya Chandradutta Sharma.
+- **Bhagavad Gita**: Sourced from the open-source [Gita GitHub Project](https://github.com/gita/gita), credited to the [IIT Kanpur Gita Supersite](https://www.gitasupersite.iitk.ac.in/).
 - **Mahabharata & Valmiki Ramayana**: Digitized BORI critical editions sourced from the [Bhandarkar Oriental Research Institute Electronic Text (BORI)](https://bombay.indology.info/).
-- **Atharva Veda & Yajur Veda**: Shukla Yajurveda (Madhyandina Samhita) and Atharva Veda (Shaunaka Samhita) JSON datasets sourced from [DharmicData](https://github.com/bhavykhatri/DharmicData).
-- **Patanjali Yoga Sutras**: Ingested from the [International Gita Society (IGS)](https://www.gita-society.com/wp-content/uploads/PDF/Patanjali-yogasutra.IGS.pdf), with Devanagari Sanskrit, IAST transliteration, and English translations.
-- **Upanishads**: Scraped and split verse-by-verse from raw HTML pages at [Sanskrit Documents](https://sanskritdocuments.org/sanskrit/upanishhat/). Includes *Brihadaranyaka, Chandogya, Taittiriya, Aitareya, Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Shvetashvatara, Kaushitaki, Maitri, Amritabindu, and Tejobindu*.
+- **The Mahapuranas & Upanishads**: Digitized, encoded, and structured from [Sanskrit Documents](https://sanskritdocuments.org)
+- **Patanjali Yoga Sutras**: Sourced from the [International Gita Society (IGS)](https://www.gita-society.com/wp-content/uploads/PDF/Patanjali-yogasutra.IGS.pdf).
+
+---
 
 ## Getting Started
 
-### Backend
-1. Navigate to the `backend` directory.
-2. Create a `.env` file and add your `GEMINI_API_KEY`.
-3. Run the server:
+### Prerequisites
+- [Go 1.22+](https://golang.org/)
+- [Node.js 18+](https://nodejs.org/)
+
+### Backend Setup
+1. Navigate to the `backend` directory:
+   ```bash
+   cd backend
+   ```
+2. Create a `.env` file with your Gemini API key:
+   ```env
+   GOOGLE_API_KEY=your_gemini_api_key_here
+   GEMINI_MODEL=gemini-flash-lite-latest
+   FRONTEND_SECRET=your_secret_key_here
+   PORT=8080
+   ```
+3. Run the Go server:
    ```bash
    go run ./cmd/server/main.go
    ```
-   *The API will be available at `http://localhost:8080`.*
+   *The server will start on `http://localhost:8080` (with `scriptures.db` + `vedas.db` active).*
 
-### Frontend
-1. Navigate to the `frontend` directory.
-2. Install dependencies: `npm install`
-3. Run the development server:
+### Frontend Setup
+1. Navigate to the `frontend` directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Next.js development server:
    ```bash
    npm run dev
    ```
-   *The site will be available at `http://localhost:3000`.*
-
-## Limitations & Future Work
-- **Data Verification:** Scripture datasets are parsed from open-source archives and are not manually verified verse-by-verse.
-- **Coordinate Precision:** LLM coordinate routing is highly accurate for shorter texts (e.g. Bhagavad Gita) but can occasionally yield off-topic or non-existent verses on massive texts, which the backend ignores.
-- **AI Hallucinations:** Synthesized answers are for philosophical exploration and should not be treated as absolute spiritual authority.
-- **Future Work:** Focuses on expanding multi-language support, database verification, and refining coordinate routing safety filters.
-
+   *Open [http://localhost:3000](http://localhost:3000) in your browser.*

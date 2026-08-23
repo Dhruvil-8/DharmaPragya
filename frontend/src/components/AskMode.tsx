@@ -1,16 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ConversationalMessage, ChatHistoryMessage, VerseData } from '../types';
 import VerseBlock from './VerseBlock';
-import { Compass, AlertCircle, ArrowRight, FileText, Mic, MicOff, Volume2, VolumeX, Sparkles, RefreshCw, User, Bot, CheckCircle2, ChevronDown, ChevronUp, Lock } from 'lucide-react';
+import { Compass, AlertCircle, ArrowRight, FileText, Mic, MicOff, Volume2, VolumeX, RefreshCw, User, Bot, CheckCircle2, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 
 interface AskModeProps {
   apiBaseUrl: string;
+  initialPrompt?: {
+    query: string;
+    sourceFilter?: string;
+    timestamp: number;
+  } | null;
 }
 
 const MAX_QUERIES_PER_SESSION = 10;
 
-export default function AskMode({ apiBaseUrl }: AskModeProps) {
+export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
   const [query, setQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState('All');
   const [language, setLanguage] = useState('english');
@@ -30,6 +35,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const isUserAtBottomRef = useRef(true);
   const scrollThrottleRef = useRef<number | null>(null);
+  const lastInitialPromptTimestamp = useRef<number>(0);
 
   const isLimitReached = sessionQueryCount >= MAX_QUERIES_PER_SESSION;
   const remainingQueries = Math.max(0, MAX_QUERIES_PER_SESSION - sessionQueryCount);
@@ -98,7 +104,18 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
     recognitionRef.current = recognition;
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = language === 'hindi' ? 'hi-IN' : 'en-US';
+
+    const langMap: Record<string, string> = {
+      english: 'en-IN',
+      hindi: 'hi-IN',
+      gujarati: 'gu-IN',
+      marathi: 'mr-IN',
+      tamil: 'ta-IN',
+      telugu: 'te-IN',
+      bengali: 'bn-IN',
+      kannada: 'kn-IN',
+    };
+    recognition.lang = langMap[language] || 'en-IN';
 
     recognition.onstart = () => {
       setIsListening(true);
@@ -107,12 +124,13 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      setQuery(prev => (prev ? prev + ' ' : '') + transcript);
+      setQuery(prev => (prev ? `${prev} ${transcript}` : transcript));
+      setIsListening(false);
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onerror = (event: any) => {
-      console.error("Speech recognition error", event.error);
+      console.warn("Speech recognition error:", event.error);
       setIsListening(false);
     };
 
@@ -120,18 +138,26 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
       setIsListening(false);
     };
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error("Speech start error:", e);
+      setIsListening(false);
+    }
   };
 
   const stopListening = () => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
-      setIsListening(false);
     }
+    setIsListening(false);
   };
 
-  const speakAnswer = (messageId: string, answerText: string) => {
-    if (!answerText) return;
+  const speakAnswer = (messageId: string, markdownText: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      alert("Text-to-speech is not supported in this browser.");
+      return;
+    }
 
     if (speakingMessageId === messageId) {
       window.speechSynthesis.cancel();
@@ -141,31 +167,21 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
     window.speechSynthesis.cancel();
 
-    // Strip markdown formatting and citations for clean narration
-    const cleanText = answerText
-      .replace(/\[\^?\d+\]/g, '')
-      .replace(/[\#\*\_`~\-]/g, '')
-      .replace(/!\[.*?\]\(.*?\)/g, '')
+    const cleanText = markdownText
+      .replace(/#+\s/g, '')
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/`{1,3}[^`]*`{1,3}/g, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/>\s?/g, '')
       .trim();
+
+    if (!cleanText) return;
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utteranceRef.current = utterance;
 
-    utterance.onstart = () => {
-      setSpeakingMessageId(messageId);
-    };
-
-    utterance.onend = () => {
-      setSpeakingMessageId(null);
-    };
-
-    utterance.onerror = (e) => {
-      console.error("TTS error:", e);
-      setSpeakingMessageId(null);
-    };
-
-    const availableVoices = voicesList.length > 0 ? voicesList : (typeof window !== 'undefined' ? window.speechSynthesis.getVoices() : []);
-    const langPrefixes: Record<string, string> = {
+    const langCodeMap: Record<string, string> = {
       english: 'en',
       hindi: 'hi',
       gujarati: 'gu',
@@ -175,121 +191,119 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
       bengali: 'bn',
       kannada: 'kn',
     };
-    const prefix = langPrefixes[language] || 'en';
 
-    const preferredVoice =
-      availableVoices.find(v => v.lang.startsWith(prefix) && v.name.includes('Natural')) ||
-      availableVoices.find(v => v.lang.startsWith(prefix) && v.name.includes('Google')) ||
-      availableVoices.find(v => v.lang.startsWith(prefix)) ||
-      availableVoices.find(v => v.lang.startsWith('en') && v.name.includes('Natural')) ||
-      availableVoices.find(v => v.lang.startsWith('en'));
+    const targetPrefix = langCodeMap[language] || 'en';
+    const matchedVoice = voicesList.find(
+      v => v.lang.toLowerCase().startsWith(targetPrefix) || v.lang.toLowerCase().includes(targetPrefix)
+    );
 
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
+    if (matchedVoice) {
+      utterance.voice = matchedVoice;
     }
+    utterance.lang = matchedVoice ? matchedVoice.lang : (targetPrefix === 'hi' ? 'hi-IN' : 'en-IN');
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
 
-    utterance.rate = 0.92;
-    utterance.pitch = 1.02;
+    utterance.onstart = () => {
+      setSpeakingMessageId(messageId);
+    };
+
+    utterance.onend = () => {
+      setSpeakingMessageId(null);
+    };
+
+    utterance.onerror = () => {
+      setSpeakingMessageId(null);
+    };
 
     window.speechSynthesis.speak(utterance);
-  };
-
-  const handleClearThread = () => {
-    window.speechSynthesis.cancel();
-    setSpeakingMessageId(null);
-    setMessages([]);
-    setSessionQueryCount(0);
-    setError(null);
-    setExpandedVerseMap({});
-    isUserAtBottomRef.current = true;
   };
 
   const toggleVerseSection = (msgIdx: number) => {
     setExpandedVerseMap(prev => ({
       ...prev,
-      [msgIdx]: !prev[msgIdx]
+      [msgIdx]: !prev[msgIdx],
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const currentQuery = query.trim();
-    if (!currentQuery || isAiLoading || isLimitReached) return;
-
-    setError(null);
-    setQuery('');
-
-    // Stop active speech
-    window.speechSynthesis.cancel();
+  const handleClearThread = () => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     setSpeakingMessageId(null);
+    setMessages([]);
+    setSessionQueryCount(0);
+    setQuery('');
+    setError(null);
+    setExpandedVerseMap({});
+  };
+
+  const executeInquiry = useCallback(async (inquiryText: string, currentSource: string) => {
+    if (!inquiryText.trim() || isAiLoading || isLimitReached) return;
+
+    const currentQuery = inquiryText.trim();
+    setQuery('');
+    setError(null);
+
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setSpeakingMessageId(null);
+    }
 
     const userMessageId = `user-${Date.now()}`;
     const assistantMessageId = `assistant-${Date.now()}`;
 
-    const userMessage: ConversationalMessage = {
+    const userMsg: ConversationalMessage = {
       id: userMessageId,
       role: 'user',
       content: currentQuery,
       timestamp: Date.now(),
     };
 
-    const initialAssistantMessage: ConversationalMessage = {
+    const placeholderAssistantMsg: ConversationalMessage = {
       id: assistantMessageId,
       role: 'assistant',
       content: '',
-      citations: [],
-      statusMessage: 'Routing canonical scriptures...',
       isStreaming: true,
       timestamp: Date.now(),
+      statusMessage: 'Routing inquiry through sacred Vedic scriptures...',
     };
 
-    // Increment session inquiry count
+    setMessages(prev => [...prev, userMsg, placeholderAssistantMsg]);
     setSessionQueryCount(prev => prev + 1);
-
-    // Prepare history for backend multi-turn
-    const historyPayload: ChatHistoryMessage[] = messages.map(m => ({
-      role: m.role,
-      content: m.content,
-    }));
-
-    setMessages(prev => [...prev, userMessage, initialAssistantMessage]);
     setIsAiLoading(true);
-    isUserAtBottomRef.current = true;
 
-    // Smooth scroll down to new inquiry
-    setTimeout(() => {
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
-        behavior: 'smooth',
-      });
-    }, 60);
+    const historyPayload: ChatHistoryMessage[] = messages
+      .filter(m => m.content && !m.isStreaming && !m.isError)
+      .slice(-6)
+      .map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
 
     try {
       const response = await fetch(`${apiBaseUrl}/api/ask`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          question: currentQuery,
-          source_filter: sourceFilter,
+          query: currentQuery,
+          source_filter: currentSource,
           language: language,
           history: historyPayload,
-          stream: true,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to reach scripture intelligence server.');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       if (!response.body) {
-        throw new Error('No streaming body received from server.');
+        throw new Error('Response body is empty');
       }
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
+      const decoder = new TextDecoder();
       let buffer = '';
       let accumulatedAnswer = '';
       let accumulatedCitations: VerseData[] = [];
@@ -369,7 +383,6 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
         }
       }
 
-      // Finalize streaming
       setMessages(prev =>
         prev.map(msg =>
           msg.id === assistantMessageId
@@ -397,6 +410,24 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
     } finally {
       setIsAiLoading(false);
     }
+  }, [apiBaseUrl, isAiLoading, isLimitReached, language, messages]);
+
+  // Handle Initial Prompt Triggers (e.g. from "Ask AI about this Verse")
+  useEffect(() => {
+    if (initialPrompt && initialPrompt.query && initialPrompt.timestamp !== lastInitialPromptTimestamp.current) {
+      lastInitialPromptTimestamp.current = initialPrompt.timestamp;
+      const targetSource = initialPrompt.sourceFilter || sourceFilter;
+      if (initialPrompt.sourceFilter) {
+        setSourceFilter(initialPrompt.sourceFilter);
+      }
+      executeInquiry(initialPrompt.query, targetSource);
+    }
+  }, [initialPrompt, executeInquiry, sourceFilter]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim() || isAiLoading || isLimitReached) return;
+    executeInquiry(query, sourceFilter);
   };
 
   const scrollToVerse = (id: string, msgIdx: number) => {
@@ -405,9 +436,9 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
       const element = document.getElementById(id);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        element.classList.add('ring-2', 'ring-saffron-500', 'ring-offset-2');
+        element.classList.add('ring-2', 'ring-saffron-500', 'dark:ring-amber-400', 'ring-offset-2');
         setTimeout(() => {
-          element.classList.remove('ring-2', 'ring-saffron-500', 'ring-offset-2');
+          element.classList.remove('ring-2', 'ring-saffron-500', 'dark:ring-amber-400', 'ring-offset-2');
         }, 2000);
       }
     }, 100);
@@ -416,17 +447,17 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-32">
       {/* 1. Header Bar with Thread & Session Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-cream-400/60 shadow-xs">
-        <div className="flex items-center gap-2 text-saffron-900 font-bold font-cinzel text-sm">
-          <Compass className="w-4 h-4 text-saffron-600" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#0d121d] p-3.5 sm:p-4 rounded-2xl border border-cream-400/60 dark:border-amber-500/20 shadow-xs transition-colors duration-300">
+        <div className="flex items-center gap-2 text-saffron-900 dark:text-amber-300 font-bold font-cinzel text-sm">
+          <Compass className="w-4 h-4 text-saffron-600 dark:text-amber-400" />
           <span>Vedic Scripture Dialogue</span>
           <span
             className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
               isLimitReached
-                ? 'bg-red-100 text-red-800 border-red-200'
+                ? 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800/40'
                 : remainingQueries <= 3
-                ? 'bg-amber-100 text-amber-900 border-amber-300'
-                : 'bg-saffron-100 text-saffron-800 border-saffron-200'
+                ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-700/40'
+                : 'bg-saffron-100 dark:bg-amber-950/30 text-saffron-800 dark:text-amber-300 border-saffron-200 dark:border-amber-700/30'
             }`}
           >
             {isLimitReached ? 'Session Limit Reached (10/10)' : `${remainingQueries} / ${MAX_QUERIES_PER_SESSION} inquiries remaining`}
@@ -435,28 +466,49 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Source Filter */}
-          <div className="flex items-center gap-1.5 bg-cream-200 px-2.5 py-1 rounded-xl border border-cream-400/60 text-xs">
-            <label className="text-[9px] text-stone-600 font-bold uppercase tracking-wider">Source:</label>
+          <div className="flex items-center gap-1.5 bg-cream-200 dark:bg-slate-900 px-2.5 py-1 rounded-xl border border-cream-400/60 dark:border-amber-500/20 text-xs">
+            <label className="text-[9px] text-stone-600 dark:text-slate-400 font-bold uppercase tracking-wider">Source:</label>
             <select
               value={sourceFilter}
               onChange={e => setSourceFilter(e.target.value)}
-              className="bg-transparent text-stone-900 font-semibold focus:outline-none cursor-pointer text-xs"
+              className="bg-transparent text-stone-900 dark:text-slate-100 font-semibold focus:outline-none cursor-pointer text-xs"
             >
-              <option value="All">All Sources</option>
-              <option value="Bhagavad Gita">Bhagavad Gita</option>
-              <option value="Rigveda">Rigveda</option>
-              <option value="Mahabharata">Mahabharata</option>
-              <option value="Valmiki Ramayana">Valmiki Ramayana</option>
-              <option value="Atharva Veda">Atharva Veda</option>
-              <option value="Yajur Veda">Yajur Veda</option>
-              <option value="Patanjali Yoga Sutras">Patanjali Yoga Sutras</option>
-              <option value="Upanishad">Upanishads</option>
+              <option value="All" className="dark:bg-slate-900 font-bold">All Sources</option>
+              
+              <optgroup label="The Mahapuranas (पुराण)" className="dark:bg-slate-900 font-bold">
+                <option value="Puranas" className="dark:bg-slate-900">All Puranas (महापुराण)</option>
+                <option value="Shiva Purana" className="dark:bg-slate-900">Shiva Purana</option>
+                <option value="Bhagavata Purana" className="dark:bg-slate-900">Bhagavata Purana (Srimad Bhagavatam)</option>
+                <option value="Devi Bhagavata Purana" className="dark:bg-slate-900">Devi Bhagavata Purana</option>
+                <option value="Garuda Purana" className="dark:bg-slate-900">Garuda Purana</option>
+                <option value="Brahma Purana" className="dark:bg-slate-900">Brahma Purana</option>
+                <option value="Harivamsha Purana" className="dark:bg-slate-900">Harivamsha Purana</option>
+              </optgroup>
+
+              <optgroup label="Foundational Epics & Smriti (इतिहास)" className="dark:bg-slate-900 font-bold">
+                <option value="Bhagavad Gita" className="dark:bg-slate-900">Bhagavad Gita</option>
+                <option value="Mahabharata" className="dark:bg-slate-900">Mahabharata</option>
+                <option value="Valmiki Ramayana" className="dark:bg-slate-900">Valmiki Ramayana</option>
+              </optgroup>
+
+              <optgroup label="The Four Vedas (चतुर्वेद)" className="dark:bg-slate-900 font-bold">
+                <option value="Vedas" className="dark:bg-slate-900">All 4 Vedas (वेद संहिता)</option>
+                <option value="Rigveda" className="dark:bg-slate-900">Rigveda</option>
+                <option value="Yajur Veda" className="dark:bg-slate-900">Yajurveda</option>
+                <option value="Samaveda" className="dark:bg-slate-900">Samaveda</option>
+                <option value="Atharva Veda" className="dark:bg-slate-900">Atharvaveda</option>
+              </optgroup>
+
+              <optgroup label="Upanishads & Sutras (दर्शन)" className="dark:bg-slate-900 font-bold">
+                <option value="Upanishad" className="dark:bg-slate-900">Upanishads (15 Principal)</option>
+                <option value="Patanjali Yoga Sutras" className="dark:bg-slate-900">Patanjali Yoga Sutras</option>
+              </optgroup>
             </select>
           </div>
 
           {/* Language Selector */}
-          <div className="flex items-center gap-1.5 bg-cream-200 px-2.5 py-1 rounded-xl border border-cream-400/60 text-xs">
-            <label className="text-[9px] text-stone-600 font-bold uppercase tracking-wider">Lang:</label>
+          <div className="flex items-center gap-1.5 bg-cream-200 dark:bg-slate-900 px-2.5 py-1 rounded-xl border border-cream-400/60 dark:border-amber-500/20 text-xs">
+            <label className="text-[9px] text-stone-600 dark:text-slate-400 font-bold uppercase tracking-wider">Lang:</label>
             <select
               value={language}
               onChange={e => {
@@ -464,16 +516,16 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                 window.speechSynthesis.cancel();
                 setSpeakingMessageId(null);
               }}
-              className="bg-transparent text-stone-900 font-semibold focus:outline-none cursor-pointer text-xs"
+              className="bg-transparent text-stone-900 dark:text-slate-100 font-semibold focus:outline-none cursor-pointer text-xs"
             >
-              <option value="english">English</option>
-              <option value="hindi">हिन्दी (Hindi)</option>
-              <option value="gujarati">ગુજરાતી (Gujarati)</option>
-              <option value="marathi">मराठी (Marathi)</option>
-              <option value="tamil">தமிழ் (Tamil)</option>
-              <option value="telugu">తెలుగు (Telugu)</option>
-              <option value="bengali">বাংলা (Bengali)</option>
-              <option value="kannada">ಕನ್ನಡ (Kannada)</option>
+              <option value="english" className="dark:bg-slate-900">English</option>
+              <option value="hindi" className="dark:bg-slate-900">हिन्दी (Hindi)</option>
+              <option value="gujarati" className="dark:bg-slate-900">ગુજરાતી (Gujarati)</option>
+              <option value="marathi" className="dark:bg-slate-900">मराठी (Marathi)</option>
+              <option value="tamil" className="dark:bg-slate-900">தமிழ் (Tamil)</option>
+              <option value="telugu" className="dark:bg-slate-900">తెలుగు (Telugu)</option>
+              <option value="bengali" className="dark:bg-slate-900">বাংলা (Bengali)</option>
+              <option value="kannada" className="dark:bg-slate-900">ಕನ್ನಡ (Kannada)</option>
             </select>
           </div>
 
@@ -482,7 +534,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
             <button
               type="button"
               onClick={handleClearThread}
-              className="flex items-center gap-1 px-3 py-1 bg-cream-200 hover:bg-cream-300 text-stone-700 hover:text-saffron-800 rounded-xl border border-cream-400/60 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              className="flex items-center gap-1 px-3 py-1 bg-cream-200 dark:bg-slate-900 hover:bg-cream-300 dark:hover:bg-slate-800 text-stone-700 dark:text-slate-300 hover:text-saffron-800 dark:hover:text-amber-300 rounded-xl border border-cream-400/60 dark:border-amber-500/20 text-xs font-bold transition-all cursor-pointer shadow-2xs"
               title="Start a fresh conversation thread (resets query limit to 10)"
             >
               <RefreshCw className="w-3 h-3" />
@@ -499,10 +551,10 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
             if (msg.role === 'user') {
               return (
                 <div key={msg.id} className="flex justify-end items-start gap-2.5 pl-8 animate-fade-in">
-                  <div className="bg-gradient-to-r from-saffron-700 to-terracotta-700 text-white px-5 py-3 rounded-2xl rounded-tr-xs shadow-sm max-w-xl">
+                  <div className="bg-gradient-to-r from-saffron-700 to-terracotta-700 dark:from-amber-600 dark:to-terracotta-700 text-white px-5 py-3 rounded-2xl rounded-tr-xs shadow-sm max-w-xl">
                     <p className="text-sm font-medium leading-relaxed">{msg.content}</p>
                   </div>
-                  <div className="w-7 h-7 rounded-full bg-saffron-800 text-white flex items-center justify-center shrink-0 shadow-xs mt-1">
+                  <div className="w-7 h-7 rounded-full bg-saffron-800 dark:bg-amber-700 text-white flex items-center justify-center shrink-0 shadow-xs mt-1">
                     <User className="w-4 h-4" />
                   </div>
                 </div>
@@ -514,19 +566,19 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
             // Assistant Synthesis Card
             return (
               <div key={msg.id} className="flex items-start gap-3 pr-2 animate-fade-in">
-                <div className="w-8 h-8 rounded-xl bg-saffron-100 text-saffron-800 border border-saffron-300 flex items-center justify-center shrink-0 shadow-xs mt-1">
+                <div className="w-8 h-8 rounded-xl bg-saffron-100 dark:bg-slate-900 text-saffron-800 dark:text-amber-400 border border-saffron-300 dark:border-amber-500/30 flex items-center justify-center shrink-0 shadow-xs mt-1">
                   <Bot className="w-4.5 h-4.5" />
                 </div>
 
-                <div className="flex-1 bg-white p-5 md:p-7 rounded-3xl shadow-sm border border-cream-400/70 border-t-2 border-t-saffron-500 relative overflow-hidden space-y-4">
-                  <div className="flex items-center justify-between border-b border-cream-300/40 pb-3">
+                <div className="flex-1 bg-white dark:bg-[#0d121d] p-5 md:p-7 rounded-3xl shadow-sm border border-cream-400/70 dark:border-amber-500/20 border-t-2 border-t-saffron-500 dark:border-t-amber-500 relative overflow-hidden space-y-4 transition-colors duration-300">
+                  <div className="flex items-center justify-between border-b border-cream-300/40 dark:border-amber-500/20 pb-3">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-cinzel font-bold text-base md:text-lg text-saffron-950">
+                      <h3 className="font-cinzel font-bold text-base md:text-lg text-saffron-950 dark:text-amber-300">
                         Scriptural Synthesis
                       </h3>
                       {msg.isStreaming && (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-saffron-700 bg-saffron-50 px-2 py-0.5 rounded-full animate-pulse border border-saffron-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-saffron-600 animate-ping" />
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-saffron-700 dark:text-amber-300 bg-saffron-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full animate-pulse border border-saffron-200 dark:border-amber-700/40">
+                          <span className="w-1.5 h-1.5 rounded-full bg-saffron-600 dark:bg-amber-400 animate-ping" />
                           Synthesizing...
                         </span>
                       )}
@@ -539,7 +591,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                         className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-2xs ${
                           speakingMessageId === msg.id
                             ? 'bg-gradient-to-r from-terracotta-500 to-terracotta-600 text-white'
-                            : 'bg-cream-200 hover:bg-saffron-100 border border-cream-400 text-saffron-900'
+                            : 'bg-cream-200 dark:bg-slate-900 hover:bg-saffron-100 dark:hover:bg-slate-800 border border-cream-400 dark:border-amber-500/20 text-saffron-900 dark:text-amber-200'
                         }`}
                         title={speakingMessageId === msg.id ? 'Stop listening' : 'Listen aloud'}
                       >
@@ -551,28 +603,28 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
                   {/* Status indicator during pre-retrieval routing */}
                   {msg.statusMessage && (
-                    <div className="flex items-center gap-2 py-2 px-3 bg-cream-100 rounded-xl border border-cream-300 text-xs font-semibold text-saffron-900 animate-pulse">
-                      <div className="w-3 h-3 border-2 border-saffron-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                    <div className="flex items-center gap-2 py-2 px-3 bg-cream-100 dark:bg-slate-900 rounded-xl border border-cream-300 dark:border-amber-500/20 text-xs font-semibold text-saffron-900 dark:text-amber-300 animate-pulse">
+                      <div className="w-3 h-3 border-2 border-saffron-600 dark:border-amber-400 border-t-transparent rounded-full animate-spin shrink-0" />
                       <span>{msg.statusMessage}</span>
                     </div>
                   )}
 
                   {/* Rendered Synthesis Text */}
                   {msg.content ? (
-                    <div className="text-sm md:text-base leading-relaxed text-stone-900 font-serif space-y-3">
+                    <div className="text-sm md:text-base leading-relaxed text-stone-900 dark:text-slate-200 font-serif space-y-3">
                       <ReactMarkdown
                         components={{
-                          h1: ({ ...props }) => <h1 className="text-xl font-bold mt-4 mb-2 text-saffron-950 font-cinzel" {...props} />,
-                          h2: ({ ...props }) => <h2 className="text-lg font-bold mt-3 mb-1.5 text-saffron-900 font-cinzel" {...props} />,
-                          h3: ({ ...props }) => <h3 className="text-base font-semibold mt-2.5 mb-1 text-saffron-900 font-cinzel" {...props} />,
-                          p: ({ ...props }) => <p className="mb-3 text-stone-900 leading-relaxed font-normal" {...props} />,
-                          ul: ({ ...props }) => <ul className="list-disc pl-5 mb-3 text-stone-900 space-y-1 font-sans text-xs sm:text-sm" {...props} />,
-                          ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-3 text-stone-900 space-y-1 font-sans text-xs sm:text-sm" {...props} />,
+                          h1: ({ ...props }) => <h1 className="text-xl font-bold mt-4 mb-2 text-saffron-950 dark:text-amber-300 font-cinzel" {...props} />,
+                          h2: ({ ...props }) => <h2 className="text-lg font-bold mt-3 mb-1.5 text-saffron-900 dark:text-amber-400 font-cinzel" {...props} />,
+                          h3: ({ ...props }) => <h3 className="text-base font-semibold mt-2.5 mb-1 text-saffron-900 dark:text-amber-400 font-cinzel" {...props} />,
+                          p: ({ ...props }) => <p className="mb-3 text-stone-900 dark:text-slate-200 leading-relaxed font-normal" {...props} />,
+                          ul: ({ ...props }) => <ul className="list-disc pl-5 mb-3 text-stone-900 dark:text-slate-300 space-y-1 font-sans text-xs sm:text-sm" {...props} />,
+                          ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-3 text-stone-900 dark:text-slate-300 space-y-1 font-sans text-xs sm:text-sm" {...props} />,
                           li: ({ ...props }) => <li className="mb-0.5" {...props} />,
-                          strong: ({ ...props }) => <strong className="font-bold text-stone-950 font-sans text-xs sm:text-sm" {...props} />,
-                          em: ({ ...props }) => <em className="italic text-stone-900 font-medium" {...props} />,
+                          strong: ({ ...props }) => <strong className="font-bold text-stone-950 dark:text-amber-200 font-sans text-xs sm:text-sm" {...props} />,
+                          em: ({ ...props }) => <em className="italic text-stone-900 dark:text-slate-200 font-medium" {...props} />,
                           blockquote: ({ ...props }) => (
-                            <blockquote className="border-l-4 border-saffron-500 pl-4 py-1.5 italic my-3 text-stone-900 font-medium bg-cream-200/60 rounded-r-lg" {...props} />
+                            <blockquote className="border-l-4 border-saffron-500 dark:border-amber-500 pl-4 py-1.5 italic my-3 text-stone-900 dark:text-slate-200 font-medium bg-cream-200/60 dark:bg-slate-900/60 rounded-r-lg" {...props} />
                           ),
                         }}
                       >
@@ -581,20 +633,20 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                     </div>
                   ) : null}
 
-                  {/* Interactive Verified Citation Badges */}
+                  {/* Interactive Scripture Citation Badges */}
                   {msg.citations && msg.citations.length > 0 && (
-                    <div className="pt-3 border-t border-cream-300/40 space-y-2.5">
+                    <div className="pt-3 border-t border-cream-300/40 dark:border-amber-500/20 space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-saffron-950 tracking-wider uppercase">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-saffron-600" />
-                          <span>Canonical Citations ({msg.citations.length})</span>
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-saffron-950 dark:text-amber-300 tracking-wider uppercase">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
+                          <span>Scripture Citations ({msg.citations.length})</span>
                         </div>
 
                         {!msg.isStreaming && (
                           <button
                             type="button"
                             onClick={() => toggleVerseSection(msgIdx)}
-                            className="flex items-center gap-1 text-[11px] font-bold text-saffron-800 hover:text-saffron-950 cursor-pointer transition-colors"
+                            className="flex items-center gap-1 text-[11px] font-bold text-saffron-800 dark:text-amber-400 hover:text-saffron-950 dark:hover:text-amber-200 cursor-pointer transition-colors"
                           >
                             <span>{isVersesExpanded ? 'Hide Scripture Verses' : 'View Scripture Verses'}</span>
                             {isVersesExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -607,9 +659,9 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                           <button
                             key={citIdx}
                             onClick={() => scrollToVerse(`citation-card-${msgIdx}-${citIdx}`, msgIdx)}
-                            className="px-3 py-1 text-xs bg-cream-200 hover:bg-saffron-100 border border-cream-400 hover:border-saffron-300 rounded-full text-saffron-900 font-bold cursor-pointer transition-all duration-200 flex items-center gap-1.5 shadow-2xs"
+                            className="px-3 py-1 text-xs bg-cream-200 dark:bg-slate-900 hover:bg-saffron-100 dark:hover:bg-slate-800 border border-cream-400 dark:border-amber-500/20 hover:border-saffron-300 dark:hover:border-amber-500/40 rounded-full text-saffron-900 dark:text-amber-200 font-bold cursor-pointer transition-all duration-200 flex items-center gap-1.5 shadow-2xs"
                           >
-                            <span className="text-[9px] bg-saffron-600 text-white w-4 h-4 rounded-full flex items-center justify-center shrink-0">
+                            <span className="text-[9px] bg-saffron-600 dark:bg-amber-600 text-white w-4 h-4 rounded-full flex items-center justify-center shrink-0">
                               {citIdx + 1}
                             </span>
                             <span>{cit.source_name} — Ch. {cit.chapter_number}, Verse {cit.verse_number}</span>
@@ -619,12 +671,12 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                     </div>
                   )}
 
-                  {/* Clean Scripture Reference Blocks (Commentaries Excluded) */}
+                  {/* Clean Scripture Reference Blocks */}
                   {msg.citations && msg.citations.length > 0 && !msg.isStreaming && isVersesExpanded && (
-                    <div className="pt-4 border-t border-cream-300/40 space-y-4 animate-fade-in">
+                    <div className="pt-4 border-t border-cream-300/40 dark:border-amber-500/20 space-y-4 animate-fade-in">
                       <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-saffron-600" />
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-saffron-900 font-cinzel">
+                        <FileText className="w-4 h-4 text-saffron-600 dark:text-amber-400" />
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-saffron-900 dark:text-amber-300 font-cinzel">
                           Scripture Verse Records
                         </h4>
                       </div>
@@ -647,81 +699,25 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
           <div ref={messagesEndRef} />
         </div>
       ) : (
-        /* 3. Starter Inquiries View (When empty) */
-        <div className="bg-white p-6 md:p-8 rounded-3xl border border-cream-400/60 shadow-sm space-y-6">
-          <div className="text-center space-y-2 max-w-lg mx-auto">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-saffron-500 to-terracotta-600 text-white flex items-center justify-center mx-auto shadow-sm">
-              <Compass className="w-6 h-6" />
-            </div>
-            <h2 className="text-xl md:text-2xl font-bold font-cinzel text-saffron-950">
-              Seek the Eternal Wisdom
-            </h2>
-            <p className="text-xs sm:text-sm text-stone-600 font-serif leading-relaxed">
-              Ask deep questions on life, mind mastery, karma, duty, and spiritual consciousness. DharmaPragya synthesizes answers directly with verified verse citations.
-            </p>
+        /* 3. Welcome View (When empty) */
+        <div className="bg-white dark:bg-[#0d121d] p-6 md:p-8 rounded-3xl border border-cream-400/60 dark:border-amber-500/20 shadow-sm space-y-4 text-center transition-colors duration-300">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-saffron-500 to-terracotta-600 dark:from-amber-500 dark:to-terracotta-600 text-white flex items-center justify-center mx-auto shadow-sm">
+            <Compass className="w-6 h-6" />
           </div>
-
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-saffron-800 uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-saffron-600" />
-              <span>Recommended Philosophical Inquiries</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {[
-                {
-                  theme: 'Duty & Action',
-                  text: 'How to perform duty selflessly without being consumed by results?',
-                  source: 'Bhagavad Gita',
-                },
-                {
-                  theme: 'Mind Mastery',
-                  text: 'How does one quiet a restless and turbulent mind?',
-                  source: 'Patanjali Yoga Sutras',
-                },
-                {
-                  theme: 'Inner Resilience',
-                  text: 'How to maintain equanimity during severe grief and adversity?',
-                  source: 'Bhagavad Gita',
-                },
-                {
-                  theme: 'True Consciousness',
-                  text: 'What is the distinction between the witness self (Sakshi) and the ego?',
-                  source: 'Upanishad',
-                },
-              ].map((item, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    setQuery(item.text);
-                    setSourceFilter(item.source);
-                  }}
-                  className="p-3.5 bg-cream-100 hover:bg-saffron-50 border border-cream-400/50 hover:border-saffron-300 rounded-2xl text-left cursor-pointer transition-all duration-200 group flex flex-col justify-between"
-                >
-                  <div className="flex items-center justify-between w-full mb-1.5">
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-saffron-700">
-                      {item.theme}
-                    </span>
-                    <span className="text-[9px] font-semibold text-stone-500">
-                      {item.source}
-                    </span>
-                  </div>
-                  <p className="text-xs text-stone-800 font-serif font-medium group-hover:text-saffron-900 transition-colors leading-relaxed">
-                    &quot;{item.text}&quot;
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
+          <h2 className="text-xl md:text-2xl font-bold font-cinzel text-saffron-950 dark:text-amber-300">
+            Seek the Eternal Wisdom
+          </h2>
+          <p className="text-xs sm:text-sm text-stone-600 dark:text-slate-300 font-serif leading-relaxed max-w-lg mx-auto">
+            Ask any question on dharma, philosophy, duty, karma, and spiritual consciousness.
+          </p>
         </div>
       )}
 
       {/* 4. Limit Reached Alert Banner */}
       {isLimitReached && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-xs animate-fade-in">
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 text-amber-900 dark:text-amber-300 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-xs animate-fade-in">
           <div className="flex items-center gap-2.5 text-xs">
-            <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+            <Lock className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0" />
             <span>You have reached the limit of 10 inquiries for this session. Start a new inquiry to reset.</span>
           </div>
           <button
@@ -736,7 +732,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
 
       {/* 5. Global Error Alert */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl flex items-start gap-3 shadow-xs animate-fade-in" role="alert">
+        <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 px-4 py-3 rounded-2xl flex items-start gap-3 shadow-xs animate-fade-in" role="alert">
           <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
           <div className="text-xs">
             <h4 className="font-semibold">Unable to Complete Inquiry</h4>
@@ -746,8 +742,8 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
       )}
 
       {/* 6. Fixed Bottom Ask Box Dock */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-cream-100 via-cream-100/95 to-transparent pt-3 pb-4 px-4">
-        <div className="max-w-4xl mx-auto bg-white/95 backdrop-blur-md p-2.5 sm:p-3 rounded-3xl border border-cream-400/80 shadow-xl">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-cream-100 via-cream-100/95 to-transparent dark:from-[#070A0F] dark:via-[#070A0F]/95 pt-3 pb-4 px-4 transition-colors duration-300">
+        <div className="max-w-4xl mx-auto bg-white/95 dark:bg-[#0d121d]/95 backdrop-blur-md p-2.5 sm:p-3 rounded-3xl border border-cream-400/80 dark:border-amber-500/20 shadow-xl">
           <form onSubmit={handleSubmit}>
             <div className="relative flex items-center">
               <textarea
@@ -767,7 +763,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                     ? "Ask a follow-up inquiry (e.g. 'Can you explain the 2nd verse in more detail?')..."
                     : "Ask the sacred scriptures (e.g. 'How does one attain mental peace amidst adversity?')..."
                 }
-                className="w-full p-3 pr-24 border border-cream-400/80 hover:border-cream-500 bg-cream-50 rounded-2xl text-stone-900 placeholder-stone-400 font-medium focus:outline-none focus:ring-2 focus:ring-saffron-400/20 focus:border-saffron-500 focus:bg-white transition-all text-xs sm:text-sm leading-relaxed resize-none min-h-[48px] max-h-28 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full p-3 pr-24 border border-cream-400/80 dark:border-amber-500/20 hover:border-cream-500 dark:hover:border-amber-500/40 bg-cream-50 dark:bg-slate-900 rounded-2xl text-stone-900 dark:text-slate-100 placeholder-stone-400 dark:placeholder-slate-500 font-medium focus:outline-none focus:ring-2 focus:ring-saffron-400/20 dark:focus:ring-amber-500/20 focus:border-saffron-500 dark:focus:border-amber-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs sm:text-sm leading-relaxed resize-none min-h-[48px] max-h-28 disabled:opacity-60 disabled:cursor-not-allowed"
                 rows={1}
               />
 
@@ -779,7 +775,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                   className={`p-2 rounded-xl transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     isListening
                       ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-xs'
-                      : 'text-stone-500 hover:text-saffron-700 hover:bg-cream-200'
+                      : 'text-stone-500 dark:text-slate-400 hover:text-saffron-700 dark:hover:text-amber-300 hover:bg-cream-200 dark:hover:bg-slate-800'
                   }`}
                   title={isListening ? "Listening... click to stop" : "Speak query via microphone"}
                 >
@@ -789,7 +785,7 @@ export default function AskMode({ apiBaseUrl }: AskModeProps) {
                 <button
                   type="submit"
                   disabled={isAiLoading || !query.trim() || isLimitReached}
-                  className="p-2 rounded-xl bg-gradient-to-r from-saffron-600 to-terracotta-600 hover:from-saffron-500 hover:to-terracotta-500 text-white disabled:from-stone-300 disabled:to-stone-400 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
+                  className="p-2 rounded-xl bg-gradient-to-r from-saffron-600 to-terracotta-600 dark:from-amber-500 dark:to-terracotta-600 hover:from-saffron-500 hover:to-terracotta-500 text-white disabled:from-stone-300 dark:disabled:from-slate-700 disabled:to-stone-400 dark:disabled:to-slate-600 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
                   title="Send inquiry"
                 >
                   {isAiLoading ? (

@@ -157,7 +157,7 @@ export default async function SourceChaptersPage({ params }: PageProps) {
         {/* Footer */}
         <footer className="pt-8 pb-4 text-center text-xs text-stone-500 space-y-1 border-t border-cream-400/40">
           <p className="font-cinzel font-bold text-saffron-800">DharmaPragya Scripture Index</p>
-          <p>Synthesizing canonical Sanatan Dharma wisdom with modern intelligence.</p>
+          <p>Synthesizing timeless Sanatan Dharma wisdom with modern intelligence.</p>
         </footer>
       </div>
     </main>

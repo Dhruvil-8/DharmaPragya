@@ -85,41 +85,27 @@ func (h *Handler) ReadVerses(w http.ResponseWriter, r *http.Request) {
 	chapter, _ := strconv.Atoi(chapterStr)
 	verse, _ := strconv.Atoi(verseStr)
 
-	v, err := h.db.GetVerse(source, chapter, verse)
-	if err != nil {
-		// If exact verse not found, maybe they want all verses in chapter
-		if verseStr == "" {
-			sources, _ := h.db.GetSources()
-			var sourceID int
-			for _, s := range sources {
-				if s.Name == source {
-					sourceID = s.ID
-					break
-				}
-			}
-			sections, _ := h.db.GetSections(sourceID)
-			var sectionID int
-			for _, sec := range sections {
-				if sec.ChapterNumber == chapter {
-					sectionID = sec.ID
-					break
-				}
-			}
-			verses, err := h.db.GetVersesBySection(sectionID)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-			json.NewEncoder(w).Encode(verses)
+	// Case 1: Specific Verse requested
+	if verseStr != "" && verse > 0 {
+		v, err := h.db.GetVerse(source, chapter, verse)
+		if err != nil {
+			http.Error(w, "Verse not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "Verse not found", http.StatusNotFound)
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		json.NewEncoder(w).Encode(v)
+		return
+	}
+
+	// Case 2: Entire Chapter requested (Ultra-fast direct index query)
+	verses, err := h.db.GetVersesByChapter(source, chapter)
+	if err != nil || len(verses) == 0 {
+		http.Error(w, "Chapter not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-	json.NewEncoder(w).Encode(v)
+	json.NewEncoder(w).Encode(verses)
 }
 
 type ChatMessage struct {
@@ -658,3 +644,95 @@ Structure your response as follows:
 		Citations: verifiedCitations,
 	})
 }
+
+func (h *Handler) ReadVedas(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	if !validateToken(r) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	veda := r.URL.Query().Get("veda")
+	div1Str := r.URL.Query().Get("div1")
+	div2Str := r.URL.Query().Get("div2")
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if veda == "" {
+		vedas, err := h.db.GetVedas()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		json.NewEncoder(w).Encode(vedas)
+		return
+	}
+
+	if veda != "" && div1Str == "" {
+		sections, err := h.db.GetVedaSections(veda)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		json.NewEncoder(w).Encode(sections)
+		return
+	}
+
+	div1, _ := strconv.Atoi(div1Str)
+	div2, _ := strconv.Atoi(div2Str)
+
+	mantras, err := h.db.GetVedaMantras(veda, div1, div2)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	json.NewEncoder(w).Encode(mantras)
+}
+
+func (h *Handler) SearchVedas(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	if !validateToken(r) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	q := r.URL.Query().Get("q")
+	veda := r.URL.Query().Get("veda")
+	limitStr := r.URL.Query().Get("limit")
+	limit := 15
+	if limitStr != "" {
+		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+
+	if strings.TrimSpace(q) == "" {
+		json.NewEncoder(w).Encode([]models.VedaMantra{})
+		return
+	}
+
+	results, err := h.db.SearchVedas(q, veda, limit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if results == nil {
+		results = []models.VedaMantra{}
+	}
+
+	json.NewEncoder(w).Encode(results)
+}
+

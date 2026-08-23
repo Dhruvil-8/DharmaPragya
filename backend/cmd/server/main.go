@@ -14,9 +14,10 @@ import (
 func main() {
 	_ = godotenv.Load()
 	dbPath := "./data/scriptures.db"
-	db, err := storage.NewSQLiteStorage(dbPath)
+	vedasDBPath := "./data/vedas.db"
+	db, err := storage.NewSQLiteStorage(dbPath, vedasDBPath)
 	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+		log.Fatalf("Failed to open databases: %v", err)
 	}
 	defer db.Close()
 
@@ -24,6 +25,8 @@ func main() {
 
 	http.HandleFunc("/api/read", handler.ReadVerses)
 	http.HandleFunc("/api/search", handler.SearchVerses)
+	http.HandleFunc("/api/veda/read", handler.ReadVedas)
+	http.HandleFunc("/api/veda/search", handler.SearchVedas)
 	http.HandleFunc("/api/ask", handler.AskAI)
 	
 	// Serve static audio files (publicly accessible for HTML5 audio streaming)
@@ -42,7 +45,7 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	log.Printf("Server listening on :%s\n", port)
+	log.Printf("Server listening on :%s (scriptures.db + vedas.db active)\n", port)
 	if err := http.ListenAndServe(":" + port, nil); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}

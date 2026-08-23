@@ -3,7 +3,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { VerseData, Language } from '../types';
 import { isVerseBookmarked, toggleBookmark } from '../lib/bookmarks';
-import { Play, Pause, ChevronLeft, ChevronRight, Languages, BookOpen, Volume2, Bookmark, Share2 } from 'lucide-react';
+import { formatSanskritVerseLines } from '../lib/sanskritUtils';
+import { 
+  Play, 
+  Pause, 
+  ChevronLeft, 
+  ChevronRight, 
+  Languages, 
+  BookOpen, 
+  Volume2, 
+  Bookmark, 
+  Share2, 
+  Sparkles, 
+  Type, 
+  Layers, 
+  FileText,
+  AlignLeft
+} from 'lucide-react';
 
 interface VerseBlockProps {
   verse: VerseData;
@@ -16,6 +32,13 @@ interface VerseBlockProps {
   preferredLanguage?: string;
   autoPlayChant?: boolean;
   isActive?: boolean;
+  globalLayers?: {
+    showTransliteration?: boolean;
+    showWordMeanings?: boolean;
+    showTranslation?: boolean;
+    showCommentaries?: boolean;
+  };
+  onToggleGlobalLayer?: (layer: 'transliteration' | 'wordMeanings' | 'translation' | 'commentaries') => void;
   onOpenShareModal?: (details: {
     sourceName: string;
     chapterNumber: number;
@@ -24,9 +47,12 @@ interface VerseBlockProps {
     transliteration?: string;
     translationText: string;
   }) => void;
+  onAskAboutVerse?: (verse: VerseData) => void;
 }
 
-export default function VerseBlock({
+type SanskritFontSize = 'sm' | 'md' | 'lg' | 'xl';
+
+function VerseBlock({
   verse,
   index,
   totalVerses,
@@ -37,20 +63,32 @@ export default function VerseBlock({
   preferredLanguage = 'english',
   autoPlayChant = false,
   isActive = true,
+  globalLayers,
+  onToggleGlobalLayer,
   onOpenShareModal,
+  onAskAboutVerse,
 }: VerseBlockProps) {
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('english');
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
-  const [showMeaningsFocus, setShowMeaningsFocus] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Custom Font Size State
+  const [fontSize, setFontSize] = useState<SanskritFontSize>('md');
 
+  // Unified Layer Visibility: Derived from globalLayers
+  const showTransliteration = globalLayers?.showTransliteration !== undefined ? globalLayers.showTransliteration : true;
+  const showWordMeanings = globalLayers?.showWordMeanings !== undefined ? globalLayers.showWordMeanings : true;
+  const showTranslation = globalLayers?.showTranslation !== undefined ? globalLayers.showTranslation : true;
+  const showCommentaries = globalLayers?.showCommentaries !== undefined ? globalLayers.showCommentaries : true;
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
 
   const audioPath = `/api/audio/${verse.chapter_number}/${verse.verse_number}.mp3`;
 
+  // Bookmark synchronization
   useEffect(() => {
     setIsBookmarked(isVerseBookmarked(verse.source_name, verse.chapter_number, verse.verse_number));
     const handleUpdate = () => {
@@ -60,7 +98,17 @@ export default function VerseBlock({
     return () => window.removeEventListener('dharmapragya_bookmarks_updated', handleUpdate);
   }, [verse.source_name, verse.chapter_number, verse.verse_number]);
 
-  // Sync preferredLanguage prop to internal selectedLanguage
+  // Load saved font size preference
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedSize = localStorage.getItem('dharmapragya_verse_fontsize') as SanskritFontSize;
+      if (savedSize && ['sm', 'md', 'lg', 'xl'].includes(savedSize)) {
+        setFontSize(savedSize);
+      }
+    }
+  }, []);
+
+  // Sync preferredLanguage prop
   useEffect(() => {
     if (preferredLanguage) {
       Promise.resolve().then(() => {
@@ -69,7 +117,7 @@ export default function VerseBlock({
     }
   }, [preferredLanguage]);
 
-  // Audio lifecycle and autoplay synchronization on verse navigation
+  // Audio lifecycle and autoplay synchronization
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -85,7 +133,7 @@ export default function VerseBlock({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [verse.id, verse.chapter_number, verse.verse_number, autoPlayChant, readingMode, isActive]);
 
-  // Clean up audio player on unmount
+  // Clean up audio on unmount
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -95,79 +143,94 @@ export default function VerseBlock({
     };
   }, []);
 
-  // Stop audio if the component becomes inactive (e.g. tab switched)
+  // Stop audio if component becomes inactive
   useEffect(() => {
     if (!isActive) {
-      pauseAudio();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
     }
   }, [isActive]);
 
-  function playAudio() {
-    try {
-      setIsAudioLoading(true);
-      if (!audioRef.current) {
-        audioRef.current = new Audio(audioPath);
-      } else if (audioRef.current.src !== window.location.origin + audioPath) {
-        audioRef.current.src = audioPath;
-        audioRef.current.load();
-      }
-      
-      audioRef.current.play()
-        .then(() => {
-          setIsPlaying(true);
-          setIsAudioLoading(false);
-        })
-        .catch(e => {
-          console.error("Audio playback failed:", e);
-          setIsPlaying(false);
-          setIsAudioLoading(false);
-        });
-
-      audioRef.current.onended = () => {
-        setIsPlaying(false);
-        if (autoPlayChant && onNext && !isAskMode) {
-          onNext();
-        }
-      };
-      
-      audioRef.current.onerror = () => {
-        setIsPlaying(false);
-        setIsAudioLoading(false);
-      };
-    } catch (e) {
-      console.error('Audio play failed', e);
-      setIsPlaying(false);
-      setIsAudioLoading(false);
+  const handleFontSizeChange = (newSize: SanskritFontSize) => {
+    setFontSize(newSize);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dharmapragya_verse_fontsize', newSize);
     }
-  }
+  };
 
-  function pauseAudio() {
+  const playAudio = () => {
+    if (verse.source_name === 'Bhagavad Gita') {
+      if (!audioRef.current) {
+        setIsAudioLoading(true);
+        const audio = new Audio(audioPath);
+        audioRef.current = audio;
+
+        audio.onplaying = () => {
+          setIsAudioLoading(false);
+          setIsPlaying(true);
+        };
+
+        audio.onpause = () => {
+          setIsPlaying(false);
+        };
+
+        audio.onended = () => {
+          setIsPlaying(false);
+        };
+
+        audio.onerror = () => {
+          setIsAudioLoading(false);
+          setIsPlaying(false);
+        };
+
+        audio.play().catch(e => {
+          console.warn("Audio autoplay blocked or unavailable:", e);
+          setIsAudioLoading(false);
+          setIsPlaying(false);
+        });
+      } else {
+        audioRef.current.play().catch(e => {
+          console.warn("Audio play error:", e);
+          setIsPlaying(false);
+        });
+      }
+    }
+  };
+
+  const pauseAudio = () => {
     if (audioRef.current) {
       audioRef.current.pause();
       setIsPlaying(false);
     }
-  }
+  };
 
   const handleBookmarkToggle = () => {
-    const nextState = toggleBookmark(verse);
-    setIsBookmarked(nextState);
+    const newStatus = toggleBookmark(verse);
+    setIsBookmarked(newStatus);
   };
 
   const handleShareClick = () => {
-    if (onOpenShareModal) {
-      const activeTrans = filteredTranslations[0]?.text || verse.translations?.[0]?.text || '';
-      onOpenShareModal({
-        sourceName: verse.source_name,
-        chapterNumber: verse.chapter_number,
-        verseNumber: verse.verse_number,
-        sanskritText: verse.sanskrit_text,
-        transliteration: verse.transliteration,
-        translationText: activeTrans,
-      });
+    if (!onOpenShareModal) return;
+    const defaultTranslation = verse.translations?.[0]?.text || '';
+    onOpenShareModal({
+      sourceName: verse.source_name,
+      chapterNumber: verse.chapter_number,
+      verseNumber: verse.verse_number,
+      sanskritText: verse.sanskrit_text,
+      transliteration: verse.transliteration,
+      translationText: defaultTranslation,
+    });
+  };
+
+  const handleAskAI = () => {
+    if (onAskAboutVerse) {
+      onAskAboutVerse(verse);
     }
   };
 
-  // Touch Swipe Handlers for Mobile Focus Mode
+  // Mobile Swipe Gesture Handlers (for Focus Mode)
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.targetTouches[0].clientX;
   };
@@ -177,30 +240,26 @@ export default function VerseBlock({
   };
 
   const handleTouchEnd = () => {
-    const deltaX = touchEndX.current - touchStartX.current;
-    const threshold = 60;
-    if (Math.abs(deltaX) > threshold) {
-      if (deltaX > 0 && onPrev) {
-        onPrev();
-      } else if (deltaX < 0 && onNext) {
-        onNext();
-      }
+    const diff = touchStartX.current - touchEndX.current;
+    const threshold = 50;
+
+    if (diff > threshold && onNext) {
+      onNext();
+    } else if (diff < -threshold && onPrev) {
+      onPrev();
     }
-    touchStartX.current = 0;
-    touchEndX.current = 0;
   };
 
-  // Parse Sanskrit word meanings from semicolon-separated key-values
-  const parseWordMeanings = (meaningsStr: string) => {
-    if (!meaningsStr) return [];
-    return meaningsStr.split(';').map(item => {
-      let parts = item.split('—');
-      if (parts.length < 2) parts = item.split('–');
+  // Parse structured word meanings
+  const parseWordMeanings = (raw: string | undefined) => {
+    if (!raw) return [];
+    const items = raw.split(/[;,\n]/).map(s => s.trim()).filter(Boolean);
+    return items.map(item => {
+      let parts = item.split('--');
+      if (parts.length < 2) parts = item.split('=');
       if (parts.length < 2) {
         const match = item.match(/(.+?)\s*[-:]\s*(.+)/);
-        if (match) {
-          parts = [match[1], match[2]];
-        }
+        if (match) parts = [match[1], match[2]];
       }
       return {
         word: parts[0]?.trim(),
@@ -243,251 +302,64 @@ export default function VerseBlock({
   const hasTranslations = filteredTranslations.length > 0;
   const hasCommentaries = filteredCommentaries.length > 0;
 
-  const focusTranslation = filteredTranslations[0];
-
-  // 1. RENDER FOCUS MODE CARD
-  if (readingMode === 'focus') {
-    return (
-      <div 
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        className="w-full max-w-3xl mx-auto flex flex-col bg-white border border-cream-400 rounded-3xl shadow-xl overflow-hidden hover:border-saffron-300 transition-all duration-300 min-h-[500px] select-none"
-      >
-        {/* Top Info Bar */}
-        <div className="px-6 py-4 bg-gradient-to-r from-cream-200 to-cream-100 border-b border-cream-300 flex justify-between items-center">
-          <div>
-            <span className="text-[10px] font-extrabold text-saffron-800 bg-saffron-50 px-2.5 py-1 rounded-full border border-saffron-200/40 uppercase tracking-widest">
-              {verse.source_name}
-            </span>
-            <span className="text-xs text-stone-700 font-cinzel font-bold ml-2.5">
-              Ch. {verse.chapter_number}, Verse {verse.verse_number}
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {/* Bookmark button */}
-            <button
-              onClick={handleBookmarkToggle}
-              className={`p-2 rounded-full border transition-all cursor-pointer ${
-                isBookmarked
-                  ? 'bg-saffron-500 text-white border-saffron-600 shadow-xs'
-                  : 'bg-white text-stone-600 hover:text-saffron-700 border-cream-400'
-              }`}
-              title={isBookmarked ? "Remove from Sanctuary" : "Save to Sanctuary"}
-            >
-              <Bookmark className="w-3.5 h-3.5" />
-            </button>
-
-            {/* Share Card button */}
-            {onOpenShareModal && (
-              <button
-                onClick={handleShareClick}
-                className="p-2 rounded-full bg-white text-stone-600 hover:text-saffron-700 border border-cream-400 transition-all cursor-pointer"
-                title="Share as Image Card"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-
-            {/* Audio Chanting controls (Only Gita) */}
-            {verse.source_name === 'Bhagavad Gita' && (
-              <button 
-                onClick={isPlaying ? pauseAudio : playAudio} 
-                disabled={isAudioLoading}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-300 cursor-pointer shadow-xs ${
-                  isPlaying 
-                    ? 'bg-gradient-to-r from-terracotta-500 to-terracotta-600 text-white' 
-                    : 'bg-cream-300 hover:bg-saffron-100 text-saffron-900 border border-cream-400'
-                }`}
-              >
-                {isAudioLoading ? (
-                  <div className="w-3 h-3 border-2 border-saffron-600/30 border-t-saffron-700 rounded-full animate-spin" />
-                ) : isPlaying ? (
-                  <Pause className="w-3 h-3" />
-                ) : (
-                  <Play className="w-3 h-3" />
-                )}
-                <span>{isPlaying ? 'Pause' : 'Chant'}</span>
-                {isPlaying && (
-                  <div className="flex items-end gap-0.5 h-3 ml-1">
-                    <span className="vedic-bar" />
-                    <span className="vedic-bar" />
-                    <span className="vedic-bar" />
-                  </div>
-                )}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Central Scripture Panel */}
-        <div className="flex-grow p-6 md:p-10 flex flex-col justify-center text-center space-y-6 md:space-y-8">
-          {/* Devanagari Sanskrit Text */}
-          <div className="space-y-4">
-            <h4 className="text-[9px] font-bold text-stone-600 tracking-widest uppercase">Sanskrit</h4>
-            <p className="font-sanskrit text-2xl md:text-3xl text-stone-950 font-bold leading-loose tracking-wide whitespace-pre-wrap py-2 select-text">
-              {verse.sanskrit_text}
-            </p>
-          </div>
-
-          {/* Transliteration */}
-          {verse.transliteration && (
-            <div className="py-2 border-t border-dashed border-cream-300 max-w-xl mx-auto w-full">
-              <h4 className="text-[9px] font-bold text-stone-600 tracking-widest uppercase mb-1">Transliteration</h4>
-              <p className="font-serif italic text-sm md:text-base text-stone-700 font-medium leading-relaxed select-text">
-                {verse.transliteration}
-              </p>
-            </div>
-          )}
-
-          {/* Preferred Translation (Single choice) */}
-          <div className="pt-4 border-t border-cream-300 max-w-xl mx-auto w-full">
-            <h4 className="text-[9px] font-bold text-saffron-800 tracking-widest uppercase mb-2 flex items-center justify-center gap-1">
-              <BookOpen className="w-3 h-3 text-saffron-700" />
-              <span>Translation ({activeLanguage})</span>
-            </h4>
-            
-            {focusTranslation ? (
-              <div className="space-y-1.5">
-                <p className="font-serif italic text-stone-900 font-medium text-base md:text-lg leading-relaxed select-text">
-                  &quot;{focusTranslation.text}&quot;
-                </p>
-                <span className="inline-block text-[10px] font-bold text-stone-600 uppercase tracking-widest">
-                  — {focusTranslation.author}
-                </span>
-              </div>
-            ) : (
-              <p className="text-stone-600 italic text-xs">
-                No translation available in {activeLanguage} for this verse.
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Collapsible Word meanings / Navigation buttons footer */}
-        <div className="px-6 py-4 bg-cream-200 border-t border-cream-300 flex flex-col gap-4">
-          <div className="flex justify-between items-center w-full">
-            {/* Word Breakdown Toggle */}
-            {!isAskMode && parsedMeanings.length > 0 ? (
-              <button 
-                onClick={() => setShowMeaningsFocus(!showMeaningsFocus)}
-                className="text-xs font-bold text-saffron-800 hover:text-saffron-950 cursor-pointer flex items-center gap-1"
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>{showMeaningsFocus ? 'Hide' : 'Show'} Word Meanings</span>
-              </button>
-            ) : (
-              <div />
-            )}
-
-            {/* Desktop Navigation Helper Buttons */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={onPrev}
-                disabled={index === 0}
-                className="p-1.5 rounded-lg border border-cream-400 bg-white text-stone-700 hover:text-saffron-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors font-bold"
-                title="Previous Verse"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-[10px] font-bold text-stone-700 uppercase tracking-wider">
-                {index + 1} / {totalVerses || 1}
-              </span>
-              <button
-                onClick={onNext}
-                disabled={index === (totalVerses || 0) - 1}
-                className="p-1.5 rounded-lg border border-cream-400 bg-white text-stone-700 hover:text-saffron-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors font-bold"
-                title="Next Verse"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Word Meanings Expanded Grid */}
-          {showMeaningsFocus && parsedMeanings.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pt-3 border-t border-cream-300 max-h-48 overflow-y-auto pr-1 animate-fade-in select-text">
-              {parsedMeanings.map((item, idx) => (
-                <div key={idx} className="bg-white p-2 rounded-xl border border-cream-300 shadow-inner flex flex-col">
-                  <span className="font-serif font-bold text-xs text-saffron-900">{item.word}</span>
-                  <span className="text-[10px] text-stone-700 mt-0.5 leading-tight font-medium">{item.meaning}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // Font size class mapping
+  const getSanskritFontSizeClass = () => {
+    switch (fontSize) {
+      case 'sm':
+        return 'text-lg md:text-xl leading-relaxed';
+      case 'lg':
+        return 'text-2xl md:text-3xl leading-loose';
+      case 'xl':
+        return 'text-3xl md:text-4xl leading-loose';
+      case 'md':
+      default:
+        return 'text-xl md:text-2xl leading-loose';
+    }
+  };
 
   // 2. RENDER STUDY (NORMAL) MODE BLOCK
   return (
-    <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-cream-400 hover:border-saffron-500/20 transition-all duration-300 relative overflow-hidden select-text">
-      {/* Header Info, Actions & Audio Player */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-cream-300/40">
+    <div className="bg-white dark:bg-[#0d121d] p-6 md:p-8 rounded-3xl shadow-sm border border-cream-400 dark:border-amber-500/20 hover:border-saffron-500/20 dark:hover:border-amber-500/40 transition-all duration-300 relative overflow-hidden select-text space-y-6">
+      
+      {/* Header Info & Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cream-300/40 dark:border-amber-500/20">
         <div>
-          <span className="text-[10px] font-bold text-saffron-800 uppercase tracking-widest bg-saffron-50 px-2.5 py-1 rounded-full border border-saffron-200/40">
+          <span className="text-[10px] font-bold text-saffron-800 dark:text-amber-300 uppercase tracking-widest bg-saffron-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-full border border-saffron-200/40 dark:border-amber-700/40">
             {verse.source_name}
           </span>
-          <h3 className="text-lg md:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-saffron-700 to-terracotta-800 font-cinzel mt-1.5">
+          <h3 className="text-lg md:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-saffron-700 to-terracotta-800 dark:from-amber-300 dark:to-saffron-400 font-cinzel mt-1.5">
             {verse.chapter_name}, Verse {verse.verse_number}
           </h3>
           {!isAskMode && totalVerses && (
-            <p className="text-xs text-stone-600 font-bold uppercase tracking-wider mt-0.5">Verse {index + 1} of {totalVerses}</p>
+            <p className="text-xs text-stone-600 dark:text-slate-400 font-bold uppercase tracking-wider mt-0.5">Verse {index + 1} of {totalVerses}</p>
           )}
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          {/* Bookmark Action */}
-          <button
-            onClick={handleBookmarkToggle}
-            className={`p-2 rounded-xl border transition-all cursor-pointer ${
-              isBookmarked
-                ? 'bg-saffron-500 text-white border-saffron-600 shadow-xs'
-                : 'bg-cream-200 text-stone-700 hover:text-saffron-800 border-cream-400'
-            }`}
-            title={isBookmarked ? "Remove from Sanctuary" : "Save to Sanctuary"}
-          >
-            <Bookmark className="w-4 h-4" />
-          </button>
-
-          {/* Share as Card Action */}
-          {onOpenShareModal && (
-            <button
-              onClick={handleShareClick}
-              className="p-2 rounded-xl bg-cream-200 text-stone-700 hover:text-saffron-800 border border-cream-400 transition-all cursor-pointer"
-              title="Share as Image Card"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Audio Player Button (Bhagavad Gita only) */}
+        {/* Action Bar */}
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          {/* 1. 🔊 Authentic Recitation (Bhagavad Gita Only) */}
           {verse.source_name === 'Bhagavad Gita' && (
             <button 
               onClick={isPlaying ? pauseAudio : playAudio} 
               disabled={isAudioLoading}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer shadow-xs ${
-                isPlaying 
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer shadow-xs ${
+                isPlaying
                   ? 'bg-gradient-to-r from-terracotta-500 to-terracotta-600 text-white' 
-                  : 'bg-cream-300 hover:bg-saffron-100 border border-cream-400 text-saffron-900'
+                  : 'bg-cream-300 dark:bg-slate-800 hover:bg-saffron-100 dark:hover:bg-slate-700 border border-cream-400 dark:border-amber-500/20 text-saffron-900 dark:text-amber-300'
               }`}
+              title="Authentic Bhagavad Gita Sanskrit Recitation"
             >
               {isAudioLoading ? (
                 <div className="w-3.5 h-3.5 border-2 border-saffron-600/30 border-t-saffron-700 rounded-full animate-spin" />
               ) : isPlaying ? (
                 <Pause className="w-3.5 h-3.5" />
               ) : (
-                <Play className="w-3.5 h-3.5" />
+                <Volume2 className="w-3.5 h-3.5" />
               )}
-              <span>{isPlaying ? 'Pause Audio' : 'Play Chant'}</span>
+              <span>{isPlaying ? 'Pause' : 'Recite'}</span>
               
-              {/* Vedic Harmonic Wave Visualizer */}
               {isPlaying && (
                 <div className="flex items-end gap-0.5 h-3 ml-1">
-                  <span className="vedic-bar" />
-                  <span className="vedic-bar" />
                   <span className="vedic-bar" />
                   <span className="vedic-bar" />
                   <span className="vedic-bar" />
@@ -495,61 +367,200 @@ export default function VerseBlock({
               )}
             </button>
           )}
+
+          {/* 2. 💬 "Ask AI about this Verse" */}
+          <button
+            onClick={handleAskAI}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-saffron-600 to-terracotta-600 dark:from-amber-500 dark:to-saffron-600 hover:from-saffron-500 hover:to-terracotta-500 text-white font-bold text-xs shadow-xs cursor-pointer transition-all"
+            title="Ask AI for deep philosophical explanation"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Ask AI</span>
+          </button>
+
+          {/* 3. 🔖 Bookmark to Sanctuary */}
+          <button
+            onClick={handleBookmarkToggle}
+            className={`p-2 rounded-xl border transition-all cursor-pointer ${
+              isBookmarked
+                ? 'bg-saffron-500 dark:bg-amber-600 text-white border-saffron-600 dark:border-amber-500 shadow-xs'
+                : 'bg-cream-200 dark:bg-slate-800 text-stone-700 dark:text-slate-300 hover:text-saffron-800 dark:hover:text-amber-300 border-cream-400 dark:border-amber-500/20'
+            }`}
+            title={isBookmarked ? "Remove from Sanctuary" : "Save to Sanctuary"}
+          >
+            <Bookmark className="w-4 h-4" />
+          </button>
+
+          {/* 4. 🎴 Aesthetic Instagram/Twitter Share Card */}
+          {onOpenShareModal && (
+            <button
+              onClick={handleShareClick}
+              className="p-2 rounded-xl bg-cream-200 dark:bg-slate-800 text-stone-700 dark:text-slate-300 hover:text-saffron-800 dark:hover:text-amber-300 border border-cream-400 dark:border-amber-500/20 transition-all cursor-pointer"
+              title="Generate Aesthetic Share Card"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Sanskrit Text Centerpiece with Sacred Styling */}
-      <div className="my-6 p-6 md:p-8 bg-cream-200/50 rounded-2xl border border-cream-400/60 shadow-inner text-center space-y-4">
-        <h4 className="text-[10px] font-bold text-stone-600 uppercase tracking-widest text-left select-none">SANSKRIT TEXT</h4>
-        <p className="font-sanskrit text-xl md:text-2xl text-stone-950 font-bold leading-loose tracking-wide whitespace-pre-wrap py-2">
-          {verse.sanskrit_text}
-        </p>
-        
-        {verse.transliteration && (
-          <div className="pt-3 border-t border-cream-300/50">
-            <h4 className="text-[10px] font-bold text-stone-600 uppercase tracking-widest text-left mb-2 select-none">TRANSLITERATION</h4>
-            <p className="font-serif italic text-sm md:text-base text-stone-800 font-medium leading-relaxed max-w-2xl mx-auto">
-              {verse.transliteration}
+      {/* Layer Toggle Pills Bar & Font Size Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-cream-100 dark:bg-slate-900/90 p-2.5 rounded-2xl border border-cream-300/80 dark:border-amber-500/20 select-none text-xs">
+        {/* Toggle Layer Visibility Pills */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] font-bold text-stone-500 dark:text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1">
+            <Layers className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
+            <span>Layers:</span>
+          </span>
+
+          {verse.transliteration && (
+            <button
+              type="button"
+              onClick={() => onToggleGlobalLayer ? onToggleGlobalLayer('transliteration') : null}
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
+                showTransliteration
+                  ? 'bg-saffron-100 dark:bg-amber-950/60 text-saffron-900 dark:text-amber-300 border-saffron-300 dark:border-amber-600/40 shadow-2xs'
+                  : 'bg-white dark:bg-slate-800 text-stone-500 dark:text-slate-400 border-cream-300 dark:border-slate-700 opacity-60'
+              }`}
+            >
+              IAST Transliteration
+            </button>
+          )}
+
+          {!isAskMode && parsedMeanings.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onToggleGlobalLayer ? onToggleGlobalLayer('wordMeanings') : null}
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
+                showWordMeanings
+                  ? 'bg-saffron-100 dark:bg-amber-950/60 text-saffron-900 dark:text-amber-300 border-saffron-300 dark:border-amber-600/40 shadow-2xs'
+                  : 'bg-white dark:bg-slate-800 text-stone-500 dark:text-slate-400 border-cream-300 dark:border-slate-700 opacity-60'
+              }`}
+            >
+              Word-by-Word Anvaya
+            </button>
+          )}
+
+          {hasTranslations && (
+            <button
+              type="button"
+              onClick={() => onToggleGlobalLayer ? onToggleGlobalLayer('translation') : null}
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
+                showTranslation
+                  ? 'bg-saffron-100 dark:bg-amber-950/60 text-saffron-900 dark:text-amber-300 border-saffron-300 dark:border-amber-600/40 shadow-2xs'
+                  : 'bg-white dark:bg-slate-800 text-stone-500 dark:text-slate-400 border-cream-300 dark:border-slate-700 opacity-60'
+              }`}
+            >
+              Translation ({activeLanguage})
+            </button>
+          )}
+
+          {!isAskMode && hasCommentaries && (
+            <button
+              type="button"
+              onClick={() => onToggleGlobalLayer ? onToggleGlobalLayer('commentaries') : null}
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
+                showCommentaries
+                  ? 'bg-saffron-100 dark:bg-amber-950/60 text-saffron-900 dark:text-amber-300 border-saffron-300 dark:border-amber-600/40 shadow-2xs'
+                  : 'bg-white dark:bg-slate-800 text-stone-500 dark:text-slate-400 border-cream-300 dark:border-slate-700 opacity-60'
+              }`}
+            >
+              Commentaries ({filteredCommentaries.length})
+            </button>
+          )}
+        </div>
+
+        {/* Custom Sanskrit Font Size Controls */}
+        <div className="flex items-center gap-1.5 ml-auto">
+          <span className="text-[10px] font-bold text-stone-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+            <Type className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
+            <span>Font:</span>
+          </span>
+          <div className="flex items-center gap-0.5 bg-white dark:bg-slate-800 p-0.5 rounded-xl border border-cream-300 dark:border-amber-500/20">
+            {(['sm', 'md', 'lg', 'xl'] as SanskritFontSize[]).map(size => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => handleFontSizeChange(size)}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                  fontSize === size
+                    ? 'bg-saffron-600 dark:bg-amber-600 text-white shadow-2xs'
+                    : 'text-stone-600 dark:text-slate-400 hover:text-saffron-800 dark:hover:text-slate-200'
+                }`}
+                title={`Set Sanskrit font size to ${size.toUpperCase()}`}
+              >
+                {size.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Devanagari Sanskrit Text Centerpiece */}
+      <div className="p-6 md:p-8 bg-cream-200/50 dark:bg-slate-900/60 rounded-2xl border border-cream-400/60 dark:border-amber-500/20 shadow-inner text-center space-y-4">
+        <h4 className="text-[10px] font-bold text-stone-600 dark:text-slate-400 uppercase tracking-widest text-left select-none">
+          Sanskrit Verse
+        </h4>
+        <div className="space-y-2 py-2">
+          {formatSanskritVerseLines(verse.sanskrit_text).map((line, idx) => (
+            <p 
+              key={idx} 
+              className={`font-sanskrit ${getSanskritFontSizeClass()} text-stone-950 dark:text-amber-200 font-bold tracking-wide transition-all duration-200`}
+            >
+              {line}
             </p>
+          ))}
+        </div>
+        
+        {verse.transliteration && showTransliteration && (
+          <div className="pt-3 border-t border-cream-300/50 dark:border-amber-500/20 animate-fade-in space-y-1">
+            <h4 className="text-[10px] font-bold text-stone-600 dark:text-slate-400 uppercase tracking-widest text-left mb-2 select-none">
+              IAST Transliteration
+            </h4>
+            {formatSanskritVerseLines(verse.transliteration).map((tLine, tIdx) => (
+              <p key={tIdx} className="font-serif italic text-sm md:text-base text-stone-800 dark:text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto">
+                {tLine}
+              </p>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Structured Word meanings collapsible grid */}
-      {!isAskMode && parsedMeanings.length > 0 && (
-        <div className="my-6 p-5 bg-cream-300/40 rounded-2xl border border-cream-400/50">
-          <h4 className="text-[10px] font-bold text-stone-700 uppercase tracking-widest mb-3 flex items-center gap-1 select-none">
-            <BookOpen className="w-3.5 h-3.5 text-saffron-600" />
-            <span>Sanskrit Word Meanings</span>
+      {/* Word-by-Word Anvaya Meanings Grid */}
+      {!isAskMode && showWordMeanings && parsedMeanings.length > 0 && (
+        <div className="p-5 bg-cream-300/40 dark:bg-slate-900/40 rounded-2xl border border-cream-400/50 dark:border-amber-500/20 animate-fade-in">
+          <h4 className="text-[10px] font-bold text-stone-700 dark:text-slate-300 uppercase tracking-widest mb-3 flex items-center gap-1 select-none">
+            <BookOpen className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
+            <span>Word-by-Word Anvaya (Sanskrit Meanings)</span>
           </h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-56 overflow-y-auto pr-1">
             {parsedMeanings.map((item, idx) => (
-              <div key={idx} className="bg-white p-2.5 rounded-xl border border-cream-400/60 shadow-xs flex flex-col hover:border-saffron-300 transition-colors">
-                <span className="font-serif font-bold text-xs text-saffron-900">{item.word}</span>
-                <span className="text-[10px] text-stone-700 mt-1 leading-tight font-medium">{item.meaning}</span>
+              <div key={idx} className="bg-white dark:bg-slate-800/90 p-2.5 rounded-xl border border-cream-400/60 dark:border-amber-500/20 shadow-xs flex flex-col hover:border-saffron-300 dark:hover:border-amber-500/40 transition-colors">
+                <span className="font-serif font-bold text-xs text-saffron-900 dark:text-amber-300">{item.word}</span>
+                <span className="text-[10px] text-stone-700 dark:text-slate-300 mt-1 leading-tight font-medium">{item.meaning}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Language / Translation Tab Controls */}
-      {availableLanguages.length > 1 && (
-        <div className="flex items-center justify-between flex-wrap gap-3 mb-6 pb-4 border-b border-cream-300/40 select-none">
-          <div className="flex items-center gap-1.5 text-xs text-stone-700 font-bold">
-            <Languages className="w-4 h-4 text-stone-600" />
-            <span>DISPLAY LANGUAGE</span>
+      {/* Display Language Tabs */}
+      {availableLanguages.length > 1 && showTranslation && (
+        <div className="flex items-center justify-between flex-wrap gap-3 pb-2 border-b border-cream-300/40 dark:border-amber-500/20 select-none">
+          <div className="flex items-center gap-1.5 text-xs text-stone-700 dark:text-slate-300 font-bold">
+            <Languages className="w-4 h-4 text-stone-600 dark:text-slate-400" />
+            <span>TRANSLATION LANGUAGE:</span>
           </div>
 
-          <div className="flex gap-1.5 bg-cream-300/80 p-1 rounded-full border border-cream-400/50">
+          <div className="flex gap-1.5 bg-cream-300/80 dark:bg-slate-900/80 p-1 rounded-full border border-cream-400/50 dark:border-amber-500/20">
             {availableLanguages.map((lang) => (
               <button 
                 key={lang} 
                 onClick={() => setSelectedLanguage(lang)} 
-                className={`px-4 py-1.5 text-xs font-bold rounded-full cursor-pointer transition-all duration-300 ${
+                className={`px-4 py-1 text-xs font-bold rounded-full cursor-pointer transition-all duration-300 ${
                   activeLanguage === lang 
-                    ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 text-white shadow-xs' 
-                    : 'text-saffron-900 hover:text-saffron-700'
+                    ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 dark:from-amber-500 dark:to-saffron-600 text-white shadow-xs' 
+                    : 'text-saffron-900 dark:text-slate-300 hover:text-saffron-700 dark:hover:text-amber-300'
                 }`}
               >
                 {lang.charAt(0).toUpperCase() + lang.slice(1)}
@@ -559,48 +570,50 @@ export default function VerseBlock({
         </div>
       )}
 
-      {/* Translations & Commentaries Display */}
+      {/* Translations & Commentaries Section */}
       <div className="space-y-6">
         {/* Translations Section */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 uppercase tracking-wider">
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Translations ({activeLanguage})</span>
-          </div>
-
-          {hasTranslations ? (
-            <div className="grid gap-3">
-              {filteredTranslations.map((t, i) => (
-                <div key={i} className="p-4 bg-saffron-50/60 border border-saffron-200/40 hover:border-saffron-300 rounded-2xl transition-all duration-200 shadow-xs">
-                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-saffron-800 bg-saffron-100/80 px-2 py-0.5 rounded border border-saffron-200/60 mb-2">
-                    {t.author}
-                  </span>
-                  <p className="font-serif italic text-stone-900 font-medium text-sm md:text-base leading-relaxed">&quot;{t.text}&quot;</p>
-                </div>
-              ))}
+        {showTranslation && (
+          <div className="space-y-3 animate-fade-in">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 dark:text-amber-300 uppercase tracking-wider">
+              <FileText className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
+              <span>Translations ({activeLanguage})</span>
             </div>
-          ) : (
-            <p className="text-stone-600 italic text-xs p-4 bg-cream-200/20 rounded-xl border border-dashed border-cream-400/40 text-center">
-              No translation available in {activeLanguage} for this verse.
-            </p>
-          )}
-        </div>
 
-        {/* Commentaries Section (Only in Study / Reading Mode) */}
-        {hasCommentaries && !isAskMode && (
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 uppercase tracking-wider">
-              <Volume2 className="w-3.5 h-3.5" />
+            {hasTranslations ? (
+              <div className="grid gap-3">
+                {filteredTranslations.map((t, i) => (
+                  <div key={i} className="p-4 bg-saffron-50/60 dark:bg-amber-950/20 border border-saffron-200/40 dark:border-amber-500/20 hover:border-saffron-300 dark:hover:border-amber-500/40 rounded-2xl transition-all duration-200 shadow-xs">
+                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-300 bg-saffron-100/80 dark:bg-amber-900/40 px-2 py-0.5 rounded border border-saffron-200/60 dark:border-amber-700/40 mb-2">
+                      {t.author}
+                    </span>
+                    <p className="font-serif italic text-stone-900 dark:text-slate-100 font-medium text-sm md:text-base leading-relaxed">&quot;{t.text}&quot;</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-stone-600 dark:text-slate-400 italic text-xs p-4 bg-cream-200/20 dark:bg-slate-900/40 rounded-xl border border-dashed border-cream-400/40 dark:border-amber-500/20 text-center">
+                No translation available in {activeLanguage} for this verse.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Commentaries Section */}
+        {!isAskMode && showCommentaries && hasCommentaries && (
+          <div className="space-y-3 pt-2 animate-fade-in">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 dark:text-amber-300 uppercase tracking-wider">
+              <AlignLeft className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
               <span>Commentaries ({activeLanguage})</span>
             </div>
 
             <div className="space-y-3">
               {filteredCommentaries.map((c, i) => (
-                <div key={i} className="p-5 bg-stone-50 border border-cream-400/60 rounded-2xl hover:shadow-xs transition-all duration-200">
-                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-stone-700 bg-stone-200/80 px-2 py-0.5 rounded border border-stone-300/60 mb-2">
+                <div key={i} className="p-5 bg-stone-50 dark:bg-slate-900/80 border border-cream-400/60 dark:border-amber-500/20 rounded-2xl hover:shadow-xs transition-all duration-200">
+                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-stone-700 dark:text-amber-300 bg-stone-200/80 dark:bg-slate-800 px-2 py-0.5 rounded border border-stone-300/60 dark:border-amber-700/40 mb-2">
                     {c.author}
                   </span>
-                  <p className="text-stone-900 text-sm leading-relaxed whitespace-pre-wrap font-serif font-medium">&quot;{c.text}&quot;</p>
+                  <p className="text-stone-900 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-serif font-medium">&quot;{c.text}&quot;</p>
                 </div>
               ))}
             </div>
@@ -608,13 +621,13 @@ export default function VerseBlock({
         )}
       </div>
 
-      {/* Prev/Next Verse Navigation (Only in Reading Mode) */}
+      {/* Prev/Next Verse Navigation */}
       {!isAskMode && onNext && onPrev && (
-        <div className="mt-8 pt-5 border-t border-cream-300/40 flex justify-between items-center gap-4 select-none">
+        <div className="mt-8 pt-5 border-t border-cream-300/40 dark:border-amber-500/20 flex justify-between items-center gap-4 select-none">
           <button 
             onClick={onPrev} 
             disabled={index === 0} 
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border border-cream-400 bg-white text-stone-800 hover:text-saffron-900 hover:bg-saffron-50 font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-300 shadow-xs"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border border-cream-400 dark:border-amber-500/20 bg-white dark:bg-slate-900 text-stone-800 dark:text-slate-200 hover:text-saffron-900 dark:hover:text-amber-300 hover:bg-saffron-50 dark:hover:bg-slate-800 font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-300 shadow-xs"
           >
             <ChevronLeft className="w-4 h-4" />
             <span>Previous Verse</span>
@@ -623,7 +636,7 @@ export default function VerseBlock({
           <button 
             onClick={onNext} 
             disabled={index === (totalVerses || 0) - 1} 
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border border-cream-400 bg-white text-stone-800 hover:text-saffron-900 hover:bg-saffron-50 font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-300 shadow-xs"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border border-cream-400 dark:border-amber-500/20 bg-white dark:bg-slate-900 text-stone-800 dark:text-slate-200 hover:text-saffron-900 dark:hover:text-amber-300 hover:bg-saffron-50 dark:hover:bg-slate-800 font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-300 shadow-xs"
           >
             <span>Next Verse</span>
             <ChevronRight className="w-4 h-4" />
@@ -633,3 +646,5 @@ export default function VerseBlock({
     </div>
   );
 }
+
+export default React.memo(VerseBlock);

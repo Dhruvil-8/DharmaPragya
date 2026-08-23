@@ -44,7 +44,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.9,
   }));
 
-  // 3. High-Impact Canonical Verses (/read/[source]/[chapter]/[verse])
+  // 3. High-Impact Sacred Verses (/read/[source]/[chapter]/[verse])
   const keyVerses = [
     { source: 'Bhagavad Gita', chapter: 2, verse: 47 },
     { source: 'Bhagavad Gita', chapter: 2, verse: 14 },

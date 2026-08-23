@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   manifest: "/manifest.json",
-  title: "DharmaPragya - Canonical AI Guide to Sanatan Dharma Wisdom",
+  title: "DharmaPragya - AI Guide to Sanatan Dharma Wisdom",
   description: "Explore the timeless wisdom of Sanatan Dharma. Ask philosophical questions and receive synthesized, authentic answers cited directly from the Bhagavad Gita, Upanishads, Vedas, Mahabharata, Ramayana, and Patanjali Yoga Sutras.",
   keywords: [
     "Sanatan Dharma",
@@ -81,7 +81,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "DharmaPragya - Canonical AI Guide to Sanatan Dharma Wisdom",
+    title: "DharmaPragya - AI Guide to Sanatan Dharma Wisdom",
     description: "Explore the timeless wisdom of Sanatan Dharma with synthesized answers cited directly from the Bhagavad Gita, Vedas, Upanishads, and Epics.",
     url: "https://dharma-pragya.vercel.app",
     siteName: "DharmaPragya",
@@ -158,8 +158,12 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                document.documentElement.classList.remove('dark');
-                localStorage.removeItem('dharmapragya_theme');
+                const savedTheme = localStorage.getItem('dharmapragya_theme');
+                if (savedTheme === 'dark') {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
               } catch (e) {}
               if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
                 window.addEventListener('load', () => {
@@ -170,7 +174,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col font-sans bg-cream-100 text-gray-800">
+      <body className="min-h-full flex flex-col font-sans bg-cream-100 dark:bg-[#070A0F] text-gray-800 dark:text-slate-100 transition-colors duration-300">
         {children}
       </body>
     </html>
