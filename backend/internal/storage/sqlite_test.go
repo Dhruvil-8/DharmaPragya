@@ -5,7 +5,7 @@ import (
 )
 
 func TestSearchVersesFTS(t *testing.T) {
-	s, err := NewSQLiteStorage("../../data/scriptures.db")
+	s, err := NewSQLiteStorage("../../data/scriptures.db", "../../data/vedas.db")
 	if err != nil {
 		t.Fatalf("Failed to open database: %v", err)
 	}
@@ -46,7 +46,7 @@ func TestSearchVersesFTS(t *testing.T) {
 }
 
 func TestDirectSearch(t *testing.T) {
-	s, err := NewSQLiteStorage("../../data/scriptures.db")
+	s, err := NewSQLiteStorage("../../data/scriptures.db", "../../data/vedas.db")
 	if err != nil {
 		t.Fatalf("Failed to open database: %v", err)
 	}
