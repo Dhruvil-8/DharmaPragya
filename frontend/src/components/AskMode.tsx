@@ -284,12 +284,17 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
     try {
       const response = await fetch(`${apiBaseUrl}/api/ask`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
         body: JSON.stringify({
+          question: currentQuery,
           query: currentQuery,
           source_filter: currentSource,
           language: language,
           history: historyPayload,
+          stream: true,
         }),
       });
 

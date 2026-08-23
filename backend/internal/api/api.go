@@ -116,6 +116,7 @@ type ChatMessage struct {
 
 type AskRequest struct {
 	Question     string        `json:"question"`
+	Query        string        `json:"query"`
 	SourceFilter string        `json:"source_filter"`
 	Language     string        `json:"language"`
 	History      []ChatMessage `json:"history"`
@@ -199,6 +200,9 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+	if req.Question == "" && req.Query != "" {
+		req.Question = req.Query
 	}
 
 	isStreaming := req.Stream || strings.Contains(r.Header.Get("Accept"), "text/event-stream")
@@ -561,6 +565,7 @@ Structure your response as follows:
 			}
 			if err != nil {
 				log.Printf("Synthesis streaming error: %v", err)
+				sendSSE("error", map[string]string{"error": fmt.Sprintf("Synthesis streaming error: %v", err)})
 				break
 			}
 			for _, cand := range chunkResp.Candidates {
