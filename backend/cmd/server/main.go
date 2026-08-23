@@ -1,9 +1,12 @@
 package main
 
 import (
+	"archive/zip"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"dharmapragya/internal/api"
 	"dharmapragya/internal/storage"
@@ -11,10 +14,51 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func ensureUnpacked(dbPath, zipPath string) {
+	if _, err := os.Stat(dbPath); err == nil {
+		return // DB file already exists
+	}
+	if _, err := os.Stat(zipPath); os.IsNotExist(err) {
+		return
+	}
+	log.Printf("Unpacking %s -> %s for first-time startup...", zipPath, dbPath)
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		log.Printf("Warning: could not open zip %s: %v", zipPath, err)
+		return
+	}
+	defer r.Close()
+
+	for _, f := range r.File {
+		if strings.HasSuffix(f.Name, ".db") {
+			rc, err := f.Open()
+			if err != nil {
+				log.Printf("Warning: could not read %s: %v", f.Name, err)
+				continue
+			}
+			out, err := os.OpenFile(dbPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+			if err != nil {
+				rc.Close()
+				log.Printf("Warning: could not create %s: %v", dbPath, err)
+				continue
+			}
+			_, _ = io.Copy(out, rc)
+			out.Close()
+			rc.Close()
+			log.Printf("Successfully unpacked %s", dbPath)
+			break
+		}
+	}
+}
+
 func main() {
 	_ = godotenv.Load()
 	dbPath := "./data/scriptures.db"
 	vedasDBPath := "./data/vedas.db"
+
+	ensureUnpacked(dbPath, "./data/scriptures.zip")
+	ensureUnpacked(vedasDBPath, "./data/vedas.zip")
+
 	db, err := storage.NewSQLiteStorage(dbPath, vedasDBPath)
 	if err != nil {
 		log.Fatalf("Failed to open databases: %v", err)
