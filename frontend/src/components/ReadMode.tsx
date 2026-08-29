@@ -1602,9 +1602,9 @@ export default function ReadMode({
                           chapter_name: m.coordinate_str,
                           chapter_number: m.division_1,
                           translations: m.bhashyas?.filter(b => b.bhavartha).map(b => ({
-                            language: b.language,
-                            text: b.bhavartha,
-                            author: b.author,
+                            language: b.language || 'hindi',
+                            text: b.bhavartha || '',
+                            author: b.author || '',
                           })) || [],
                           commentaries: [],
                         });
