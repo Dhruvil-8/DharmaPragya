@@ -397,7 +397,7 @@ function VerseBlock({
       )}
 
       {/* Display Language Tabs */}
-      {availableLanguages.length > 1 && showTranslation && (
+      {availableLanguages.length > 1 && (hasTranslations || hasCommentaries) && showTranslation && (
         <div className="flex items-center justify-between flex-wrap gap-3 pb-2 border-b border-cream-300/40 dark:border-amber-500/20 select-none">
           <div className="flex items-center gap-1.5 text-xs text-stone-700 dark:text-slate-300 font-bold">
             <Languages className="w-4 h-4 text-stone-600 dark:text-slate-400" />
@@ -424,16 +424,16 @@ function VerseBlock({
       )}
 
       {/* Translations & Commentaries Section */}
-      <div className="space-y-6">
-        {/* Translations Section */}
-        {showTranslation && (
-          <div className="space-y-3 animate-fade-in">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 dark:text-amber-300 uppercase tracking-wider">
-              <FileText className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
-              <span>Translations ({activeLanguage})</span>
-            </div>
+      {(hasTranslations || hasCommentaries) && (
+        <div className="space-y-6">
+          {/* Translations Section */}
+          {showTranslation && hasTranslations && (
+            <div className="space-y-3 animate-fade-in">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 dark:text-amber-300 uppercase tracking-wider">
+                <FileText className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
+                <span>Translations ({activeLanguage})</span>
+              </div>
 
-            {hasTranslations ? (
               <div className="grid gap-3">
                 {filteredTranslations.map((t, i) => (
                   <div key={i} className="p-4 bg-saffron-50/70 dark:bg-amber-950/20 border border-saffron-200/50 dark:border-amber-500/20 hover:border-saffron-300 dark:hover:border-amber-500/40 rounded-2xl transition-all duration-200 shadow-2xs">
@@ -446,37 +446,33 @@ function VerseBlock({
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-stone-600 dark:text-slate-400 italic text-xs p-4 bg-cream-200/20 dark:bg-slate-900/40 rounded-xl border border-dashed border-cream-400/40 dark:border-amber-500/20 text-center">
-                No translation available in {activeLanguage} for this verse.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Commentaries Section */}
-        {!isAskMode && showCommentaries && hasCommentaries && (
-          <div className="space-y-3 pt-2 animate-fade-in">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 dark:text-amber-300 uppercase tracking-wider">
-              <AlignLeft className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
-              <span>Classical Commentaries ({activeLanguage})</span>
             </div>
+          )}
 
-            <div className="space-y-3">
-              {filteredCommentaries.map((c, i) => (
-                <div key={i} className="p-5 bg-stone-50 dark:bg-slate-900/80 border border-cream-400/60 dark:border-amber-500/20 rounded-2xl hover:shadow-xs transition-all duration-200">
-                  <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-stone-700 dark:text-amber-300 bg-stone-200/80 dark:bg-slate-800 px-2 py-0.5 rounded border border-stone-300/60 dark:border-amber-700/40 mb-2">
-                    {c.author}
-                  </span>
-                  <p className="text-stone-900 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-serif font-medium">
-                    &quot;{c.text}&quot;
-                  </p>
-                </div>
-              ))}
+          {/* Commentaries Section */}
+          {!isAskMode && showCommentaries && hasCommentaries && (
+            <div className="space-y-3 pt-2 animate-fade-in">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 dark:text-amber-300 uppercase tracking-wider">
+                <AlignLeft className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
+                <span>Classical Commentaries ({activeLanguage})</span>
+              </div>
+
+              <div className="space-y-3">
+                {filteredCommentaries.map((c, i) => (
+                  <div key={i} className="p-5 bg-stone-50 dark:bg-slate-900/80 border border-cream-400/60 dark:border-amber-500/20 rounded-2xl hover:shadow-xs transition-all duration-200">
+                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-stone-700 dark:text-amber-300 bg-stone-200/80 dark:bg-slate-800 px-2 py-0.5 rounded border border-stone-300/60 dark:border-amber-700/40 mb-2">
+                      {c.author}
+                    </span>
+                    <p className="text-stone-900 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-serif font-medium">
+                      &quot;{c.text}&quot;
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
     </article>
   );

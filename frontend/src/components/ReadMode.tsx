@@ -1236,7 +1236,7 @@ export default function ReadMode({
                     {src.name}
                   </p>
                   <p className="text-[11px] text-stone-600 dark:text-slate-400 font-medium">
-                    {src.name === 'Bhagavad Gita' ? '18 Adhyayas • Word-by-Word & Commentaries' : src.name === 'Ashtavakra Gita' ? '20 Prakaranas • Non-Dual Advaita Wisdom' : '8 Chapters • Avadhuta Non-Duality'}
+                    {src.name === 'Bhagavad Gita' ? '18 Adhyayas • Word-by-Word & Commentaries' : src.name === 'Ashtavakra Gita' ? '20 Prakaranas • English & Hindi Translations' : '8 Chapters • Authentic Sanskrit Text'}
                   </p>
                 </div>
                 <div className="flex justify-end items-center w-full pt-2 border-t border-saffron-200/60 dark:border-amber-900/40">

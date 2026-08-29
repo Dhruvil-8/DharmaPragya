@@ -38,8 +38,8 @@ The scriptures and Vedic Samhitas are stored across unified SQLite databases (`s
 | **Atharvaveda Samhita** | 5,977 | Yes (Svara & Plain) | Pending | Yes (Bhavartha) | Vishaya, Bhashyartha, Bhavartha, Tippani |
 | **Bhagavad Gita** | 701 | Yes | Yes (5+ authors) | Yes (2+ authors) | 15+ classical commentators (Shankara, Ramanuja, Madhva, etc.) |
 | **Ashtavakra Gita** | 298 | Yes | Yes (John Henry Richards) | Yes (Vedic Scriptures) | Complete 20 Prakaranas with dual translations |
-| **Avadhuta Gita** | 271 | Yes | Yes (Swami Ashokananda) | Yes | Complete 8 Chapters on Non-Dual Advaita realization |
-| **Devi Mahatmyam (Durga Saptashati)** | 581 | Yes | Yes (Swami Jagadiswarananda) | Yes (Gita Press) | Complete 13 Adhyayas from Markandeya Purana |
+| **Avadhuta Gita** | 271 | Yes | Pending | Pending | Complete 8 Chapters on Non-Dual Advaita |
+| **Devi Mahatmyam (Durga Saptashati)** | 581 | Yes | Pending | Pending | Complete 13 Adhyayas from Markandeya Purana |
 | **Patanjali Yoga Sutras** | 196 | Yes | Yes (IGS / Woods) | Yes | Devanagari Sanskrit, IAST, English word meanings |
 | **Mahabharata (BORI Critical Edition)** | 73,436 | Yes | Pending | Pending | Complete 18 Parvas (1,995 Adhyayas) |
 | **Valmiki Ramayana (Critical Edition)** | 18,761 | Yes | Pending | Pending | Complete 6 Kandas (606 Sargas) |
@@ -55,8 +55,8 @@ The scriptures and Vedic Samhitas are stored across unified SQLite databases (`s
 - **The Four Vedas**: Digitized Vedic Samhitas, Padapatha, and classical Bhashyas sourced from [VedaKosh](http://www.vedakosh.com) and the [Arya Samaj Vedic Heritage Project](https://aryasamajjamnagar.org/). English Rigveda translations by Ralph T.H. Griffith.
 - **Bhagavad Gita**: Sourced from the open-source [Gita GitHub Project](https://github.com/gita/gita) & [IIT Kanpur Gita Supersite](https://www.gitasupersite.iitk.ac.in/).
 - **Ashtavakra Gita**: Structured Devanagari text with John Henry Richards English and Hindi translations sourced from the [dhrmaorg/ashtavakra_gita](https://github.com/dhrmaorg/ashtavakra_gita) dataset.
-- **Avadhuta Gita**: Sourced from [Wikisource Sanskrit (अवधूतगीता)](https://sa.wikisource.org/wiki/अवधूतगीता) with Swami Ashokananda's Advaita Ashrama English translation purports.
-- **Devi Mahatmyam (Durga Saptashati)**: Sourced from [SanskritDocuments](https://sanskritdocuments.org/doc_devii/durga700.html) and Gita Press Gorakhpur editions with Swami Jagadiswarananda's Ramakrishna Math English translations.
+- **Avadhuta Gita**: Sourced from [Wikisource Sanskrit (अवधूतगीता)](https://sa.wikisource.org/wiki/अवधूतगीता).
+- **Devi Mahatmyam (Durga Saptashati)**: Sourced from [SanskritDocuments](https://sanskritdocuments.org/doc_devii/durga700.html) and Gita Press Gorakhpur editions.
 - **Mahabharata & Valmiki Ramayana**: Digitized BORI critical editions sourced from the [Bhandarkar Oriental Research Institute Electronic Text (BORI)](https://bombay.indology.info/) and [Muneo Tokunaga Mahabharata Text Archive](https://crux.bham.ac.uk/).
 - **The Mahapuranas & Upanishads**: Digitized, encoded, and structured from [Sanskrit Documents](https://sanskritdocuments.org), [GRETIL (Göttingen Register of Electronic Texts in Indian Languages)](http://gretil.sub.uni-goettingen.de/), and the [Tübingen Purana Project](https://homepages.uni-tuebingen.de/).
 - **Patanjali Yoga Sutras**: Sourced from the [International Gita Society (IGS)](https://www.gita-society.com/wp-content/uploads/PDF/Patanjali-yogasutra.IGS.pdf).
@@ -92,12 +92,17 @@ The scriptures and Vedic Samhitas are stored across unified SQLite databases (`s
    ```bash
    cd frontend
    ```
-2. Install dependencies:
-   ```bash
-   npm install
+2. Create a `.env.local` file (configured for the local Go backend):
+   ```env
+   BACKEND_URL=http://localhost:8080
+   FRONTEND_SECRET=your_secret_key_here
    ```
-3. Start the Next.js development server:
+3. Install dependencies using `pnpm` (recommended) or `npm`:
    ```bash
-   npm run dev
+   pnpm install
+   ```
+4. Start the Next.js development server:
+   ```bash
+   pnpm run dev
    ```
    *Open [http://localhost:3000](http://localhost:3000) in your browser.*
