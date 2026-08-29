@@ -481,48 +481,62 @@ func (s *Storage) SearchVerses(query string, sourceFilter string, limit int) ([]
 		return results, nil
 	}
 
-	matchQuery := strings.Join(tokens, " AND ")
+	buildFTSQuery := func(matchOperator string) (string, []interface{}) {
+		matchQuery := strings.Join(tokens, fmt.Sprintf(" %s ", matchOperator))
+		sql := `
+			SELECT verse_id 
+			FROM verses_fts 
+			WHERE verses_fts MATCH ?
+		`
+		var qArgs []interface{}
+		qArgs = append(qArgs, matchQuery)
 
-	sqlQuery := `
-		SELECT verse_id 
-		FROM verses_fts 
-		WHERE verses_fts MATCH ?
-	`
-	var args []interface{}
-	args = append(args, matchQuery)
-
-	if sourceFilter != "" && !strings.EqualFold(sourceFilter, "all") {
-		if strings.EqualFold(sourceFilter, "upanishad") || strings.EqualFold(sourceFilter, "upanishads") {
-			sqlQuery += " AND source_name LIKE '%Upanishad%'"
-		} else if strings.EqualFold(sourceFilter, "purana") || strings.EqualFold(sourceFilter, "puranas") {
-			sqlQuery += " AND source_name LIKE '%Purana%'"
-		} else if strings.EqualFold(sourceFilter, "veda") || strings.EqualFold(sourceFilter, "vedas") {
-			sqlQuery += " AND (source_name LIKE '%Veda%' OR source_name LIKE '%Rigveda%' OR source_name LIKE '%Samaveda%')"
-		} else {
-			sqlQuery += " AND LOWER(source_name) = LOWER(?)"
-			args = append(args, sourceFilter)
+		if sourceFilter != "" && !strings.EqualFold(sourceFilter, "all") {
+			sfLower := strings.ToLower(strings.TrimSpace(sourceFilter))
+			if strings.Contains(sfLower, "upanishad") {
+				sql += " AND source_name LIKE '%Upanishad%'"
+			} else if strings.Contains(sfLower, "purana") {
+				sql += " AND source_name LIKE '%Purana%'"
+			} else if strings.Contains(sfLower, "veda") {
+				sql += " AND (source_name LIKE '%Veda%' OR source_name LIKE '%Rigveda%' OR source_name LIKE '%Samaveda%')"
+			} else {
+				sql += " AND (LOWER(source_name) = ? OR source_name LIKE ?)"
+				qArgs = append(qArgs, sfLower, "%"+sourceFilter+"%")
+			}
 		}
+
+		sql += " ORDER BY rank LIMIT ?"
+		qArgs = append(qArgs, limit)
+		return sql, qArgs
 	}
 
-	sqlQuery += " ORDER BY rank LIMIT ?"
-	args = append(args, limit)
-
-	rows, err := s.db.Query(sqlQuery, args...)
-	if err != nil {
-		orMatchQuery := strings.Join(tokens, " OR ")
-		args[0] = orMatchQuery
-		rows, err = s.db.Query(sqlQuery, args...)
-		if err != nil {
-			return results, nil
-		}
-	}
-	defer rows.Close()
-
+	// Try AND match if few tokens (<= 2), otherwise or as fallback use OR match
 	var verseIDs []int
-	for rows.Next() {
-		var id int
-		if err := rows.Scan(&id); err == nil {
-			verseIDs = append(verseIDs, id)
+	if len(tokens) <= 2 {
+		andSQL, andArgs := buildFTSQuery("AND")
+		rows, err := s.db.Query(andSQL, andArgs...)
+		if err == nil {
+			for rows.Next() {
+				var id int
+				if err := rows.Scan(&id); err == nil {
+					verseIDs = append(verseIDs, id)
+				}
+			}
+			rows.Close()
+		}
+	}
+
+	if len(verseIDs) == 0 {
+		orSQL, orArgs := buildFTSQuery("OR")
+		rows, err := s.db.Query(orSQL, orArgs...)
+		if err == nil {
+			for rows.Next() {
+				var id int
+				if err := rows.Scan(&id); err == nil {
+					verseIDs = append(verseIDs, id)
+				}
+			}
+			rows.Close()
 		}
 	}
 
