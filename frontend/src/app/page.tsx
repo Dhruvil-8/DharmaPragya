@@ -115,7 +115,10 @@ function HomePageContent() {
 
   const handleAskAboutVerse = (verse: VerseData) => {
     setMode('ask');
-    const promptQuery = `Explain the philosophical meaning, spiritual context, and life application of ${verse.source_name} Chapter ${verse.chapter_number}, Verse ${verse.verse_number}: "${verse.sanskrit_text}"`;
+    const coordinate = verse.chapter_name && !verse.chapter_name.includes('Chapter')
+      ? `${verse.source_name} (${verse.chapter_name})`
+      : `${verse.source_name} Chapter ${verse.chapter_number}, Verse ${verse.verse_number}`;
+    const promptQuery = `Please provide a focused and profound explanation specifically for ${coordinate}:\n"${verse.sanskrit_text}"`;
     setAskInitialPrompt({
       query: promptQuery,
       sourceFilter: verse.source_name,

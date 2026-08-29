@@ -1595,13 +1595,17 @@ export default function ReadMode({
                           id: m.krama_number,
                           section_id: m.division_1,
                           verse_number: m.division_3,
-                          sanskrit_text: m.sanskrit_svara,
+                          sanskrit_text: m.sanskrit_svara || m.sanskrit_plain,
                           transliteration: m.transliteration_iast || '',
                           word_meanings: m.word_meanings?.[0]?.padartha_text || '',
                           source_name: m.veda_name,
                           chapter_name: m.coordinate_str,
                           chapter_number: m.division_1,
-                          translations: [],
+                          translations: m.bhashyas?.filter(b => b.bhavartha).map(b => ({
+                            language: b.language,
+                            text: b.bhavartha,
+                            author: b.author,
+                          })) || [],
                           commentaries: [],
                         });
                       }
