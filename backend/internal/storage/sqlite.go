@@ -623,7 +623,7 @@ func (s *Storage) GetVedaMantras(vedaID string, division1 int, division2 int) ([
 			FROM mantras m
 			JOIN vedas v ON m.veda_id = v.id
 			WHERE m.veda_id = ? AND m.division_1 = ? AND m.division_2 = ?
-			ORDER BY m.division_3
+			ORDER BY m.krama_number ASC
 		`, vedaID, division1, division2)
 	} else {
 		rows, err = s.vedasDB.Query(`
@@ -636,7 +636,7 @@ func (s *Storage) GetVedaMantras(vedaID string, division1 int, division2 int) ([
 			FROM mantras m
 			JOIN vedas v ON m.veda_id = v.id
 			WHERE m.veda_id = ? AND m.division_1 = ?
-			ORDER BY m.division_2, m.division_3
+			ORDER BY m.krama_number ASC
 		`, vedaID, division1)
 	}
 

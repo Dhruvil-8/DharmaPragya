@@ -200,7 +200,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
     const availableVoices = voicesList.length > 0 ? voicesList : window.speechSynthesis.getVoices();
 
     // Prefer high-quality English voices (en-IN for accurate Indic philosophical pronunciation, or standard en)
-    const englishVoice = 
+    const englishVoice =
       availableVoices.find(v => v.lang.toLowerCase() === 'en-in') ||
       availableVoices.find(v => v.lang.toLowerCase().includes('en-in')) ||
       availableVoices.find(v => v.lang.toLowerCase().startsWith('en-')) ||
@@ -306,7 +306,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
     try {
       const response = await fetch(`${apiBaseUrl}/api/ask`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream',
         },
@@ -425,12 +425,12 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
         prev.map(msg =>
           msg.id === assistantMessageId
             ? {
-                ...msg,
-                isStreaming: false,
-                isError: true,
-                content: msg.content || 'Unable to complete response. Please verify your connection or try again.',
-                statusMessage: undefined,
-              }
+              ...msg,
+              isStreaming: false,
+              isError: true,
+              content: msg.content || 'Unable to complete response. Please verify your connection or try again.',
+              statusMessage: undefined,
+            }
             : msg
         )
       );
@@ -479,13 +479,12 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
           <Compass className="w-4 h-4 text-saffron-600 dark:text-amber-400" />
           <span>Vedic Scripture Dialogue</span>
           <span
-            className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
-              isLimitReached
-                ? 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800/40'
-                : remainingQueries <= 3
+            className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${isLimitReached
+              ? 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800/40'
+              : remainingQueries <= 3
                 ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-700/40'
                 : 'bg-saffron-100 dark:bg-amber-950/30 text-saffron-800 dark:text-amber-300 border-saffron-200 dark:border-amber-700/30'
-            }`}
+              }`}
           >
             {isLimitReached ? 'Session Limit Reached (10/10)' : `${remainingQueries} / ${MAX_QUERIES_PER_SESSION} inquiries remaining`}
           </span>
@@ -501,7 +500,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
               className="bg-transparent text-stone-900 dark:text-slate-100 font-semibold focus:outline-none cursor-pointer text-xs"
             >
               <option value="All" className="dark:bg-slate-900 font-bold">All Sources</option>
-              
+
               <optgroup label="The Mahapuranas (पुराण)" className="dark:bg-slate-900 font-bold">
                 <option value="Puranas" className="dark:bg-slate-900">All Puranas (महापुराण)</option>
                 <option value="Shiva Purana" className="dark:bg-slate-900">Shiva Purana</option>
@@ -597,7 +596,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
                   <Bot className="w-4.5 h-4.5" />
                 </div>
 
-                <div className="flex-1 bg-white dark:bg-[#0d121d] p-5 md:p-7 rounded-3xl shadow-sm border border-cream-400/70 dark:border-amber-500/20 border-t-2 border-t-saffron-500 dark:border-t-amber-500 relative overflow-hidden space-y-4 transition-colors duration-300">
+                <div className="flex-1 bg-white dark:bg-[#0d121d] p-5 md:p-7 rounded-3xl shadow-sm border border-cream-300 dark:border-amber-500/20 hover:border-cream-400 dark:hover:border-amber-500/30 relative overflow-hidden space-y-4 transition-colors duration-300">
                   <div className="flex items-center justify-between border-b border-cream-300/40 dark:border-amber-500/20 pb-3">
                     <div className="flex items-center gap-2">
                       <h3 className="font-cinzel font-bold text-base md:text-lg text-saffron-950 dark:text-amber-300">
@@ -615,11 +614,10 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
                       <button
                         type="button"
                         onClick={() => speakAnswer(msg.id, msg.content)}
-                        className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-2xs ${
-                          speakingMessageId === msg.id
-                            ? 'bg-gradient-to-r from-terracotta-500 to-terracotta-600 text-white'
-                            : 'bg-cream-200 dark:bg-slate-900 hover:bg-saffron-100 dark:hover:bg-slate-800 border border-cream-400 dark:border-amber-500/20 text-saffron-900 dark:text-amber-200'
-                        }`}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer shadow-2xs ${speakingMessageId === msg.id
+                          ? 'bg-gradient-to-r from-terracotta-500 to-terracotta-600 text-white'
+                          : 'bg-cream-200 dark:bg-slate-900 hover:bg-saffron-100 dark:hover:bg-slate-800 border border-cream-400 dark:border-amber-500/20 text-saffron-900 dark:text-amber-200'
+                          }`}
                         title={speakingMessageId === msg.id ? 'Stop listening' : 'Listen aloud'}
                       >
                         {speakingMessageId === msg.id ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
@@ -787,8 +785,8 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
                   isLimitReached
                     ? "Session limit reached. Click 'New Inquiry' above to continue..."
                     : messages.length > 0
-                    ? "Ask a follow-up inquiry (e.g. 'Can you explain the 2nd verse in more detail?')..."
-                    : "Ask the sacred scriptures (e.g. 'How does one attain mental peace amidst adversity?')..."
+                      ? "Ask a follow-up inquiry (e.g. 'Can you explain the 2nd verse in more detail?')..."
+                      : "Ask the sacred scriptures (e.g. 'How does one attain mental peace amidst adversity?')..."
                 }
                 className="w-full p-3 pr-24 border border-cream-400/80 dark:border-amber-500/20 hover:border-cream-500 dark:hover:border-amber-500/40 bg-cream-50 dark:bg-slate-900 rounded-2xl text-stone-900 dark:text-slate-100 placeholder-stone-400 dark:placeholder-slate-500 font-medium focus:outline-none focus:ring-2 focus:ring-saffron-400/20 dark:focus:ring-amber-500/20 focus:border-saffron-500 dark:focus:border-amber-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs sm:text-sm leading-relaxed resize-none min-h-[48px] max-h-28 disabled:opacity-60 disabled:cursor-not-allowed"
                 rows={1}
@@ -799,11 +797,10 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
                   type="button"
                   disabled={isLimitReached}
                   onClick={isListening ? stopListening : startListening}
-                  className={`p-2 rounded-xl transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                    isListening
-                      ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-xs'
-                      : 'text-stone-500 dark:text-slate-400 hover:text-saffron-700 dark:hover:text-amber-300 hover:bg-cream-200 dark:hover:bg-slate-800'
-                  }`}
+                  className={`p-2 rounded-xl transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${isListening
+                    ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-xs'
+                    : 'text-stone-500 dark:text-slate-400 hover:text-saffron-700 dark:hover:text-amber-300 hover:bg-cream-200 dark:hover:bg-slate-800'
+                    }`}
                   title={isListening ? "Listening... click to stop" : "Speak query via microphone"}
                 >
                   {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
@@ -824,6 +821,9 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
               </div>
             </div>
           </form>
+          <p className="text-[11px] text-center text-stone-500 dark:text-slate-400 mt-2 font-medium tracking-wide">
+            AI can make mistakes. Please check responses.
+          </p>
         </div>
       </div>
     </div>

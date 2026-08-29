@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"compress/gzip"
 	"io"
 	"log"
 	"net/http"
@@ -13,6 +14,29 @@ import (
 
 	"github.com/joho/godotenv"
 )
+
+type gzipResponseWriter struct {
+	io.Writer
+	http.ResponseWriter
+}
+
+func (w gzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+func gzipMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			next(w, r)
+			return
+		}
+		w.Header().Set("Content-Encoding", "gzip")
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+		gzw := gzipResponseWriter{Writer: gz, ResponseWriter: w}
+		next(gzw, r)
+	}
+}
 
 func ensureUnpacked(dbPath, zipPath string) {
 	if _, err := os.Stat(dbPath); err == nil {
@@ -67,10 +91,10 @@ func main() {
 
 	handler := api.NewHandler(db)
 
-	http.HandleFunc("/api/read", handler.ReadVerses)
-	http.HandleFunc("/api/search", handler.SearchVerses)
-	http.HandleFunc("/api/veda/read", handler.ReadVedas)
-	http.HandleFunc("/api/veda/search", handler.SearchVedas)
+	http.HandleFunc("/api/read", gzipMiddleware(handler.ReadVerses))
+	http.HandleFunc("/api/search", gzipMiddleware(handler.SearchVerses))
+	http.HandleFunc("/api/veda/read", gzipMiddleware(handler.ReadVedas))
+	http.HandleFunc("/api/veda/search", gzipMiddleware(handler.SearchVedas))
 	http.HandleFunc("/api/ask", handler.AskAI)
 	
 	// Serve static audio files (publicly accessible for HTML5 audio streaming)

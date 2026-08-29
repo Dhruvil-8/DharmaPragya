@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { VedaMantra, VerseData } from '../types';
 import { isVerseBookmarked, toggleBookmark } from '../lib/bookmarks';
 import { formatSanskritVerseLines } from '../lib/sanskritUtils';
@@ -9,18 +9,17 @@ import {
   Share2, 
   Sparkles, 
   BookOpen, 
-  ChevronLeft, 
-  ChevronRight, 
   Check, 
   Copy, 
   User, 
   Sparkle, 
   Music, 
   Compass, 
-  Languages, 
   Feather, 
-  ExternalLink 
+  FileText
 } from 'lucide-react';
+
+export type SanskritFontSize = 'sm' | 'md' | 'lg' | 'xl';
 
 interface VedicVerseBlockProps {
   mantra: VedaMantra;
@@ -28,19 +27,19 @@ interface VedicVerseBlockProps {
   totalMantras?: number;
   onNext?: () => void;
   onPrev?: () => void;
-  readingMode?: 'study' | 'focus';
   preferredLanguage?: string;
-  autoPlayChant?: boolean;
   isActive?: boolean;
+  fontSize?: SanskritFontSize;
   globalLayers?: {
     showSvara?: boolean;
     showIAST?: boolean;
     showPadapatha?: boolean;
     showAnvaya?: boolean;
+    showTranslation?: boolean;
     showBhavartha?: boolean;
     showBhashyas?: boolean;
   };
-  onToggleGlobalLayer?: (layer: 'svara' | 'iast' | 'padapatha' | 'anvaya' | 'bhavartha' | 'bhashyas') => void;
+  onToggleGlobalLayer?: (layer: 'svara' | 'iast' | 'padapatha' | 'anvaya' | 'translation' | 'bhavartha' | 'bhashyas') => void;
   onOpenShareModal?: (details: {
     sourceName: string;
     chapterNumber: number;
@@ -52,106 +51,97 @@ interface VedicVerseBlockProps {
   onAskAboutMantra?: (mantra: VedaMantra) => void;
 }
 
-type FontSizeOption = 'sm' | 'md' | 'lg' | 'xl';
-
 function VedicVerseBlock({
   mantra,
   index = 0,
   totalMantras = 1,
   onNext,
   onPrev,
-  readingMode = 'study',
   preferredLanguage = 'hindi',
   isActive = true,
+  fontSize = 'md',
   globalLayers,
   onToggleGlobalLayer,
   onOpenShareModal,
   onAskAboutMantra,
 }: VedicVerseBlockProps) {
-  // Layer Toggles: Derived from globalLayers
+  // Layer Toggles: Derived from globalLayers (Translation & Bhashyas default to true)
   const showSvara = globalLayers?.showSvara !== undefined ? globalLayers.showSvara : true;
   const showIAST = globalLayers?.showIAST !== undefined ? globalLayers.showIAST : false;
   const showPadapatha = globalLayers?.showPadapatha !== undefined ? globalLayers.showPadapatha : true;
   const showAnvaya = globalLayers?.showAnvaya !== undefined ? globalLayers.showAnvaya : true;
-  const showBhavartha = globalLayers?.showBhavartha !== undefined ? globalLayers.showBhavartha : true;
+  const showTranslation = globalLayers?.showTranslation !== undefined ? globalLayers.showTranslation : true;
   const showBhashyas = globalLayers?.showBhashyas !== undefined ? globalLayers.showBhashyas : true;
+  
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(preferredLanguage || 'english');
   const [selectedBhashyaAuthor, setSelectedBhashyaAuthor] = useState<string>('Maharshi Dayananda Saraswati');
-
-  // Custom Font Size
-  const [fontSize, setFontSize] = useState<FontSizeOption>('lg');
-
   const [bookmarked, setBookmarked] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Load font size preference from localStorage
+  // Sync preferredLanguage prop
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedFontSize = localStorage.getItem('dharmapragya_vedic_font_size') as FontSizeOption;
-      if (savedFontSize && ['sm', 'md', 'lg', 'xl'].includes(savedFontSize)) {
-        setFontSize(savedFontSize);
-      }
+    if (preferredLanguage) {
+      setSelectedLanguage(preferredLanguage.toLowerCase());
     }
-  }, []);
+  }, [preferredLanguage]);
 
-  // Update Bookmark state
+  // Update Bookmark state & sync across windows/drawers
   useEffect(() => {
-    setBookmarked(isVerseBookmarked(mantra.veda_name, mantra.division_1, mantra.division_3));
+    setIsBookmarkedState();
+    const handleUpdate = () => {
+      setIsBookmarkedState();
+    };
+    window.addEventListener('dharmapragya_bookmarks_updated', handleUpdate);
+    return () => window.removeEventListener('dharmapragya_bookmarks_updated', handleUpdate);
   }, [mantra]);
 
-  // Set default selected author if available
-  useEffect(() => {
-    if (mantra.bhashyas && mantra.bhashyas.length > 0) {
-      const authors = Array.from(new Set(mantra.bhashyas.map(b => b.author)));
-      if (!authors.includes(selectedBhashyaAuthor)) {
-        setSelectedBhashyaAuthor(authors[0]);
-      }
+  const setIsBookmarkedState = () => {
+    setBookmarked(isVerseBookmarked(mantra.veda_name, mantra.division_1, mantra.division_3));
+  };
+
+  // Find English translation across bhashyas
+  const englishTranslation = useMemo(() => {
+    if (!mantra.bhashyas || mantra.bhashyas.length === 0) return null;
+    const found = mantra.bhashyas.find(
+      b => b.language?.toLowerCase() === 'english' || 
+           b.author?.toLowerCase().includes('griffith') ||
+           b.author?.toLowerCase().includes('english')
+    );
+    if (found && (found.bhavartha || found.mantra_vishaya)) {
+      return {
+        author: found.author || 'Ralph T.H. Griffith',
+        text: (found.bhavartha || found.mantra_vishaya || '').trim(),
+      };
     }
-  }, [mantra, selectedBhashyaAuthor]);
+    return null;
+  }, [mantra.bhashyas]);
 
-  const handleFontSizeChange = (size: FontSizeOption) => {
-    setFontSize(size);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('dharmapragya_vedic_font_size', size);
+  // Find Hindi translation across bhashyas
+  const hindiTranslation = useMemo(() => {
+    if (!mantra.bhashyas || mantra.bhashyas.length === 0) return null;
+    const found = mantra.bhashyas.find(
+      b => b.language?.toLowerCase() === 'hindi' && (b.bhavartha || b.mantra_vishaya)
+    );
+    if (found && (found.bhavartha || found.mantra_vishaya)) {
+      return {
+        author: found.author || 'Maharshi Dayananda Saraswati',
+        text: (found.bhavartha || found.mantra_vishaya || '').trim(),
+      };
     }
-  };
+    return null;
+  }, [mantra.bhashyas]);
 
-  const fontSizeClassMap: Record<FontSizeOption, string> = {
-    sm: 'text-base sm:text-lg md:text-xl leading-relaxed',
-    md: 'text-lg sm:text-xl md:text-2xl leading-relaxed',
-    lg: 'text-xl sm:text-2xl md:text-3xl leading-relaxed',
-    xl: 'text-2xl sm:text-3xl md:text-4xl leading-relaxed font-semibold',
-  };
+  // Active translation strictly based on selected language (NEVER fallback to Hindi when English is requested, and vice-versa)
+  const activeTranslation = useMemo(() => {
+    if (selectedLanguage === 'english') {
+      return englishTranslation;
+    } else if (selectedLanguage === 'hindi') {
+      return hindiTranslation;
+    }
+    return null;
+  }, [selectedLanguage, englishTranslation, hindiTranslation]);
 
-  const handleCopySanskrit = () => {
-    const textToCopy = showSvara ? mantra.sanskrit_svara : mantra.sanskrit_plain;
-    navigator.clipboard.writeText(textToCopy);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const toggleBookmarkCurrent = () => {
-    const tempVerse: VerseData = {
-      id: mantra.krama_number,
-      section_id: mantra.division_1,
-      verse_number: mantra.division_3,
-      sanskrit_text: mantra.sanskrit_plain,
-      transliteration: mantra.transliteration_iast || '',
-      word_meanings: mantra.word_meanings?.[0]?.padartha_text || '',
-      source_name: mantra.veda_name,
-      chapter_name: mantra.coordinate_str,
-      chapter_number: mantra.division_1,
-      translations: mantra.bhashyas.map(b => ({
-        author: b.author,
-        language: b.language,
-        text: b.bhavartha || b.mantra_vishaya || '',
-      })),
-      commentaries: [],
-    };
-    const nowBookmarked = toggleBookmark(tempVerse);
-    setBookmarked(nowBookmarked);
-  };
-
-  // Group bhashyas by author
+  // Group traditional bhashyas by author
   const bhashyasByAuthor = useMemo(() => {
     const map: Record<string, { 
       sanskrit?: string; 
@@ -161,7 +151,7 @@ function VedicVerseBlock({
       vishaya_hi?: string; 
       tika?: string 
     }> = {};
-    mantra.bhashyas.forEach(b => {
+    mantra.bhashyas?.forEach(b => {
       if (!map[b.author]) map[b.author] = {};
       if (b.language === 'sanskrit') {
         map[b.author].sanskrit = b.bhavartha;
@@ -180,27 +170,75 @@ function VedicVerseBlock({
     return map;
   }, [mantra.bhashyas]);
 
-  const authorsList = Object.keys(bhashyasByAuthor);
-
-  // Group word meanings by commentator
-  const wordMeaningsByCommentator = useMemo(() => {
-    const map: Record<string, { sanskrit?: string; hindi?: string }> = {};
-    mantra.word_meanings.forEach(w => {
-      if (!map[w.commentator]) map[w.commentator] = {};
-      if (w.language === 'sanskrit') map[w.commentator].sanskrit = w.padartha_text;
-      if (w.language === 'hindi') map[w.commentator].hindi = w.padartha_text;
+  const authorsList = useMemo(() => {
+    const list = Object.keys(bhashyasByAuthor).filter(
+      author => !author.toLowerCase().includes('griffith') &&
+                !author.toLowerCase().includes('ralph') &&
+                (bhashyasByAuthor[author]?.hindi || bhashyasByAuthor[author]?.sanskrit || bhashyasByAuthor[author]?.vishaya_hi || bhashyasByAuthor[author]?.vishaya_sk || bhashyasByAuthor[author]?.tika)
+    );
+    // Prioritize traditional commentary authors first
+    return list.sort((a, b) => {
+      if (a.includes('Dayananda')) return -1;
+      if (b.includes('Dayananda')) return 1;
+      if (a.includes('Aryamuni')) return -1;
+      if (b.includes('Aryamuni')) return 1;
+      return a.localeCompare(b);
     });
-    return map;
-  }, [mantra.word_meanings]);
+  }, [bhashyasByAuthor]);
+
+  // Set default selected author if available
+  useEffect(() => {
+    if (authorsList.length > 0) {
+      if (!authorsList.includes(selectedBhashyaAuthor)) {
+        setSelectedBhashyaAuthor(authorsList[0]);
+      }
+    }
+  }, [authorsList, selectedBhashyaAuthor]);
+
+  const fontSizeClassMap: Record<SanskritFontSize, string> = {
+    sm: 'text-base sm:text-lg md:text-xl leading-relaxed',
+    md: 'text-lg sm:text-xl md:text-2xl leading-relaxed',
+    lg: 'text-xl sm:text-2xl md:text-3xl leading-relaxed',
+    xl: 'text-2xl sm:text-3xl md:text-4xl leading-relaxed font-semibold',
+  };
+
+  const handleCopySanskrit = () => {
+    const textToCopy = showSvara ? (mantra.sanskrit_svara || mantra.sanskrit_plain) : mantra.sanskrit_plain;
+    navigator.clipboard.writeText(textToCopy);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const toggleBookmarkCurrent = () => {
+    const tempVerse: VerseData = {
+      id: mantra.krama_number,
+      section_id: mantra.division_1,
+      verse_number: mantra.division_3,
+      sanskrit_text: mantra.sanskrit_plain,
+      transliteration: mantra.transliteration_iast || '',
+      word_meanings: mantra.word_meanings?.[0]?.padartha_text || '',
+      source_name: mantra.veda_name,
+      chapter_name: mantra.coordinate_str,
+      chapter_number: mantra.division_1,
+      translations: mantra.bhashyas?.map(b => ({
+        author: b.author,
+        language: b.language,
+        text: b.bhavartha || b.mantra_vishaya || '',
+      })) || [],
+      commentaries: [],
+    };
+    const nowBookmarked = toggleBookmark(tempVerse);
+    setBookmarked(nowBookmarked);
+  };
 
   return (
-    <article className="w-full bg-white dark:bg-[#0d121d] rounded-3xl p-5 md:p-8 shadow-sm border border-cream-400 dark:border-amber-500/20 border-t-2 border-t-saffron-500 dark:border-t-amber-500 relative flex flex-col justify-between space-y-6 transition-all duration-300">
+    <article className="w-full bg-white dark:bg-[#0d121d] rounded-3xl p-5 md:p-8 shadow-xs border border-cream-300 dark:border-amber-500/20 hover:border-cream-400 dark:hover:border-amber-500/30 transition-all duration-300 relative flex flex-col justify-between space-y-6">
       
       {/* 1. Header & Arsha Quad-Metadata Chips */}
       <div className="space-y-3 border-b border-cream-300/60 dark:border-amber-500/20 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="px-3 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-saffron-100 dark:bg-amber-950/40 text-saffron-800 dark:text-amber-300 border border-saffron-200 dark:border-amber-700/40">
+            <span className="px-3 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-saffron-100 dark:bg-amber-950/50 text-saffron-800 dark:text-amber-300 border border-saffron-200 dark:border-amber-700/40">
               {mantra.veda_name}
             </span>
             <span className="font-cinzel text-xs font-bold text-stone-600 dark:text-slate-400">
@@ -208,11 +246,32 @@ function VedicVerseBlock({
             </span>
           </div>
 
-          {mantra.ashtaka_coordinate && (
-            <span className="text-[10px] font-mono font-bold bg-cream-200 dark:bg-slate-800 px-2 py-0.5 rounded text-stone-600 dark:text-slate-400">
-              Ashtaka: {mantra.ashtaka_coordinate}
-            </span>
-          )}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {mantra.ashtaka_coordinate && (
+              <span className="text-[10px] font-mono font-bold bg-cream-200 dark:bg-slate-800 px-2 py-0.5 rounded text-stone-600 dark:text-slate-400">
+                Ashtaka: {mantra.ashtaka_coordinate}
+              </span>
+            )}
+            {mantra.kauthuma_coordinate && (
+              <span className="text-[10px] font-mono font-bold bg-cream-200 dark:bg-slate-800 px-2 py-0.5 rounded text-stone-600 dark:text-slate-400" title="Kauthuma Shakha coordinate">
+                Kauthuma: {mantra.kauthuma_coordinate}
+              </span>
+            )}
+            {mantra.ranayaniya_coordinate && (
+              <span className="text-[10px] font-mono font-bold bg-cream-200 dark:bg-slate-800 px-2 py-0.5 rounded text-stone-600 dark:text-slate-400" title="Ranayaniya Shakha coordinate">
+                Ranayaniya: {mantra.ranayaniya_coordinate}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={handleCopySanskrit}
+              className="flex items-center gap-1 px-2 py-0.5 bg-cream-100 dark:bg-slate-800 hover:bg-cream-200 dark:hover:bg-slate-700 text-stone-600 dark:text-slate-300 rounded-md border border-cream-300 dark:border-amber-500/20 transition-colors cursor-pointer text-[10px] font-semibold"
+              title="Copy Sanskrit text"
+            >
+              {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
+              <span>{copied ? 'Copied' : 'Copy'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Arsha Quad-Metadata Grid (Rishi, Devata, Chhandas, Svara) */}
@@ -267,70 +326,9 @@ function VedicVerseBlock({
         </div>
       </div>
 
-      {/* 2. Controls Bar (Svara Toggle + Font Size Controls + Copy) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-cream-100 dark:bg-slate-900/80 px-3.5 py-2 rounded-2xl border border-cream-300 dark:border-amber-500/20 text-xs">
-        {/* Svara / Accent Switch */}
-        <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-0.5 rounded-xl border border-cream-300 dark:border-amber-500/20">
-          <button
-            type="button"
-            onClick={() => onToggleGlobalLayer ? onToggleGlobalLayer('svara') : null}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-              showSvara
-                ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 dark:from-amber-500 dark:to-saffron-600 text-white shadow-2xs'
-                : 'text-stone-600 dark:text-slate-400 hover:text-saffron-800 dark:hover:text-amber-300'
-            }`}
-            title="Display authentic Vedic accent marks (Udatta, Anudatta, Svarita)"
-          >
-            स्वर-सहित (Accented)
-          </button>
-          <button
-            type="button"
-            onClick={() => onToggleGlobalLayer ? onToggleGlobalLayer('svara') : null}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-              !showSvara
-                ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 dark:from-amber-500 dark:to-saffron-600 text-white shadow-2xs'
-                : 'text-stone-600 dark:text-slate-400 hover:text-saffron-800 dark:hover:text-amber-300'
-            }`}
-            title="Display clean plain Devanagari text without accents"
-          >
-            स्वर-रहित (Plain)
-          </button>
-        </div>
-
-        {/* Font Size Selector */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-slate-400">Size:</span>
-          <div className="flex bg-white dark:bg-slate-800 p-0.5 rounded-xl border border-cream-300 dark:border-amber-500/20">
-            {(['sm', 'md', 'lg', 'xl'] as FontSizeOption[]).map((size) => (
-              <button
-                key={size}
-                type="button"
-                onClick={() => handleFontSizeChange(size)}
-                className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer ${
-                  fontSize === size
-                    ? 'bg-saffron-600 dark:bg-amber-500 text-white shadow-2xs'
-                    : 'text-stone-600 dark:text-slate-400 hover:text-saffron-800 dark:hover:text-amber-300'
-                }`}
-              >
-                {size}
-              </button>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            onClick={handleCopySanskrit}
-            className="p-1.5 ml-1 text-stone-500 dark:text-slate-400 hover:text-saffron-700 dark:hover:text-amber-300 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-            title="Copy Sanskrit Mantra"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* 3. Sacred Mantra Text Display */}
+      {/* 2. Sacred Mantra Text Display */}
       <div className="py-2 text-center select-text space-y-2">
-        {formatSanskritVerseLines(showSvara ? mantra.sanskrit_svara : mantra.sanskrit_plain).map((line, idx) => (
+        {formatSanskritVerseLines(showSvara ? (mantra.sanskrit_svara || mantra.sanskrit_plain) : mantra.sanskrit_plain).map((line, idx) => (
           <p 
             key={idx} 
             className={`font-sanskrit text-saffron-950 dark:text-amber-200 tracking-wide font-normal ${fontSizeClassMap[fontSize]}`}
@@ -350,68 +348,7 @@ function VedicVerseBlock({
         )}
       </div>
 
-      {/* 4. Layer Visibility Toggle Pills Bar */}
-      <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-cream-300/40 dark:border-amber-500/20">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-slate-400 mr-1">Layers:</span>
-        
-        {mantra.transliteration_iast && (
-          <button
-            type="button"
-            onClick={() => onToggleGlobalLayer ? onToggleGlobalLayer('iast') : null}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border cursor-pointer ${
-              showIAST
-                ? 'bg-saffron-600 dark:bg-amber-500 text-white border-saffron-600 dark:border-amber-400 shadow-2xs'
-                : 'bg-cream-200 dark:bg-slate-800 border-cream-300 dark:border-amber-500/20 text-stone-700 dark:text-slate-300'
-            }`}
-          >
-            IAST
-          </button>
-        )}
-
-        {(mantra.padapatha_svara || mantra.padapatha_plain) && (
-          <button
-            type="button"
-            onClick={() => onToggleGlobalLayer ? onToggleGlobalLayer('padapatha') : null}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border cursor-pointer ${
-              showPadapatha
-                ? 'bg-saffron-600 dark:bg-amber-500 text-white border-saffron-600 dark:border-amber-400 shadow-2xs'
-                : 'bg-cream-200 dark:bg-slate-800 border-cream-300 dark:border-amber-500/20 text-stone-700 dark:text-slate-300'
-            }`}
-          >
-            Padapatha (पदपाठः)
-          </button>
-        )}
-
-        {mantra.word_meanings && mantra.word_meanings.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onToggleGlobalLayer ? onToggleGlobalLayer('anvaya') : null}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border cursor-pointer ${
-              showAnvaya
-                ? 'bg-saffron-600 dark:bg-amber-500 text-white border-saffron-600 dark:border-amber-400 shadow-2xs'
-                : 'bg-cream-200 dark:bg-slate-800 border-cream-300 dark:border-amber-500/20 text-stone-700 dark:text-slate-300'
-            }`}
-          >
-            Word Meanings (पदार्थः)
-          </button>
-        )}
-
-        {authorsList.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onToggleGlobalLayer ? onToggleGlobalLayer('bhashyas') : null}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border cursor-pointer ${
-              showBhashyas
-                ? 'bg-saffron-600 dark:bg-amber-500 text-white border-saffron-600 dark:border-amber-400 shadow-2xs'
-                : 'bg-cream-200 dark:bg-slate-800 border-cream-300 dark:border-amber-500/20 text-stone-700 dark:text-slate-300'
-            }`}
-          >
-            Bhashya & Bhavartha
-          </button>
-        )}
-      </div>
-
-      {/* 5. Expanded Layers Content */}
+      {/* 3. Expanded Layers Content */}
       
       {/* A. Padapatha (पदपाठः) */}
       {showPadapatha && (mantra.padapatha_svara || mantra.padapatha_plain) && (
@@ -449,7 +386,56 @@ function VedicVerseBlock({
         </div>
       )}
 
-      {/* C. Multi-Bhashya & Bhavartha Commentary View */}
+      {/* C. Translation Layer (English / Hindi depending on selected language) */}
+      {showTranslation && activeTranslation && activeTranslation.text && (
+        <div className="p-4.5 bg-amber-50/70 dark:bg-amber-950/25 rounded-2xl border border-amber-200/70 dark:border-amber-500/30 space-y-2 animate-fade-in shadow-2xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 dark:text-amber-300 uppercase tracking-wider">
+              <FileText className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
+              <span>{selectedLanguage === 'english' ? 'English Translation' : 'हिंदी अनुवाद / भावार्थ'}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Optional inline language switch if both exist */}
+              {englishTranslation && hindiTranslation && (
+                <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-900/80 p-0.5 rounded-lg border border-amber-200/60 dark:border-amber-500/30 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLanguage('english')}
+                    className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                      selectedLanguage === 'english'
+                        ? 'bg-saffron-600 dark:bg-amber-500 text-white'
+                        : 'text-stone-600 dark:text-slate-400 hover:text-saffron-800'
+                    }`}
+                  >
+                    English
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLanguage('hindi')}
+                    className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
+                      selectedLanguage === 'hindi'
+                        ? 'bg-saffron-600 dark:bg-amber-500 text-white'
+                        : 'text-stone-600 dark:text-slate-400 hover:text-saffron-800'
+                    }`}
+                  >
+                    हिंदी
+                  </button>
+                </div>
+              )}
+
+              <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-300 bg-saffron-100/90 dark:bg-amber-900/40 px-2 py-0.5 rounded border border-saffron-200/60 dark:border-amber-700/40">
+                {activeTranslation.author}
+              </span>
+            </div>
+          </div>
+          <p className="font-serif italic text-stone-900 dark:text-slate-100 font-medium text-sm md:text-base leading-relaxed whitespace-pre-line">
+            &quot;{activeTranslation.text}&quot;
+          </p>
+        </div>
+      )}
+
+      {/* D. Multi-Bhashya & Bhavartha Commentary View */}
       {showBhashyas && authorsList.length > 0 && (
         <div className="p-4.5 bg-cream-100/90 dark:bg-slate-900/70 rounded-2xl border border-cream-300 dark:border-amber-500/20 space-y-3 animate-fade-in">
           {/* Author Selector Tabs */}
@@ -484,7 +470,7 @@ function VedicVerseBlock({
                 </div>
               )}
 
-              {/* Bhavartha (Purport) */}
+              {/* Bhavartha (Hindi Purport) */}
               {bhashyasByAuthor[selectedBhashyaAuthor].hindi && (
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold uppercase text-saffron-800 dark:text-amber-400">
@@ -496,8 +482,8 @@ function VedicVerseBlock({
                 </div>
               )}
 
-              {/* English Translation */}
-              {bhashyasByAuthor[selectedBhashyaAuthor].english && (
+              {/* English Translation under author if present */}
+              {bhashyasByAuthor[selectedBhashyaAuthor].english && !englishTranslation && (
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold uppercase text-saffron-800 dark:text-amber-400">
                     English Translation:
@@ -508,6 +494,7 @@ function VedicVerseBlock({
                 </div>
               )}
 
+              {/* Sanskrit Purport */}
               {bhashyasByAuthor[selectedBhashyaAuthor].sanskrit && (
                 <div className="space-y-1 pt-1 border-t border-cream-200 dark:border-amber-900/30">
                   <span className="text-[10px] font-bold uppercase text-saffron-800 dark:text-amber-400 font-sanskrit">
@@ -531,7 +518,7 @@ function VedicVerseBlock({
         </div>
       )}
 
-      {/* D. Cross-Veda Concordance Link */}
+      {/* E. Cross-Veda Concordance Link */}
       {(mantra.rigveda_ref || mantra.yajurveda_ref || mantra.atharvaveda_ref) && (
         <div className="flex items-center gap-2 text-xs bg-saffron-50 dark:bg-amber-950/30 p-2.5 rounded-xl border border-saffron-200 dark:border-amber-800/30 text-saffron-900 dark:text-amber-300">
           <Compass className="w-4 h-4 text-saffron-600 dark:text-amber-400 shrink-0" />
@@ -543,7 +530,7 @@ function VedicVerseBlock({
         </div>
       )}
 
-      {/* 6. Interactive Action Bar & Navigation */}
+      {/* 4. Interactive Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-cream-300/60 dark:border-amber-500/20">
         <div className="flex flex-wrap items-center gap-2">
           {/* Ask AI about this Mantra */}
@@ -566,7 +553,7 @@ function VedicVerseBlock({
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 border cursor-pointer ${
               bookmarked
                 ? 'bg-saffron-50 dark:bg-amber-950/40 text-saffron-700 dark:text-amber-300 border-saffron-300 dark:border-amber-600'
-                : 'bg-cream-200 dark:bg-slate-900 hover:bg-saffron-100 dark:hover:bg-slate-800 text-stone-600 dark:text-slate-400 border-cream-400 dark:border-amber-500/20'
+                : 'bg-cream-200 dark:bg-slate-900 hover:bg-saffron-100 dark:hover:bg-slate-800 text-stone-600 dark:text-slate-400 border border-cream-400 dark:border-amber-500/20'
             }`}
             title={bookmarked ? "Bookmarked to Sanctuary" : "Bookmark to Sanctuary"}
           >
@@ -584,42 +571,13 @@ function VedicVerseBlock({
                 verseNumber: mantra.division_3,
                 sanskritText: mantra.sanskrit_svara,
                 transliteration: mantra.transliteration_iast,
-                translationText: mantra.bhashyas?.[0]?.bhavartha || mantra.coordinate_str,
+                translationText: englishTranslation?.text || mantra.bhashyas?.[0]?.bhavartha || mantra.coordinate_str,
               })}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-cream-200 dark:bg-slate-900 hover:bg-saffron-100 dark:hover:bg-slate-800 text-stone-700 dark:text-slate-300 border border-cream-400 dark:border-amber-500/20 transition-all duration-200 cursor-pointer"
               title="Generate shareable card"
             >
               <Share2 className="w-3.5 h-3.5" />
               <span>Share</span>
-            </button>
-          )}
-        </div>
-
-        {/* Next / Prev Navigation */}
-        <div className="flex items-center gap-1.5">
-          {onPrev && (
-            <button
-              type="button"
-              onClick={onPrev}
-              disabled={index === 0}
-              className="p-1.5 rounded-xl bg-cream-200 dark:bg-slate-900 hover:bg-cream-300 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed border border-cream-400 dark:border-amber-500/20 cursor-pointer"
-              title="Previous Mantra"
-            >
-              <ChevronLeft className="w-4 h-4 text-saffron-800 dark:text-amber-300" />
-            </button>
-          )}
-          <span className="text-[11px] font-bold text-stone-500 dark:text-slate-400 px-1">
-            {index + 1} / {totalMantras}
-          </span>
-          {onNext && (
-            <button
-              type="button"
-              onClick={onNext}
-              disabled={index >= totalMantras - 1}
-              className="p-1.5 rounded-xl bg-cream-200 dark:bg-slate-900 hover:bg-cream-300 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed border border-cream-400 dark:border-amber-500/20 cursor-pointer"
-              title="Next Mantra"
-            >
-              <ChevronRight className="w-4 h-4 text-saffron-800 dark:text-amber-300" />
             </button>
           )}
         </div>
@@ -630,3 +588,4 @@ function VedicVerseBlock({
 }
 
 export default React.memo(VedicVerseBlock);
+

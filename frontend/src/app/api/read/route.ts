@@ -17,7 +17,8 @@ export async function GET(req: Request) {
     const res = await fetch(url, {
       headers: {
         'X-App-Token': secret
-      }
+      },
+      cache: 'no-store'
     });
     
     const data = await res.json();

@@ -18,6 +18,7 @@ export async function GET(req: Request) {
       headers: {
         'X-App-Token': secret,
       },
+      cache: 'no-store',
     });
 
     const data = await res.json();

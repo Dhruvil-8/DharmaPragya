@@ -53,3 +53,95 @@ export function formatSanskritVerseLines(text?: string | null): string[] {
 
   return formatted.length > 0 ? formatted : [cleanedText.trim()];
 }
+
+export interface ParsedWordMeaning {
+  word: string;
+  meaning: string;
+}
+
+/**
+ * Robust parser for scripture word-by-word Anvaya (Gita, Upanishads, etc.).
+ * Handles em-dash (—), en-dash (–), double hyphen (--), equals (=), colons (:),
+ * and preserves internal commas in English explanations.
+ */
+export function parseWordMeanings(raw?: string | null): ParsedWordMeaning[] {
+  if (!raw || !raw.trim()) return [];
+
+  // Split on semicolons or newlines (do NOT split on commas as meanings frequently contain commas)
+  const items = raw.split(/[;\r\n]+/).map(s => s.trim()).filter(Boolean);
+  const results: ParsedWordMeaning[] = [];
+
+  for (const item of items) {
+    // Priority 1: Match em-dash, en-dash, horizon bar, double dash, equals, or colon
+    const dashMatch = item.match(/^(.+?)\s*(?:[\u2014\u2013\u2015]|--|=|\s+-\s+|:\s*)\s*(.+)$/);
+    if (dashMatch) {
+      const word = dashMatch[1].trim();
+      const meaning = dashMatch[2].trim();
+      if (word && meaning) {
+        results.push({ word, meaning });
+        continue;
+      }
+    }
+
+    // Priority 2: Fallback for single hyphen with space or at boundary
+    const singleHyphenMatch = item.match(/^([^\s-][^-]*?)\s+-\s+(.+)$/);
+    if (singleHyphenMatch) {
+      const word = singleHyphenMatch[1].trim();
+      const meaning = singleHyphenMatch[2].trim();
+      if (word && meaning) {
+        results.push({ word, meaning });
+        continue;
+      }
+    }
+
+    // Priority 3: Fallback for "word - meaning" where word might be single token
+    const parts = item.split(/\s*-\s*/);
+    if (parts.length >= 2) {
+      const word = parts[0].trim();
+      const meaning = parts.slice(1).join(' - ').trim();
+      if (word && meaning) {
+        results.push({ word, meaning });
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Cleans commentary text to remove word-by-word prefix artifacts (e.g. Swami Sivananda)
+ * and suppresses "No Commentary." placeholder markers.
+ */
+export function cleanCommentaryText(author: string, text?: string | null): string {
+  if (!text || !text.trim()) return '';
+
+  const trimmed = text.trim();
+
+  // If text is simply "No Commentary." or ".No Commentary."
+  if (/^\.?\s*No Commentary\.?\s*$/i.test(trimmed) || trimmed.endsWith('No Commentary.') && trimmed.length < 30) {
+    return '';
+  }
+
+  // If commentary has embedded ".Commentary <actual text>" or "Commentary: <actual text>"
+  const commMatch = trimmed.match(/\.?\s*Commentary[:\s]+([\s\S]+)$/i);
+  if (commMatch && commMatch[1].trim()) {
+    const extracted = commMatch[1].trim();
+    if (/^\.?\s*No Commentary\.?\s*$/i.test(extracted)) {
+      return '';
+    }
+    return extracted;
+  }
+
+  // If Swami Sivananda commentary ends with "No Commentary." after word gloss, remove it
+  if (trimmed.includes('No Commentary.')) {
+    const withoutNoComm = trimmed.replace(/\.?\s*No Commentary\.?\s*$/i, '').trim();
+    // If only word gloss remains and no actual commentary, return empty
+    if (/^[\d.]+\s*[\u0900-\u097F]/.test(withoutNoComm) && !withoutNoComm.includes('Commentary')) {
+      return '';
+    }
+    return withoutNoComm;
+  }
+
+  return trimmed;
+}
+

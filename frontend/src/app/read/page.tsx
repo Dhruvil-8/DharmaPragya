@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 };
 
 async function getSources(): Promise<SourceData[]> {
-  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8080';
+  const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://dhruvil8-dharmapragya.hf.space';
   const secret = process.env.FRONTEND_SECRET || '';
 
   try {
@@ -50,10 +50,11 @@ export default async function ReadDirectoryPage() {
   const sources = await getSources();
 
   const categorize = (name: string) => {
+    if (name === 'Bhagavad Gita' || name.toLowerCase().includes('gita')) return 'Gita (गीता)';
     if (name.includes('Upanishad')) return 'Upanishads';
     if (name.includes('Veda') || name.includes('Rigveda')) return 'Vedas';
     if (name.includes('Purana') || name === 'Harivamsha Purana') return 'Puranas';
-    if (name === 'Bhagavad Gita' || name === 'Mahabharata' || name === 'Valmiki Ramayana') return 'Itihasa';
+    if (name === 'Mahabharata' || name === 'Valmiki Ramayana') return 'Itihasa';
     return 'Other Scriptures';
   };
 

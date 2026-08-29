@@ -1,33 +1,24 @@
+'use client';
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { VerseData, SectionData, SourceData, VedaInfo, VedaSection, VedaMantra } from '../types';
-import VerseBlock from './VerseBlock';
+import VerseBlock, { SanskritFontSize } from './VerseBlock';
 import VedicVerseBlock from './VedicVerseBlock';
 import { 
   ChevronRight, 
   ChevronLeft,
-  List, 
-  BookMarked, 
-  ArrowLeft, 
   BookOpen, 
-  Languages, 
-  Volume2, 
-  VolumeX, 
   X, 
   Search, 
   Command, 
   Sparkles,
   ChevronDown,
   Layers,
-  SlidersHorizontal,
-  Bookmark,
   Compass,
   Menu,
   Type,
-  Maximize2,
-  Minimize2,
-  FileText,
   AlignLeft,
-  Grid
+  FileText
 } from 'lucide-react';
 
 interface ReadModeProps {
@@ -74,9 +65,8 @@ export default function ReadMode({
   const [vedaMantras, setVedaMantras] = useState<VedaMantra[]>([]);
   const [currentMantraIndex, setCurrentMantraIndex] = useState<number>(0);
 
-  // Reader Usability Settings
-  const [viewLayout, setViewLayout] = useState<'continuous' | 'card'>('continuous');
-  const [fontSizeOffset, setFontSizeOffset] = useState<number>(0); // -2 to +4
+  // Reader Global View Settings (Persisted in localStorage)
+  const [fontSize, setFontSize] = useState<SanskritFontSize>('md');
   const [autoPlayChant, setAutoPlayChant] = useState<boolean>(true);
   const [preferredLanguage, setPreferredLanguage] = useState<string>('english');
   const [isTocDrawerOpen, setIsTocDrawerOpen] = useState<boolean>(false);
@@ -108,14 +98,22 @@ export default function ReadMode({
     showBhashyas: true,
   });
 
-  // Load saved layer preferences on initial mount
+  // Load saved preferences on initial mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('dharmapragya_global_layers');
-        if (saved) {
-          setGlobalLayers(prev => ({ ...prev, ...JSON.parse(saved) }));
+        const savedLayers = localStorage.getItem('dharmapragya_global_layers');
+        if (savedLayers) {
+          setGlobalLayers(prev => ({ ...prev, ...JSON.parse(savedLayers) }));
         }
+        const savedFontSize = localStorage.getItem('dharmapragya_font_size') as SanskritFontSize;
+        if (savedFontSize && ['sm', 'md', 'lg', 'xl'].includes(savedFontSize)) {
+          setFontSize(savedFontSize);
+        }
+        const savedLang = localStorage.getItem('preferredLanguage');
+        if (savedLang) setPreferredLanguage(savedLang);
+        const savedAutoPlay = localStorage.getItem('autoPlayChant');
+        if (savedAutoPlay !== null) setAutoPlayChant(savedAutoPlay === 'true');
       } catch (e) {}
     }
   }, []);
@@ -150,6 +148,13 @@ export default function ReadMode({
     });
   };
 
+  const handleFontSizeChange = (newSize: SanskritFontSize) => {
+    setFontSize(newSize);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dharmapragya_font_size', newSize);
+    }
+  };
+
   // Progressive Lazy Rendering State for 60fps Continuous Mode
   const [visibleCount, setVisibleCount] = useState<number>(25);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -165,7 +170,6 @@ export default function ReadMode({
 
   // Progressive Lazy Loading Observer (Batches 25 verses at a time when scrolling near bottom)
   useEffect(() => {
-    if (viewLayout !== 'continuous') return;
     const currentRef = loadMoreRef.current;
     if (!currentRef) return;
 
@@ -179,7 +183,7 @@ export default function ReadMode({
     return () => {
       observer.disconnect();
     };
-  }, [viewLayout, chapterData.length, vedaMantras.length, visibleCount]);
+  }, [chapterData.length, vedaMantras.length, visibleCount]);
 
   // Debounced search effect
   useEffect(() => {
@@ -297,27 +301,6 @@ export default function ReadMode({
     fetchSourcesAndVedas();
   }, [apiBaseUrl]);
 
-  // Load preferences from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedLang = localStorage.getItem('preferredLanguage');
-      if (savedLang) setPreferredLanguage(savedLang);
-
-      const savedAutoPlay = localStorage.getItem('autoPlayChant');
-      if (savedAutoPlay !== null) setAutoPlayChant(savedAutoPlay === 'true');
-
-      const savedLayout = localStorage.getItem('read_view_layout');
-      if (savedLayout === 'card' || savedLayout === 'continuous') setViewLayout(savedLayout);
-    }
-  }, []);
-
-  const handleLayoutChange = (layout: 'continuous' | 'card') => {
-    setViewLayout(layout);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('read_view_layout', layout);
-    }
-  };
-
   // Deep-linking navigation
   useEffect(() => {
     if (!targetCoordinate) return;
@@ -339,7 +322,8 @@ export default function ReadMode({
     );
 
     if (matchedSource) {
-      setCurrentCategory(matchedSource.type);
+      const isGitaText = matchedSource.name === 'Bhagavad Gita' || matchedSource.name.toLowerCase().includes('gita');
+      setCurrentCategory(isGitaText ? 'Gita' : matchedSource.type);
       setCurrentSource(matchedSource.name);
       loadSourceAndSection(matchedSource.name, targetCoordinate.chapterNumber, targetCoordinate.verseNumber);
     }
@@ -386,8 +370,13 @@ export default function ReadMode({
       if (targetMantraNum && mantrasArray.length > 0) {
         const mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_3 === targetMantraNum || m.krama_number === targetMantraNum);
         setCurrentMantraIndex(mIdx >= 0 ? mIdx : 0);
+        if (mIdx >= 0) {
+          setVisibleCount(prev => Math.max(prev, mIdx + 30));
+        }
         setTimeout(() => {
-          const el = document.getElementById(`verse-anchor-${targetMantraNum}`) || document.getElementById(`verse-anchor-${mIdx + 1}`);
+          const el = document.getElementById(`mantra-anchor-${targetMantraNum}`) || 
+                     document.getElementById(`verse-anchor-${targetMantraNum}`) || 
+                     document.getElementById(`mantra-anchor-${mIdx + 1}`);
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 200);
       } else if (typeof window !== 'undefined') {
@@ -420,10 +409,13 @@ export default function ReadMode({
       if (targetVerseNum && chData.length > 0) {
         const vIdx = chData.findIndex((v: VerseData) => v.verse_number === targetVerseNum);
         setCurrentVerseIndex(vIdx >= 0 ? vIdx : 0);
+        if (vIdx >= 0) {
+          setVisibleCount(prev => Math.max(prev, vIdx + 30));
+        }
         setTimeout(() => {
           const el = document.getElementById(`verse-anchor-${targetVerseNum}`);
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
+        }, 150);
       } else {
         setCurrentVerseIndex(0);
         if (typeof window !== 'undefined') {
@@ -445,6 +437,8 @@ export default function ReadMode({
     setCurrentVeda(null);
     setCurrentSection(null);
     setChapterData([]);
+    const isGitaText = sourceName === 'Bhagavad Gita' || sourceName.toLowerCase().includes('gita');
+    setCurrentCategory(isGitaText ? 'Gita' : (sources.find(s => s.name === sourceName)?.type || null));
     try {
       const res = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}`);
       const data = await res.json();
@@ -488,11 +482,13 @@ export default function ReadMode({
     setSearchResults([]);
     setVedaSearchResults([]);
 
+    const isGitaText = verse.source_name === 'Bhagavad Gita' || verse.source_name.toLowerCase().includes('gita');
     const matchedSource = sources.find(s => s.name.toLowerCase() === verse.source_name.toLowerCase());
-    if (matchedSource) {
-      setCurrentCategory(matchedSource.type);
-      setCurrentSource(matchedSource.name);
-      await loadSourceAndSection(matchedSource.name, verse.chapter_number, verse.verse_number);
+    if (matchedSource || isGitaText) {
+      const srcName = matchedSource ? matchedSource.name : verse.source_name;
+      setCurrentCategory(isGitaText ? 'Gita' : (matchedSource?.type || 'Itihasa/Smriti'));
+      setCurrentSource(srcName);
+      await loadSourceAndSection(srcName, verse.chapter_number, verse.verse_number);
     }
   };
 
@@ -564,21 +560,22 @@ export default function ReadMode({
   };
 
   const goToVerseIndex = (idx: number) => {
-    if (idx >= visibleCount) {
-      setVisibleCount(idx + 25);
-    }
+    setVisibleCount(prev => Math.max(prev, idx + 30));
     if (currentVeda) {
       setCurrentMantraIndex(idx);
     } else {
       setCurrentVerseIndex(idx);
     }
-    const verseNum = currentVeda ? (idx + 1) : chapterData[idx]?.verse_number;
     setTimeout(() => {
-      const element = document.getElementById(`verse-anchor-${verseNum}`);
+      const element = currentVeda
+        ? (document.getElementById(`mantra-anchor-${vedaMantras[idx]?.division_3}`) || 
+           document.getElementById(`verse-anchor-${idx + 1}`) ||
+           document.getElementById(`mantra-anchor-${idx + 1}`))
+        : document.getElementById(`verse-anchor-${chapterData[idx]?.verse_number}`);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    }, 60);
+    }, 80);
   };
 
   const handleDirectVerseJump = (e: React.FormEvent) => {
@@ -598,13 +595,25 @@ export default function ReadMode({
     setVerseJumpInput('');
   };
 
-  // Group Sources by Type Category
-  const groupedSources = useMemo(() => {
-    return sources.reduce((acc, src) => {
-      if (!acc[src.type]) acc[src.type] = [];
-      acc[src.type].push(src);
-      return acc;
-    }, {} as Record<string, SourceData[]>);
+  // Group Sources by Type Category (Dedicated Gita section separate from Itihasa)
+  const gitaSource = useMemo(() => {
+    return sources.find(s => s.name === 'Bhagavad Gita' || s.name.toLowerCase().includes('gita'));
+  }, [sources]);
+
+  const epicsSources = useMemo(() => {
+    return sources.filter(s => s.type === 'Itihasa/Smriti' && s.name !== 'Bhagavad Gita' && !s.name.toLowerCase().includes('gita'));
+  }, [sources]);
+
+  const puranaSources = useMemo(() => {
+    return sources.filter(s => s.type === 'Purana');
+  }, [sources]);
+
+  const upanishadSources = useMemo(() => {
+    return sources.filter(s => s.type === 'Shruti');
+  }, [sources]);
+
+  const sutraSources = useMemo(() => {
+    return sources.filter(s => s.type === 'Sutra');
   }, [sources]);
 
   // Group Multi-Division Chapters (Skandhas, Parvas, Kandas, Samhitas)
@@ -665,6 +674,37 @@ export default function ReadMode({
 
   const isReading = Boolean((currentSource && currentSection) || (currentVeda && currentVedaSection));
 
+  // Dynamically detect which languages actually exist for the current text / Veda
+  const availableTextLanguages = useMemo(() => {
+    if (currentVeda) {
+      if (currentVeda.id === 'rigveda') return ['english', 'hindi'];
+      return ['hindi'];
+    }
+    if (chapterData && chapterData.length > 0) {
+      const langs = new Set<string>();
+      chapterData.forEach(v => {
+        v.translations?.forEach(t => {
+          if (t.language) langs.add(t.language.toLowerCase());
+        });
+        v.commentaries?.forEach(c => {
+          if (c.language) langs.add(c.language.toLowerCase());
+        });
+      });
+      const res: string[] = [];
+      if (langs.has('english')) res.push('english');
+      if (langs.has('hindi')) res.push('hindi');
+      return res.length > 0 ? res : ['english', 'hindi'];
+    }
+    return ['english', 'hindi'];
+  }, [currentVeda, chapterData]);
+
+  const effectiveLanguage = useMemo(() => {
+    if (availableTextLanguages.includes(preferredLanguage)) {
+      return preferredLanguage;
+    }
+    return availableTextLanguages[0] || 'english';
+  }, [availableTextLanguages, preferredLanguage]);
+
   const resetToLibrary = () => {
     setCurrentCategory(null);
     setCurrentSource(null);
@@ -692,7 +732,7 @@ export default function ReadMode({
                 setIsSearchOpen(true);
               }}
               onFocus={() => setIsSearchOpen(true)}
-              placeholder="Search all Vedas, Puranas, Gita & Upanishads (e.g. 'अग्निमीळे', 'karmanye', '2.47')... [Ctrl+K]"
+              placeholder="Search all Vedas, Gita, Puranas & Upanishads (e.g. 'अग्निमीळे', 'karmanye', '2.47')... [Ctrl+K]"
               className="w-full py-2.5 px-3 text-xs sm:text-sm bg-transparent text-stone-900 dark:text-slate-100 placeholder-stone-400 dark:placeholder-slate-500 font-medium focus:outline-none"
             />
             {searchQuery && (
@@ -716,7 +756,7 @@ export default function ReadMode({
 
           {/* Live Search Dropdown */}
           {isSearchOpen && (searchQuery.trim().length >= 2 || searchResults.length > 0 || vedaSearchResults.length > 0) && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#0d121d] rounded-2xl border border-cream-400 dark:border-amber-500/20 shadow-xl overflow-hidden max-h-96 overflow-y-auto z-50 animate-fade-in">
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#0d121d] rounded-2xl border border-cream-400 dark:border-amber-500/20 shadow-xl overflow-hidden max-h-[65vh] sm:max-h-96 overflow-y-auto overscroll-contain z-50 animate-fade-in">
               <div className="p-3 bg-cream-100 dark:bg-slate-900 border-b border-cream-300 dark:border-amber-500/20 flex items-center justify-between text-[11px] font-bold text-stone-600 dark:text-slate-300 uppercase tracking-wider">
                 <span>{isSearching ? 'Searching sacred scriptures...' : `${searchResults.length + vedaSearchResults.length} results found`}</span>
                 <span className="text-[10px] text-stone-400 dark:text-slate-500 font-normal">Click record to jump</span>
@@ -800,7 +840,6 @@ export default function ReadMode({
                   } else {
                     const matchedSrc = sources.find(s => s.name === val);
                     if (matchedSrc) {
-                      setCurrentCategory(matchedSrc.type);
                       loadSource(matchedSrc.name);
                     }
                   }
@@ -808,33 +847,47 @@ export default function ReadMode({
                 className="bg-cream-100 dark:bg-slate-900 text-saffron-950 dark:text-amber-300 font-bold px-3 py-1.5 rounded-xl border border-cream-400/80 dark:border-amber-500/30 text-xs focus:outline-none cursor-pointer pr-6 appearance-none font-cinzel shadow-2xs"
               >
                 <option value="">Select Scripture...</option>
-                
-                <optgroup label="The Puranas (पुराण)" className="font-bold dark:bg-slate-900">
-                  {sources.filter(s => s.type === 'Purana').map(s => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
-                  ))}
+
+                {/* 1. Dedicated Gita Section */}
+                <optgroup label="Gita (गीता)" className="font-bold dark:bg-slate-900">
+                  {gitaSource ? (
+                    <option value={gitaSource.name}>{gitaSource.name}</option>
+                  ) : (
+                    <option value="Bhagavad Gita">Bhagavad Gita</option>
+                  )}
                 </optgroup>
 
-                <optgroup label="Epics & Smriti (इतिहास)" className="font-bold dark:bg-slate-900">
-                  {sources.filter(s => s.type === 'Itihasa/Smriti').map(s => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
-                  ))}
-                </optgroup>
-
+                {/* 2. The Four Vedas */}
                 <optgroup label="The Four Vedas (वेद संहिता)" className="font-bold dark:bg-slate-900">
                   {vedas.map(v => (
                     <option key={v.id} value={v.id}>{v.name_sanskrit} ({v.name_english})</option>
                   ))}
                 </optgroup>
-
-                <optgroup label="Upanishads (उपनिषद्)" className="font-bold dark:bg-slate-900">
-                  {sources.filter(s => s.type === 'Shruti').map(s => (
+                
+                {/* 3. The Puranas */}
+                <optgroup label="The Puranas (पुराण)" className="font-bold dark:bg-slate-900">
+                  {puranaSources.map(s => (
                     <option key={s.id} value={s.name}>{s.name}</option>
                   ))}
                 </optgroup>
 
+                {/* 4. Epics & Smriti (Mahabharata, Ramayana) */}
+                <optgroup label="Epics & Smriti (इतिहास)" className="font-bold dark:bg-slate-900">
+                  {epicsSources.map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </optgroup>
+
+                {/* 5. Upanishads */}
+                <optgroup label="Upanishads (उपनिषद्)" className="font-bold dark:bg-slate-900">
+                  {upanishadSources.map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </optgroup>
+
+                {/* 6. Sutras */}
                 <optgroup label="Sutras (दर्शन सूत्र)" className="font-bold dark:bg-slate-900">
-                  {sources.filter(s => s.type === 'Sutra').map(s => (
+                  {sutraSources.map(s => (
                     <option key={s.id} value={s.name}>{s.name}</option>
                   ))}
                 </optgroup>
@@ -886,40 +939,10 @@ export default function ReadMode({
             )}
           </div>
 
-          {/* Right: Usability Toolset (Layout Mode, Font Zoom, TOC Drawer) */}
+          {/* Right: Usability Toolset (Chapter Flippers, TOC Drawer) */}
           <div className="flex items-center gap-1.5">
             {isReading && (
               <>
-                {/* Continuous vs Card Mode Switcher */}
-                <div className="flex items-center bg-cream-100 dark:bg-slate-900 p-0.5 rounded-xl border border-cream-400/80 dark:border-amber-500/30 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => handleLayoutChange('continuous')}
-                    title="Continuous Book View (Scroll all shlokas)"
-                    className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                      viewLayout === 'continuous'
-                        ? 'bg-saffron-500 text-white shadow-2xs'
-                        : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    <AlignLeft className="w-3 h-3" />
-                    <span className="hidden sm:inline">Book View</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleLayoutChange('card')}
-                    title="Single Verse Focus View"
-                    className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                      viewLayout === 'card'
-                        ? 'bg-saffron-500 text-white shadow-2xs'
-                        : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    <Grid className="w-3 h-3" />
-                    <span className="hidden sm:inline">Verse Focus</span>
-                  </button>
-                </div>
-
                 {/* Quick Chapter Flippers */}
                 <button
                   type="button"
@@ -1098,13 +1121,15 @@ export default function ReadMode({
           <div className="flex items-center justify-center flex-wrap gap-2">
             {[
               { id: 'ALL', label: 'All Sacred Library' },
-              { id: 'Purana', label: 'Puranas (पुराण)' },
-              { id: 'Itihasa/Smriti', label: 'Epics & Smriti (इतिहास)' },
+              { id: 'Gita', label: 'Gita (गीता)' },
               { id: 'VEDAS', label: 'The Four Vedas (वेद)' },
+              { id: 'Purana', label: 'Puranas (पुराण)' },
+              { id: 'Itihasa/Smriti', label: 'Epics & Itihasa (इतिहास)' },
               { id: 'Shruti', label: 'Upanishads & Sutras (दर्शन)' },
             ].map(cat => (
               <button
                 key={cat.id}
+                type="button"
                 onClick={() => setCurrentCategory(cat.id === 'ALL' ? null : cat.id)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                   (cat.id === 'ALL' && !currentCategory) || currentCategory === cat.id
@@ -1119,12 +1144,62 @@ export default function ReadMode({
 
           {/* Scripture Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {/* Puranas Cards */}
-            {(!currentCategory || currentCategory === 'Purana') && groupedSources['Purana']?.map((src) => (
+            
+            {/* 1. Dedicated Gita Card */}
+            {(!currentCategory || currentCategory === 'Gita') && gitaSource && (
+              <button 
+                key={gitaSource.id} 
+                onClick={() => loadSource(gitaSource.name)} 
+                className="group p-5 bg-gradient-to-br from-white via-saffron-50/30 to-amber-50/20 dark:from-[#0d121d] dark:via-amber-950/20 dark:to-[#0d121d] border-2 border-saffron-400/80 dark:border-amber-500/50 hover:border-saffron-500 dark:hover:border-amber-400 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-40 cursor-pointer hover:-translate-y-0.5"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-300 bg-saffron-100 dark:bg-amber-950/70 px-2.5 py-0.5 rounded-full border border-saffron-300 dark:border-amber-600/40">
+                      Gita (गीता)
+                    </span>
+                    <span className="text-[11px] font-bold text-saffron-700 dark:text-amber-400 font-cinzel">701 Verses</span>
+                  </div>
+                  <p className="text-lg font-bold font-cinzel text-saffron-950 dark:text-amber-300 group-hover:text-saffron-700 dark:group-hover:text-amber-200 transition-colors mt-1">
+                    {gitaSource.name}
+                  </p>
+                  <p className="text-[11px] text-stone-600 dark:text-slate-400 font-medium">18 Adhyayas • 20+ Commentaries</p>
+                </div>
+                <div className="flex justify-end items-center w-full pt-2 border-t border-saffron-200/60 dark:border-amber-900/40">
+                  <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 transform group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+            )}
+
+            {/* 2. The Four Vedas Cards */}
+            {(!currentCategory || currentCategory === 'VEDAS') && vedas.map((v) => (
+              <button 
+                key={v.id} 
+                onClick={() => loadVedaSource(v)} 
+                className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-40 cursor-pointer hover:-translate-y-0.5"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-slate-800 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-500/20">
+                      Veda Samhita
+                    </span>
+                  </div>
+                  <p className="text-base font-bold font-cinzel text-saffron-950 dark:text-amber-300 group-hover:text-saffron-700 dark:group-hover:text-amber-200 transition-colors">
+                    {v.name_sanskrit} ({v.name_english})
+                  </p>
+                  <p className="text-[11px] text-stone-500 dark:text-slate-400 font-medium">{v.total_mantras.toLocaleString()} Mantras &bull; Padapatha & Bhashyas</p>
+                </div>
+                <div className="flex justify-end items-center w-full pt-2">
+                  <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 transform group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
+            ))}
+
+            {/* 3. Puranas Cards */}
+            {(!currentCategory || currentCategory === 'Purana') && puranaSources.map((src) => (
               <button 
                 key={src.id} 
                 onClick={() => loadSource(src.name)} 
-                className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-36 cursor-pointer hover:-translate-y-0.5"
+                className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-40 cursor-pointer hover:-translate-y-0.5"
               >
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -1136,19 +1211,18 @@ export default function ReadMode({
                     {src.name}
                   </p>
                 </div>
-                <div className="flex justify-between items-center w-full pt-2">
-                  <span className="text-xs font-semibold text-stone-500 dark:text-slate-400">Read Chapters</span>
+                <div className="flex justify-end items-center w-full pt-2">
                   <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 transform group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>
             ))}
 
-            {/* Epics / Itihasa Cards */}
-            {(!currentCategory || currentCategory === 'Itihasa/Smriti') && groupedSources['Itihasa/Smriti']?.map((src) => (
+            {/* 4. Epics / Itihasa Cards (Mahabharata, Ramayana) */}
+            {(!currentCategory || currentCategory === 'Itihasa/Smriti') && epicsSources.map((src) => (
               <button 
                 key={src.id} 
                 onClick={() => loadSource(src.name)} 
-                className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-36 cursor-pointer hover:-translate-y-0.5"
+                className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-40 cursor-pointer hover:-translate-y-0.5"
               >
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -1160,44 +1234,18 @@ export default function ReadMode({
                     {src.name}
                   </p>
                 </div>
-                <div className="flex justify-between items-center w-full pt-2">
-                  <span className="text-xs font-semibold text-stone-500 dark:text-slate-400">Read Text</span>
+                <div className="flex justify-end items-center w-full pt-2">
                   <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 transform group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>
             ))}
 
-            {/* The Four Vedas Cards */}
-            {(!currentCategory || currentCategory === 'VEDAS') && vedas.map((v) => (
-              <button 
-                key={v.id} 
-                onClick={() => loadVedaSource(v)} 
-                className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-36 cursor-pointer hover:-translate-y-0.5"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-slate-800 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-500/20">
-                      Veda Samhita
-                    </span>
-                  </div>
-                  <p className="text-base font-bold font-cinzel text-saffron-950 dark:text-amber-300 group-hover:text-saffron-700 dark:group-hover:text-amber-200 transition-colors">
-                    {v.name_sanskrit} ({v.name_english})
-                  </p>
-                  <p className="text-[10px] text-stone-500 dark:text-slate-400 font-medium">{v.total_mantras.toLocaleString()} Mantras</p>
-                </div>
-                <div className="flex justify-between items-center w-full pt-2">
-                  <span className="text-xs font-semibold text-stone-500 dark:text-slate-400">Chant Mantras</span>
-                  <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 transform group-hover:translate-x-1 transition-transform" />
-                </div>
-              </button>
-            ))}
-
-            {/* Upanishads Cards */}
-            {(!currentCategory || currentCategory === 'Shruti') && groupedSources['Shruti']?.map((src) => (
+            {/* 5. Upanishads Cards */}
+            {(!currentCategory || currentCategory === 'Shruti') && upanishadSources.map((src) => (
               <button 
                 key={src.id} 
                 onClick={() => loadSource(src.name)} 
-                className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-36 cursor-pointer hover:-translate-y-0.5"
+                className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-40 cursor-pointer hover:-translate-y-0.5"
               >
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -1209,19 +1257,18 @@ export default function ReadMode({
                     {src.name}
                   </p>
                 </div>
-                <div className="flex justify-between items-center w-full pt-2">
-                  <span className="text-xs font-semibold text-stone-500 dark:text-slate-400">Read Verses</span>
+                <div className="flex justify-end items-center w-full pt-2">
                   <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 transform group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>
             ))}
 
-            {/* Yoga Sutras */}
-            {(!currentCategory || currentCategory === 'Shruti') && groupedSources['Sutra']?.map((src) => (
+            {/* 6. Yoga Sutras */}
+            {(!currentCategory || currentCategory === 'Shruti') && sutraSources.map((src) => (
               <button 
                 key={src.id} 
                 onClick={() => loadSource(src.name)} 
-                className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-36 cursor-pointer hover:-translate-y-0.5"
+                className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-40 cursor-pointer hover:-translate-y-0.5"
               >
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -1233,8 +1280,7 @@ export default function ReadMode({
                     {src.name}
                   </p>
                 </div>
-                <div className="flex justify-between items-center w-full pt-2">
-                  <span className="text-xs font-semibold text-stone-500 dark:text-slate-400">Read Sutras</span>
+                <div className="flex justify-end items-center w-full pt-2">
                   <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 transform group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>
@@ -1243,7 +1289,7 @@ export default function ReadMode({
         </div>
       )}
 
-      {/* 4. ACTIVE CHAPTER READING VIEW */}
+      {/* 4. ACTIVE CHAPTER READING VIEW (Continuous Book View) */}
       {!isLoading && isReading && activeChapterInfo && (
         <div className="space-y-6">
           {/* Chapter Header Banner */}
@@ -1284,12 +1330,13 @@ export default function ReadMode({
             </form>
           </div>
 
-          {/* Global Chapter Layer Visibility Bar */}
+          {/* Unified Global View Settings & Layer Controls Bar */}
           <div className="bg-white dark:bg-[#0d121d] p-3.5 rounded-2xl border border-cream-400 dark:border-amber-500/20 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+            {/* Left: Global Layer Toggles */}
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-400 flex items-center gap-1.5 mr-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-400 flex items-center gap-1 mr-1">
                 <Layers className="w-3.5 h-3.5" />
-                <span>Global Layers:</span>
+                <span>View Settings:</span>
               </span>
 
               {/* Transliteration (IAST) */}
@@ -1302,7 +1349,7 @@ export default function ReadMode({
                     : 'bg-cream-100 dark:bg-slate-900 border-cream-300 dark:border-slate-800 text-stone-500 dark:text-slate-400 opacity-60'
                 }`}
               >
-                <span>🔤 IAST Transliteration</span>
+                <span>🔤 Transliteration</span>
               </button>
 
               {/* Padapatha / Anvaya / Word Meanings */}
@@ -1318,20 +1365,18 @@ export default function ReadMode({
                 <span>📖 {currentVeda ? 'पदपाठः / पदार्थः' : 'Word-by-Word Anvaya'}</span>
               </button>
 
-              {/* Translations */}
-              {!currentVeda && (
-                <button
-                  type="button"
-                  onClick={() => handleToggleGlobalLayer('translation')}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1 ${
-                    globalLayers.showTranslation
-                      ? 'bg-saffron-600 dark:bg-amber-500 text-white border-saffron-600 dark:border-amber-400 shadow-2xs'
-                      : 'bg-cream-100 dark:bg-slate-900 border-cream-300 dark:border-slate-800 text-stone-500 dark:text-slate-400 opacity-60'
-                  }`}
-                >
-                  <span>🌐 Translation</span>
-                </button>
-              )}
+              {/* Translations (For Scriptures & Vedas) */}
+              <button
+                type="button"
+                onClick={() => handleToggleGlobalLayer('translation')}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1 ${
+                  globalLayers.showTranslation
+                    ? 'bg-saffron-600 dark:bg-amber-500 text-white border-saffron-600 dark:border-amber-400 shadow-2xs'
+                    : 'bg-cream-100 dark:bg-slate-900 border-cream-300 dark:border-slate-800 text-stone-500 dark:text-slate-400 opacity-60'
+                }`}
+              >
+                <span>🌐 Translation</span>
+              </button>
 
               {/* Commentaries / Bhashyas */}
               <button
@@ -1343,7 +1388,7 @@ export default function ReadMode({
                     : 'bg-cream-100 dark:bg-slate-900 border-cream-300 dark:border-slate-800 text-stone-500 dark:text-slate-400 opacity-60'
                 }`}
               >
-                <span>💬 {currentVeda ? 'Bhashya & Bhavartha' : 'Commentaries'}</span>
+                <span>💬 {currentVeda ? 'Vedic Bhashyas' : 'Commentaries'}</span>
               </button>
 
               {/* Svara Toggle for Vedas */}
@@ -1357,14 +1402,82 @@ export default function ReadMode({
                       : 'bg-cream-100 dark:bg-slate-900 border-cream-300 dark:border-slate-800 text-stone-500 dark:text-slate-400 opacity-60'
                   }`}
                 >
-                  <span>🕉️ Accents (Svara)</span>
+                  <span>🕉️ Svara Accents</span>
                 </button>
               )}
             </div>
 
-            <span className="text-[11px] font-medium text-stone-500 dark:text-slate-400">
-              Synchronized across all verses
-            </span>
+            {/* Right: Global Language & Sanskrit Font Sizing Controls */}
+            <div className="flex items-center gap-3 ml-auto">
+              {/* Dynamic Language Selector: Only show languages available for the current text */}
+              {availableTextLanguages.length > 1 ? (
+                <div className="flex items-center gap-1 bg-cream-100 dark:bg-slate-800 p-0.5 rounded-xl border border-cream-300 dark:border-amber-500/20">
+                  {availableTextLanguages.includes('english') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreferredLanguage('english');
+                        if (typeof window !== 'undefined') localStorage.setItem('preferredLanguage', 'english');
+                      }}
+                      className={`px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer ${
+                        effectiveLanguage === 'english'
+                          ? 'bg-saffron-600 dark:bg-amber-500 text-white shadow-2xs'
+                          : 'text-stone-600 dark:text-slate-400 hover:text-saffron-800 dark:hover:text-slate-200'
+                      }`}
+                      title="Switch translation to English (Ralph T.H. Griffith / English Commentaries)"
+                    >
+                      English
+                    </button>
+                  )}
+                  {availableTextLanguages.includes('hindi') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreferredLanguage('hindi');
+                        if (typeof window !== 'undefined') localStorage.setItem('preferredLanguage', 'hindi');
+                      }}
+                      className={`px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer ${
+                        effectiveLanguage === 'hindi'
+                          ? 'bg-saffron-600 dark:bg-amber-500 text-white shadow-2xs'
+                          : 'text-stone-600 dark:text-slate-400 hover:text-saffron-800 dark:hover:text-slate-200'
+                      }`}
+                      title="Switch translation to Hindi (हिंदी अनुवाद / भावार्थ)"
+                    >
+                      हिंदी
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center px-2.5 py-1 bg-cream-100 dark:bg-slate-800 rounded-xl border border-cream-300 dark:border-amber-500/20 text-[10px] font-bold text-stone-600 dark:text-slate-400">
+                  <span>{availableTextLanguages[0] === 'hindi' ? '🇮🇳 हिंदी (Hindi)' : '🌐 English'}</span>
+                </div>
+              )}
+
+              {/* Font Size Controls */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold text-stone-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <Type className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
+                  <span className="hidden sm:inline">Font:</span>
+                </span>
+                <div className="flex items-center gap-0.5 bg-cream-100 dark:bg-slate-800 p-0.5 rounded-xl border border-cream-300 dark:border-amber-500/20">
+                  {(['sm', 'md', 'lg', 'xl'] as SanskritFontSize[]).map(size => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => handleFontSizeChange(size)}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer ${
+                        fontSize === size
+                          ? 'bg-saffron-600 dark:bg-amber-500 text-white shadow-2xs'
+                          : 'text-stone-600 dark:text-slate-400 hover:text-saffron-800 dark:hover:text-slate-200'
+                      }`}
+                      title={`Set Sanskrit font size to ${size.toUpperCase()}`}
+                    >
+                      {size.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Quick Verse Jump Carousel Pill Bar */}
@@ -1389,73 +1502,21 @@ export default function ReadMode({
             </div>
           )}
 
-          {/* Verses Content Rendering */}
+          {/* Verses Content Rendering (Continuous Book View) */}
           {currentVeda ? (
-            /* Vedic Mantras Rendering */
-            viewLayout === 'continuous' ? (
-              /* Continuous Book View for Vedas with Progressive Lazy Batching */
-              <div className="space-y-6">
-                {vedaMantras.slice(0, visibleCount).map((mantra, idx) => (
-                  <div key={mantra.id} id={`verse-anchor-${idx + 1}`}>
-                    <VedicVerseBlock
-                      mantra={mantra}
-                      index={idx}
-                      totalMantras={vedaMantras.length}
-                      onNext={nextVerse}
-                      onPrev={prevVerse}
-                      readingMode="study"
-                      preferredLanguage={preferredLanguage}
-                      isActive={isActive}
-                      globalLayers={globalLayers}
-                      onToggleGlobalLayer={handleToggleGlobalLayer}
-                      onOpenShareModal={onOpenShareModal}
-                      onAskAboutMantra={(m) => {
-                        if (onAskAboutVerse) {
-                          onAskAboutVerse({
-                            id: m.krama_number,
-                            section_id: m.division_1,
-                            verse_number: m.division_3,
-                            sanskrit_text: m.sanskrit_svara,
-                            transliteration: m.transliteration_iast || '',
-                            word_meanings: m.word_meanings?.[0]?.padartha_text || '',
-                            source_name: m.veda_name,
-                            chapter_name: m.coordinate_str,
-                            chapter_number: m.division_1,
-                            translations: [],
-                            commentaries: [],
-                          });
-                        }
-                      }}
-                    />
-                  </div>
-                ))}
-
-                {/* Progressive Lazy Sentinel */}
-                {visibleCount < vedaMantras.length && (
-                  <div ref={loadMoreRef} className="py-6 flex flex-col items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setVisibleCount(prev => prev + 30)}
-                      className="px-5 py-2.5 bg-white dark:bg-slate-900 hover:bg-cream-100 dark:hover:bg-slate-800 rounded-2xl border border-cream-400 dark:border-amber-500/30 text-xs font-bold text-stone-700 dark:text-slate-300 transition-all cursor-pointer shadow-xs hover:scale-105"
-                    >
-                      Showing {Math.min(visibleCount, vedaMantras.length)} of {vedaMantras.length} — Load Next Batch
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Single Verse Focus Card for Vedas */
-              <div id={`verse-anchor-${currentMantraIndex + 1}`}>
-                {vedaMantras[currentMantraIndex] && (
+            /* Continuous Book View for Vedas with Progressive Lazy Batching */
+            <div className="space-y-6">
+              {vedaMantras.slice(0, visibleCount).map((mantra, idx) => (
+                <div key={mantra.id} id={`verse-anchor-${idx + 1}`}>
                   <VedicVerseBlock
-                    mantra={vedaMantras[currentMantraIndex]}
-                    index={currentMantraIndex}
+                    mantra={mantra}
+                    index={idx}
                     totalMantras={vedaMantras.length}
                     onNext={nextVerse}
                     onPrev={prevVerse}
-                    readingMode="study"
-                    preferredLanguage={preferredLanguage}
+                    preferredLanguage={effectiveLanguage}
                     isActive={isActive}
+                    fontSize={fontSize}
                     globalLayers={globalLayers}
                     onToggleGlobalLayer={handleToggleGlobalLayer}
                     onOpenShareModal={onOpenShareModal}
@@ -1477,71 +1538,59 @@ export default function ReadMode({
                       }
                     }}
                   />
-                )}
-              </div>
-            )
-          ) : (
-            /* Standard Scripture Shlokas Rendering */
-            viewLayout === 'continuous' ? (
-              /* Continuous Book View for Scriptures with Progressive Lazy Batching */
-              <div className="space-y-6">
-                {chapterData.slice(0, visibleCount).map((verse, idx) => (
-                  <div key={verse.id} id={`verse-anchor-${verse.verse_number}`}>
-                    <VerseBlock 
-                      verse={verse} 
-                      index={idx} 
-                      totalVerses={chapterData.length} 
-                      isAskMode={false} 
-                      onNext={nextVerse} 
-                      onPrev={prevVerse} 
-                      readingMode="study"
-                      preferredLanguage={preferredLanguage}
-                      autoPlayChant={autoPlayChant}
-                      isActive={isActive}
-                      globalLayers={globalLayers}
-                      onToggleGlobalLayer={handleToggleGlobalLayer}
-                      onOpenShareModal={onOpenShareModal}
-                      onAskAboutVerse={onAskAboutVerse}
-                    />
-                  </div>
-                ))}
+                </div>
+              ))}
 
-                {/* Progressive Lazy Sentinel */}
-                {visibleCount < chapterData.length && (
-                  <div ref={loadMoreRef} className="py-6 flex flex-col items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setVisibleCount(prev => prev + 30)}
-                      className="px-5 py-2.5 bg-white dark:bg-slate-900 hover:bg-cream-100 dark:hover:bg-slate-800 rounded-2xl border border-cream-400 dark:border-amber-500/30 text-xs font-bold text-stone-700 dark:text-slate-300 transition-all cursor-pointer shadow-xs hover:scale-105"
-                    >
-                      Showing {Math.min(visibleCount, chapterData.length)} of {chapterData.length} — Load Next Batch
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Single Verse Focus Card for Scriptures */
-              <div id={`verse-anchor-${chapterData[currentVerseIndex]?.verse_number}`}>
-                {chapterData[currentVerseIndex] && (
+              {/* Progressive Lazy Sentinel */}
+              {visibleCount < vedaMantras.length && (
+                <div ref={loadMoreRef} className="py-6 flex flex-col items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount(prev => prev + 30)}
+                    className="px-5 py-2.5 bg-white dark:bg-slate-900 hover:bg-cream-100 dark:hover:bg-slate-800 rounded-2xl border border-cream-400 dark:border-amber-500/30 text-xs font-bold text-stone-700 dark:text-slate-300 transition-all cursor-pointer shadow-xs hover:scale-105"
+                  >
+                    Showing {Math.min(visibleCount, vedaMantras.length)} of {vedaMantras.length} — Load Next Batch
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Continuous Book View for Scriptures with Progressive Lazy Batching */
+            <div className="space-y-6">
+              {chapterData.slice(0, visibleCount).map((verse, idx) => (
+                <div key={verse.id} id={`verse-anchor-${verse.verse_number}`}>
                   <VerseBlock 
-                    verse={chapterData[currentVerseIndex]} 
-                    index={currentVerseIndex} 
+                    verse={verse} 
+                    index={idx} 
                     totalVerses={chapterData.length} 
                     isAskMode={false} 
                     onNext={nextVerse} 
                     onPrev={prevVerse} 
-                    readingMode="study"
-                    preferredLanguage={preferredLanguage}
+                    preferredLanguage={effectiveLanguage}
                     autoPlayChant={autoPlayChant}
                     isActive={isActive}
+                    fontSize={fontSize}
                     globalLayers={globalLayers}
                     onToggleGlobalLayer={handleToggleGlobalLayer}
                     onOpenShareModal={onOpenShareModal}
                     onAskAboutVerse={onAskAboutVerse}
                   />
-                )}
-              </div>
-            )
+                </div>
+              ))}
+
+              {/* Progressive Lazy Sentinel */}
+              {visibleCount < chapterData.length && (
+                <div ref={loadMoreRef} className="py-6 flex flex-col items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount(prev => prev + 30)}
+                    className="px-5 py-2.5 bg-white dark:bg-slate-900 hover:bg-cream-100 dark:hover:bg-slate-800 rounded-2xl border border-cream-400 dark:border-amber-500/30 text-xs font-bold text-stone-700 dark:text-slate-300 transition-all cursor-pointer shadow-xs hover:scale-105"
+                  >
+                    Showing {Math.min(visibleCount, chapterData.length)} of {chapterData.length} — Load Next Batch
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Chapter Flipping Footer Bar */}
@@ -1569,3 +1618,4 @@ export default function ReadMode({
     </div>
   );
 }
+

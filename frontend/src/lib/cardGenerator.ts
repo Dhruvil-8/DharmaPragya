@@ -46,6 +46,14 @@ function wrapText(
 }
 
 export async function generateVerseCard(options: CardExportOptions): Promise<string> {
+  if (typeof document !== 'undefined' && document.fonts) {
+    try {
+      await document.fonts.ready;
+    } catch (e) {
+      console.warn('Font loading check bypassed:', e);
+    }
+  }
+
   const width = 1200;
   const height = 1200; // Square format optimal for social sharing
   const canvas = document.createElement('canvas');
