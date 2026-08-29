@@ -33,12 +33,13 @@ backend/vendor/
 *-shm
 *-shm
 
-# Ingestion & Audio
+# Ingestion & Scripts
 *.mp3
 raw_data/**/audio/
 raw_data/gita/audio/
 backend/static/audio/
 scratch/
+scripts/
 test.json
 test_gita.json
 __pycache__/
