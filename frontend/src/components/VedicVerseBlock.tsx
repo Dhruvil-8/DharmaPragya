@@ -169,17 +169,20 @@ function VedicVerseBlock({
     return null;
   }, [selectedLanguage, englishTranslation, hindiTranslation]);
 
-  // Group traditional bhashyas by author
+  // Group traditional bhashyas by author (excluding English translation author who is already in the translation layer)
   const bhashyasByAuthor = useMemo(() => {
     const map: Record<string, { 
       sanskrit?: string; 
       hindi?: string; 
-      english?: string;
       vishaya_sk?: string; 
       vishaya_hi?: string; 
       tika?: string 
     }> = {};
     mantra.bhashyas?.forEach(b => {
+      // Exclude English translation author (Griffith) from traditional Bhashyakara tabs
+      if (b.language?.toLowerCase() === 'english' || b.author?.toLowerCase().includes('griffith')) {
+        return;
+      }
       if (!map[b.author]) map[b.author] = {};
       if (b.language === 'sanskrit') {
         map[b.author].sanskrit = b.bhavartha;
@@ -189,10 +192,6 @@ function VedicVerseBlock({
         map[b.author].hindi = b.bhavartha;
         map[b.author].vishaya_hi = b.mantra_vishaya;
         if (b.tika) map[b.author].tika = b.tika;
-      } else if (b.language === 'english') {
-        map[b.author].english = b.bhavartha;
-        if (b.mantra_vishaya) map[b.author].vishaya_hi = b.mantra_vishaya;
-        if (b.tika) map[b.author].tika = b.tika;
       }
     });
     return map;
@@ -200,14 +199,14 @@ function VedicVerseBlock({
 
   const authorsList = useMemo(() => {
     const list = Object.keys(bhashyasByAuthor).filter(
-      author => bhashyasByAuthor[author]?.hindi || 
-                bhashyasByAuthor[author]?.sanskrit || 
-                bhashyasByAuthor[author]?.english ||
-                bhashyasByAuthor[author]?.vishaya_hi || 
-                bhashyasByAuthor[author]?.vishaya_sk || 
-                bhashyasByAuthor[author]?.tika
+      author => !author.toLowerCase().includes('griffith') &&
+                (bhashyasByAuthor[author]?.hindi || 
+                 bhashyasByAuthor[author]?.sanskrit || 
+                 bhashyasByAuthor[author]?.vishaya_hi || 
+                 bhashyasByAuthor[author]?.vishaya_sk || 
+                 bhashyasByAuthor[author]?.tika)
     );
-    // Prioritize traditional commentary authors first, then Griffith
+    // Prioritize traditional commentary authors (Dayananda, Aryamuni, Brahmamuni)
     return list.sort((a, b) => {
       if (a.includes('Dayananda')) return -1;
       if (b.includes('Dayananda')) return 1;
@@ -215,18 +214,13 @@ function VedicVerseBlock({
       if (b.includes('Aryamuni')) return 1;
       if (a.includes('Brahmamuni')) return -1;
       if (b.includes('Brahmamuni')) return 1;
-      if (a.includes('Griffith')) return 1;
-      if (b.includes('Griffith')) return -1;
       return a.localeCompare(b);
     });
   }, [bhashyasByAuthor]);
 
-  // Set default selected author if available
   useEffect(() => {
-    if (authorsList.length > 0) {
-      if (!authorsList.includes(selectedBhashyaAuthor)) {
-        setSelectedBhashyaAuthor(authorsList[0]);
-      }
+    if (authorsList.length > 0 && !authorsList.includes(selectedBhashyaAuthor)) {
+      setSelectedBhashyaAuthor(authorsList[0]);
     }
   }, [authorsList, selectedBhashyaAuthor]);
 
@@ -519,18 +513,6 @@ function VedicVerseBlock({
                   </span>
                   <p className="leading-relaxed whitespace-pre-line text-stone-800 dark:text-slate-200">
                     {bhashyasByAuthor[selectedBhashyaAuthor].hindi}
-                  </p>
-                </div>
-              )}
-
-              {/* English Translation under author if present */}
-              {bhashyasByAuthor[selectedBhashyaAuthor].english && (
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase text-saffron-800 dark:text-amber-400">
-                    English Translation:
-                  </span>
-                  <p className="leading-relaxed font-serif text-sm text-stone-800 dark:text-slate-200 italic">
-                    &quot;{bhashyasByAuthor[selectedBhashyaAuthor].english}&quot;
                   </p>
                 </div>
               )}
