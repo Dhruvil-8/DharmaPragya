@@ -33,8 +33,11 @@ backend/vendor/
 *-shm
 *-shm
 
-# Ingestion (Python)
-raw_data/
+# Ingestion & Audio
+*.mp3
+raw_data/**/audio/
+raw_data/gita/audio/
+backend/static/audio/
 scratch/
 test.json
 test_gita.json
