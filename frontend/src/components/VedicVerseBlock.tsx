@@ -131,26 +131,42 @@ function VedicVerseBlock({
     return null;
   }, [mantra.bhashyas]);
 
-  // Active translation based on selected language with fallback
+  // Active translation based on selected language with clear provenance
   const activeTranslation = useMemo(() => {
     if (selectedLanguage === 'english') {
-      if (englishTranslation) return englishTranslation;
+      if (englishTranslation) {
+        return {
+          author: englishTranslation.author,
+          text: englishTranslation.text,
+          isEnglish: true,
+        };
+      }
       if (hindiTranslation) {
         return {
-          author: `${hindiTranslation.author} (Hindi/Sanskrit)`,
+          author: `${hindiTranslation.author} (Hindi Purport)`,
           text: hindiTranslation.text,
+          isEnglish: false,
         };
       }
     } else if (selectedLanguage === 'hindi') {
-      if (hindiTranslation) return hindiTranslation;
+      if (hindiTranslation) {
+        return {
+          author: hindiTranslation.author,
+          text: hindiTranslation.text,
+          isEnglish: false,
+        };
+      }
       if (englishTranslation) {
         return {
           author: `${englishTranslation.author} (English)`,
           text: englishTranslation.text,
+          isEnglish: true,
         };
       }
     }
-    return englishTranslation || hindiTranslation || null;
+    if (englishTranslation) return { ...englishTranslation, isEnglish: true };
+    if (hindiTranslation) return { ...hindiTranslation, isEnglish: false };
+    return null;
   }, [selectedLanguage, englishTranslation, hindiTranslation]);
 
   // Group traditional bhashyas by author
@@ -411,7 +427,13 @@ function VedicVerseBlock({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-900 dark:text-amber-300 uppercase tracking-wider">
               <FileText className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
-              <span>{selectedLanguage === 'english' ? 'English Translation' : 'हिंदी अनुवाद / भावार्थ'}</span>
+              <span>
+                {activeTranslation.isEnglish
+                  ? 'English Translation'
+                  : selectedLanguage === 'english'
+                    ? 'भावार्थः / Hindi Purport (English Translation Not Available)'
+                    : 'हिंदी अनुवाद / भावार्थ'}
+              </span>
             </div>
             
             <div className="flex items-center gap-2">
