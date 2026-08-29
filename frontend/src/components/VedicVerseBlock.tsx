@@ -131,14 +131,26 @@ function VedicVerseBlock({
     return null;
   }, [mantra.bhashyas]);
 
-  // Active translation strictly based on selected language (NEVER fallback to Hindi when English is requested, and vice-versa)
+  // Active translation based on selected language with fallback
   const activeTranslation = useMemo(() => {
     if (selectedLanguage === 'english') {
-      return englishTranslation;
+      if (englishTranslation) return englishTranslation;
+      if (hindiTranslation) {
+        return {
+          author: `${hindiTranslation.author} (Hindi/Sanskrit)`,
+          text: hindiTranslation.text,
+        };
+      }
     } else if (selectedLanguage === 'hindi') {
-      return hindiTranslation;
+      if (hindiTranslation) return hindiTranslation;
+      if (englishTranslation) {
+        return {
+          author: `${englishTranslation.author} (English)`,
+          text: englishTranslation.text,
+        };
+      }
     }
-    return null;
+    return englishTranslation || hindiTranslation || null;
   }, [selectedLanguage, englishTranslation, hindiTranslation]);
 
   // Group traditional bhashyas by author
@@ -172,16 +184,23 @@ function VedicVerseBlock({
 
   const authorsList = useMemo(() => {
     const list = Object.keys(bhashyasByAuthor).filter(
-      author => !author.toLowerCase().includes('griffith') &&
-                !author.toLowerCase().includes('ralph') &&
-                (bhashyasByAuthor[author]?.hindi || bhashyasByAuthor[author]?.sanskrit || bhashyasByAuthor[author]?.vishaya_hi || bhashyasByAuthor[author]?.vishaya_sk || bhashyasByAuthor[author]?.tika)
+      author => bhashyasByAuthor[author]?.hindi || 
+                bhashyasByAuthor[author]?.sanskrit || 
+                bhashyasByAuthor[author]?.english ||
+                bhashyasByAuthor[author]?.vishaya_hi || 
+                bhashyasByAuthor[author]?.vishaya_sk || 
+                bhashyasByAuthor[author]?.tika
     );
-    // Prioritize traditional commentary authors first
+    // Prioritize traditional commentary authors first, then Griffith
     return list.sort((a, b) => {
       if (a.includes('Dayananda')) return -1;
       if (b.includes('Dayananda')) return 1;
       if (a.includes('Aryamuni')) return -1;
       if (b.includes('Aryamuni')) return 1;
+      if (a.includes('Brahmamuni')) return -1;
+      if (b.includes('Brahmamuni')) return 1;
+      if (a.includes('Griffith')) return 1;
+      if (b.includes('Griffith')) return -1;
       return a.localeCompare(b);
     });
   }, [bhashyasByAuthor]);
@@ -483,7 +502,7 @@ function VedicVerseBlock({
               )}
 
               {/* English Translation under author if present */}
-              {bhashyasByAuthor[selectedBhashyaAuthor].english && !englishTranslation && (
+              {bhashyasByAuthor[selectedBhashyaAuthor].english && (
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold uppercase text-saffron-800 dark:text-amber-400">
                     English Translation:

@@ -360,6 +360,7 @@ export default function ReadMode({
     setError(null);
     setCurrentVedaSection(division1);
     setCurrentMantraIndex(0);
+    setVisibleCount(30);
     try {
       const res = await fetch(`${apiBaseUrl}/api/veda/read?veda=${vedaID}&div1=${division1}`);
       const data = await res.json();
@@ -631,6 +632,29 @@ export default function ReadMode({
     }
     return null;
   }, [currentSource, sectionList]);
+
+  // Group Veda Divisions (Purvarchika, Mahanamyarchika, Uttararchika, Mandalas, Adhyayas, Kandas)
+  const vedaSectionSubdivisionMap = useMemo(() => {
+    if (!currentVeda || vedaSections.length === 0) return null;
+    if (currentVeda.id === 'samaveda') {
+      const groups: Record<string, VedaSection[]> = {
+        'पूर्वार्चिकः (Purvarchika - 6 Prapathakas)': [],
+        'महानाम्न्यार्चिकः (Mahanamyarchika)': [],
+        'उत्तरार्चिकः (Uttararchika - 9 Prapathakas)': [],
+      };
+      vedaSections.forEach(sec => {
+        if (sec.section_number <= 6) {
+          groups['पूर्वार्चिकः (Purvarchika - 6 Prapathakas)'].push(sec);
+        } else if (sec.section_number === 7) {
+          groups['महानाम्न्यार्चिकः (Mahanamyarchika)'].push(sec);
+        } else {
+          groups['उत्तरार्चिकः (Uttararchika - 9 Prapathakas)'].push(sec);
+        }
+      });
+      return groups;
+    }
+    return null;
+  }, [currentVeda, vedaSections]);
 
   // Active Chapter Title & Sub-division
   const activeChapterInfo = useMemo(() => {
@@ -911,11 +935,23 @@ export default function ReadMode({
                   className="bg-cream-100 dark:bg-slate-900 text-stone-900 dark:text-slate-100 font-semibold px-3 py-1.5 rounded-xl border border-cream-400/80 dark:border-amber-500/30 text-xs focus:outline-none cursor-pointer pr-6 appearance-none shadow-2xs max-w-[180px] sm:max-w-[260px] truncate"
                 >
                   {currentVeda ? (
-                    vedaSections.map(sec => (
-                      <option key={sec.id} value={sec.section_number}>
-                        {sec.section_name} ({sec.total_mantras} Mantras)
-                      </option>
-                    ))
+                    vedaSectionSubdivisionMap ? (
+                      Object.keys(vedaSectionSubdivisionMap).map(groupName => (
+                        <optgroup key={groupName} label={groupName} className="font-bold dark:bg-slate-900">
+                          {vedaSectionSubdivisionMap[groupName].map(sec => (
+                            <option key={sec.id} value={sec.section_number}>
+                              {sec.section_name} ({sec.total_mantras} Mantras)
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))
+                    ) : (
+                      vedaSections.map(sec => (
+                        <option key={sec.id} value={sec.section_number}>
+                          {sec.section_name} ({sec.total_mantras} Mantras)
+                        </option>
+                      ))
+                    )
                   ) : sectionSubdivisionMap ? (
                     Object.keys(sectionSubdivisionMap).map(groupName => (
                       <optgroup key={groupName} label={groupName} className="font-bold dark:bg-slate-900">
@@ -1021,23 +1057,56 @@ export default function ReadMode({
             {/* Chapter List inside Drawer */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {currentVeda ? (
-                filteredVedaSections.map(sec => {
-                  const isCurrent = sec.section_number === currentVedaSection;
-                  return (
-                    <button
-                      key={sec.id}
-                      onClick={() => loadVedaChapter(currentVeda.id, sec.section_number)}
-                      className={`w-full p-3 text-left rounded-xl border transition-all flex items-center justify-between text-xs cursor-pointer ${
-                        isCurrent
-                          ? 'bg-saffron-100 dark:bg-amber-950/60 border-saffron-400 dark:border-amber-500 text-saffron-950 dark:text-amber-300 font-bold shadow-xs'
-                          : 'bg-white dark:bg-slate-900/80 border-cream-300 dark:border-amber-900/30 text-stone-700 dark:text-slate-300 hover:bg-cream-200 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <span>{sec.section_name}</span>
-                      <span className="text-[10px] opacity-70 font-mono">{sec.total_mantras} Mantras</span>
-                    </button>
-                  );
-                })
+                vedaSectionSubdivisionMap && !tocFilterQuery.trim() ? (
+                  Object.keys(vedaSectionSubdivisionMap).map(groupName => {
+                    const groupSections = vedaSectionSubdivisionMap[groupName];
+                    return (
+                      <div key={groupName} className="border border-cream-300 dark:border-amber-900/30 rounded-2xl overflow-hidden bg-white/70 dark:bg-slate-900/50">
+                        <div className="p-3 bg-cream-100/70 dark:bg-slate-800/80 flex items-center justify-between font-bold text-xs text-saffron-950 dark:text-amber-300 font-cinzel">
+                          <span>{groupName}</span>
+                          <span className="text-[10px] text-stone-500 dark:text-slate-400">{groupSections.length} Sections</span>
+                        </div>
+                        <div className="p-2 space-y-1">
+                          {groupSections.map(sec => {
+                            const isCurrent = sec.section_number === currentVedaSection;
+                            return (
+                              <button
+                                key={sec.id}
+                                onClick={() => loadVedaChapter(currentVeda.id, sec.section_number)}
+                                className={`w-full p-2.5 text-left rounded-xl transition-all flex items-center justify-between text-xs cursor-pointer ${
+                                  isCurrent
+                                    ? 'bg-saffron-100 dark:bg-amber-950/60 border border-saffron-400 dark:border-amber-500 text-saffron-950 dark:text-amber-300 font-bold shadow-xs'
+                                    : 'hover:bg-cream-100 dark:hover:bg-slate-800 text-stone-700 dark:text-slate-300'
+                                }`}
+                              >
+                                <span className="line-clamp-1">{sec.section_name}</span>
+                                <span className="text-[10px] opacity-70 font-mono shrink-0 ml-2">{sec.total_mantras} m</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  filteredVedaSections.map(sec => {
+                    const isCurrent = sec.section_number === currentVedaSection;
+                    return (
+                      <button
+                        key={sec.id}
+                        onClick={() => loadVedaChapter(currentVeda.id, sec.section_number)}
+                        className={`w-full p-3 text-left rounded-xl border transition-all flex items-center justify-between text-xs cursor-pointer ${
+                          isCurrent
+                            ? 'bg-saffron-100 dark:bg-amber-950/60 border-saffron-400 dark:border-amber-500 text-saffron-950 dark:text-amber-300 font-bold shadow-xs'
+                            : 'bg-white dark:bg-slate-900/80 border-cream-300 dark:border-amber-900/30 text-stone-700 dark:text-slate-300 hover:bg-cream-200 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <span>{sec.section_name}</span>
+                        <span className="text-[10px] opacity-70 font-mono">{sec.total_mantras} Mantras</span>
+                      </button>
+                    );
+                  })
+                )
               ) : sectionSubdivisionMap && !tocFilterQuery.trim() ? (
                 /* Subdivided Accordion List */
                 Object.keys(sectionSubdivisionMap).map(groupName => {
