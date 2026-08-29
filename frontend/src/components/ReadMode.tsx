@@ -596,9 +596,9 @@ export default function ReadMode({
     setVerseJumpInput('');
   };
 
-  // Group Sources by Type Category (Dedicated Gita section separate from Itihasa)
-  const gitaSource = useMemo(() => {
-    return sources.find(s => s.name === 'Bhagavad Gita' || s.name.toLowerCase().includes('gita'));
+  // Group Sources by Type Category (Dedicated Gitas section: Bhagavad Gita, Ashtavakra Gita, Avadhuta Gita)
+  const gitaSources = useMemo(() => {
+    return sources.filter(s => s.name === 'Bhagavad Gita' || s.name.toLowerCase().includes('gita') || s.type === 'gita');
   }, [sources]);
 
   const epicsSources = useMemo(() => {
@@ -606,15 +606,15 @@ export default function ReadMode({
   }, [sources]);
 
   const puranaSources = useMemo(() => {
-    return sources.filter(s => s.type === 'Purana');
+    return sources.filter(s => (s.type === 'Purana' || s.type === 'purana') && !s.name.toLowerCase().includes('gita'));
   }, [sources]);
 
   const upanishadSources = useMemo(() => {
-    return sources.filter(s => s.type === 'Shruti');
+    return sources.filter(s => s.type === 'Shruti' && !s.name.toLowerCase().includes('gita'));
   }, [sources]);
 
   const sutraSources = useMemo(() => {
-    return sources.filter(s => s.type === 'Sutra');
+    return sources.filter(s => s.type === 'Sutra' && !s.name.toLowerCase().includes('gita'));
   }, [sources]);
 
   // Group Multi-Division Chapters (Skandhas, Parvas, Kandas, Samhitas)
@@ -872,10 +872,12 @@ export default function ReadMode({
               >
                 <option value="">Select Scripture...</option>
 
-                {/* 1. Dedicated Gita Section */}
-                <optgroup label="Gita (गीता)" className="font-bold dark:bg-slate-900">
-                  {gitaSource ? (
-                    <option value={gitaSource.name}>{gitaSource.name}</option>
+                {/* 1. Dedicated Gitas Section */}
+                <optgroup label="Gitas (गीता)" className="font-bold dark:bg-slate-900">
+                  {gitaSources.length > 0 ? (
+                    gitaSources.map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))
                   ) : (
                     <option value="Bhagavad Gita">Bhagavad Gita</option>
                   )}
@@ -1214,11 +1216,11 @@ export default function ReadMode({
           {/* Scripture Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             
-            {/* 1. Dedicated Gita Card */}
-            {(!currentCategory || currentCategory === 'Gita') && gitaSource && (
+            {/* 1. Dedicated Gitas Cards */}
+            {(!currentCategory || currentCategory === 'Gita') && gitaSources.map((src) => (
               <button 
-                key={gitaSource.id} 
-                onClick={() => loadSource(gitaSource.name)} 
+                key={src.id} 
+                onClick={() => loadSource(src.name)} 
                 className="group p-5 bg-gradient-to-br from-white via-saffron-50/30 to-amber-50/20 dark:from-[#0d121d] dark:via-amber-950/20 dark:to-[#0d121d] border-2 border-saffron-400/80 dark:border-amber-500/50 hover:border-saffron-500 dark:hover:border-amber-400 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-40 cursor-pointer hover:-translate-y-0.5"
               >
                 <div>
@@ -1226,18 +1228,22 @@ export default function ReadMode({
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-300 bg-saffron-100 dark:bg-amber-950/70 px-2.5 py-0.5 rounded-full border border-saffron-300 dark:border-amber-600/40">
                       Gita (गीता)
                     </span>
-                    <span className="text-[11px] font-bold text-saffron-700 dark:text-amber-400 font-cinzel">701 Verses</span>
+                    <span className="text-[11px] font-bold text-saffron-700 dark:text-amber-400 font-cinzel">
+                      {src.name === 'Bhagavad Gita' ? '701 Verses' : src.name === 'Ashtavakra Gita' ? '298 Verses' : '271 Verses'}
+                    </span>
                   </div>
                   <p className="text-lg font-bold font-cinzel text-saffron-950 dark:text-amber-300 group-hover:text-saffron-700 dark:group-hover:text-amber-200 transition-colors mt-1">
-                    {gitaSource.name}
+                    {src.name}
                   </p>
-                  <p className="text-[11px] text-stone-600 dark:text-slate-400 font-medium">18 Adhyayas • 20+ Commentaries</p>
+                  <p className="text-[11px] text-stone-600 dark:text-slate-400 font-medium">
+                    {src.name === 'Bhagavad Gita' ? '18 Adhyayas • Word-by-Word & Commentaries' : src.name === 'Ashtavakra Gita' ? '20 Prakaranas • Non-Dual Advaita Wisdom' : '8 Chapters • Avadhuta Non-Duality'}
+                  </p>
                 </div>
                 <div className="flex justify-end items-center w-full pt-2 border-t border-saffron-200/60 dark:border-amber-900/40">
                   <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 transform group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>
-            )}
+            ))}
 
             {/* 2. The Four Vedas Cards */}
             {(!currentCategory || currentCategory === 'VEDAS') && vedas.map((v) => (

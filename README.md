@@ -26,33 +26,39 @@ The core idea is that anyone should be able to explore the wisdom of Sanatan Dha
 
 ---
 
-## Data Sources
+## Data Sources & Provenance
 
-The scriptures and Vedic Samhitas are stored across unified SQLite databases (`scriptures.db` and `vedas.db`). Below is the current mapping status:
+The scriptures and Vedic Samhitas are stored across unified SQLite databases (`scriptures.db` and `vedas.db`). Below is the current mapping and translation status:
 
 | Scripture Source | Verses / Mantras | Sanskrit Text | English Translation | Hindi Translation | Commentaries / Bhashyas |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| **Rigveda Samhita** | 10,552 | Yes (Svara & Plain) | Yes (Griffith) | Yes (Padartha & Bhavartha) | Dayananda Saraswati, Aryamuni, Brahmamuni, Shivashankar Sharma |
-| **Yajurveda Samhita** | 1,975 | Yes (Svara & Plain) | No | Yes (Dayananda) | Maharshi Dayananda Saraswati |
-| **Samaveda Samhita** | 1,875 | Yes (Svara & Plain) | No | Yes (Padartha & Bhavartha) | Vishaya, Padartha, Rigveda Cross-References |
-| **Atharvaveda Samhita** | 5,977 | Yes (Svara & Plain) | No | Yes (Bhavartha) | Vishaya, Bhashyartha, Bhavartha, Tippani |
-| **Bhagavad Gita** | 701 | Yes | Yes (5 authors) | Yes (2 authors) | Yes (15+ classical commentators in Sanskrit, Hindi, English) |
-| **Patanjali Yoga Sutras** | 196 | Yes | Yes (IGS) | No | Devanagari Sanskrit, IAST, English word meanings |
-| **Mahabharata (BORI Critical Edition)** | 73,436 | Yes | No | No | Complete 18 Parvas (1,995 Adhyayas) |
-| **Valmiki Ramayana (Critical Edition)** | 18,761 | Yes | No | No | Complete 6 Kandas (606 Sargas) |
-| **Garuda Purana** | 11,970 | Yes | No | No | Purva Khanda (Achara) & Uttara Khanda (Preta Kalpa) — 317 Adhyayas |
-| **Devi Bhagavata Mahapurana** | 18,758 | Yes | No | No | Complete 12 Skandhas (includes Devi Gita) — 105 Adhyayas |
-| **Brahma Purana** | 14,052 | Yes | No | No | Complete 246 Adhyayas (Tübingen Purana Project) |
-| **Shrimad Bhagavata Purana** | 15,409 | Yes | No | No | Mahatmyam & Complete 12 Skandhas — 302 Adhyayas |
-| **Shiva Mahapurana** | 26,307 | Yes | No | No | Mahatmyam & Complete 7 Samhitas (12 Khandas) — 339 Adhyayas |
-| **Harivamsha Purana** | 16,711 | Yes | No | No | Complete 3 Parvas (Harivamsha, Vishnu, Bhavishya) — 324 Adhyayas |
-| **15 Principal Upanishads** | 2,900+ | Yes | No | No | Brihadaranyaka, Chandogya, Taittiriya, Aitareya, Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Shvetashvatara, Kaushitaki, Maitri, Amritabindu, Tejobindu |
+| **Rigveda Samhita** | 10,552 | Yes (Svara & Plain) | Yes (Ralph T.H. Griffith) | Yes (Padartha & Bhavartha) | Maharshi Dayananda Saraswati, Pandit Aryamuni, Swami Brahmamuni |
+| **Yajurveda Samhita** | 1,975 | Yes (Svara & Plain) | Pending | Yes (Dayananda) | Maharshi Dayananda Saraswati |
+| **Samaveda Samhita** | 1,875 | Yes (Svara & Plain) | Pending | Yes (Padartha & Bhavartha) | Vishaya, Padartha, Rigveda Cross-References |
+| **Atharvaveda Samhita** | 5,977 | Yes (Svara & Plain) | Pending | Yes (Bhavartha) | Vishaya, Bhashyartha, Bhavartha, Tippani |
+| **Bhagavad Gita** | 701 | Yes | Yes (5+ authors) | Yes (2+ authors) | 15+ classical commentators (Shankara, Ramanuja, Madhva, etc.) |
+| **Ashtavakra Gita** | 298 | Yes | Yes (John Henry Richards) | Yes (Vedic Scriptures) | Complete 20 Prakaranas with dual translations |
+| **Avadhuta Gita** | 271 | Yes | Yes (Swami Ashokananda) | Yes | Complete 8 Chapters on Non-Dual Advaita realization |
+| **Devi Mahatmyam (Durga Saptashati)** | 581 | Yes | Yes (Swami Jagadiswarananda) | Yes (Gita Press) | Complete 13 Adhyayas from Markandeya Purana |
+| **Patanjali Yoga Sutras** | 196 | Yes | Yes (IGS / Woods) | Yes | Devanagari Sanskrit, IAST, English word meanings |
+| **Mahabharata (BORI Critical Edition)** | 73,436 | Yes | Pending | Pending | Complete 18 Parvas (1,995 Adhyayas) |
+| **Valmiki Ramayana (Critical Edition)** | 18,761 | Yes | Pending | Pending | Complete 6 Kandas (606 Sargas) |
+| **Garuda Purana** | 11,970 | Yes | Pending | Pending | Purva Khanda (Achara) & Uttara Khanda (Preta Kalpa) |
+| **Devi Bhagavata Mahapurana** | 18,758 | Yes | Pending | Pending | Complete 12 Skandhas (includes Devi Gita) |
+| **Brahma Purana** | 14,052 | Yes | Pending | Pending | Complete 246 Adhyayas (Tübingen Purana Project) |
+| **Shrimad Bhagavata Purana** | 15,409 | Yes | Pending | Pending | Mahatmyam & Complete 12 Skandhas |
+| **Shiva Mahapurana** | 26,307 | Yes | Pending | Pending | Mahatmyam & Complete 7 Samhitas (12 Khandas) |
+| **Harivamsha Purana** | 16,711 | Yes | Pending | Pending | Complete 3 Parvas (Harivamsha, Vishnu, Bhavishya) |
+| **16 Principal Upanishads** | 2,196 | Yes | Pending | Pending | Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Taittiriya, Aitareya, Chandogya, Brihadaranyaka, Shvetashvatara, Kaushitaki, Maitri, Amritabindu, Tejobindu |
 
-### Provenance Credits:
-- **The Four Vedas**: Digitized Vedic Samhitas, Padapatha, and Bhashyas sourced from [VedaKosh.com](http://www.VedaKosh.com).
-- **Bhagavad Gita**: Sourced from the open-source [Gita GitHub Project](https://github.com/gita/gita), credited to the [IIT Kanpur Gita Supersite](https://www.gitasupersite.iitk.ac.in/).
-- **Mahabharata & Valmiki Ramayana**: Digitized BORI critical editions sourced from the [Bhandarkar Oriental Research Institute Electronic Text (BORI)](https://bombay.indology.info/).
-- **The Mahapuranas & Upanishads**: Digitized, encoded, and structured from [Sanskrit Documents](https://sanskritdocuments.org)
+### Authentic Provenance Credits:
+- **The Four Vedas**: Digitized Vedic Samhitas, Padapatha, and classical Bhashyas sourced from [VedaKosh](http://www.vedakosh.com) and the [Arya Samaj Vedic Heritage Project](https://aryasamajjamnagar.org/). English Rigveda translations by Ralph T.H. Griffith.
+- **Bhagavad Gita**: Sourced from the open-source [Gita GitHub Project](https://github.com/gita/gita) & [IIT Kanpur Gita Supersite](https://www.gitasupersite.iitk.ac.in/).
+- **Ashtavakra Gita**: Structured Devanagari text with John Henry Richards English and Hindi translations sourced from the [dhrmaorg/ashtavakra_gita](https://github.com/dhrmaorg/ashtavakra_gita) dataset.
+- **Avadhuta Gita**: Sourced from [Wikisource Sanskrit (अवधूतगीता)](https://sa.wikisource.org/wiki/अवधूतगीता) with Swami Ashokananda's Advaita Ashrama English translation purports.
+- **Devi Mahatmyam (Durga Saptashati)**: Sourced from [SanskritDocuments](https://sanskritdocuments.org/doc_devii/durga700.html) and Gita Press Gorakhpur editions with Swami Jagadiswarananda's Ramakrishna Math English translations.
+- **Mahabharata & Valmiki Ramayana**: Digitized BORI critical editions sourced from the [Bhandarkar Oriental Research Institute Electronic Text (BORI)](https://bombay.indology.info/) and [Muneo Tokunaga Mahabharata Text Archive](https://crux.bham.ac.uk/).
+- **The Mahapuranas & Upanishads**: Digitized, encoded, and structured from [Sanskrit Documents](https://sanskritdocuments.org), [GRETIL (Göttingen Register of Electronic Texts in Indian Languages)](http://gretil.sub.uni-goettingen.de/), and the [Tübingen Purana Project](https://homepages.uni-tuebingen.de/).
 - **Patanjali Yoga Sutras**: Sourced from the [International Gita Society (IGS)](https://www.gita-society.com/wp-content/uploads/PDF/Patanjali-yogasutra.IGS.pdf).
 
 ---

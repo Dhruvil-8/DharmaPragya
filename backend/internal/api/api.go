@@ -310,7 +310,8 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 						"source": {
 							Type: genai.TypeString,
 							Enum: []string{
-								"Bhagavad Gita", "Rigveda", "Mahabharata", "Valmiki Ramayana",
+								"Bhagavad Gita", "Ashtavakra Gita", "Avadhuta Gita", "Devi Mahatmyam",
+								"Rigveda", "Mahabharata", "Valmiki Ramayana",
 								"Atharva Veda", "Yajur Veda", "Patanjali Yoga Sutras",
 								"Shiva Purana", "Bhagavata Purana", "Garuda Purana",
 								"Brahma Purana", "Devi Bhagavata Purana", "Harivamsha Purana",
@@ -362,13 +363,16 @@ Analyze the question carefully and route it to relevant scriptures.
 2. If you know the EXACT chapter and verse with high confidence, provide it in the "verses" array.
 
 SOURCE FILTERING RULE:
-- If the "Filter preference" above is a specific scripture name (e.g., "Mahabharata", "Shiva Purana", "Isha Upanishad"), you MUST ONLY route and return terms/verses from that specific scripture.
-- If the "Filter preference" contains "Purana", you MUST route to relevant Puranas ("Bhagavata Purana", "Shiva Purana", "Devi Bhagavata Purana", "Garuda Purana", "Brahma Purana", "Harivamsha Purana").
+- If the "Filter preference" above is a specific scripture name (e.g., "Ashtavakra Gita", "Avadhuta Gita", "Devi Mahatmyam", "Mahabharata", "Shiva Purana", "Isha Upanishad"), you MUST ONLY route and return terms/verses from that specific scripture.
+- If the "Filter preference" contains "Purana", you MUST route to relevant Puranas ("Bhagavata Purana", "Shiva Purana", "Devi Bhagavata Purana", "Garuda Purana", "Brahma Purana", "Harivamsha Purana", "Devi Mahatmyam").
 - If the "Filter preference" contains "Upanishad", you MUST route to relevant Upanishads (e.g., "Isha Upanishad", "Katha Upanishad", "Chandogya Upanishad", "Brihadaranyaka Upanishad", "Mundaka Upanishad", "Mandukya Upanishad").
 - If the "Filter preference" is "All", you are free to suggest relevant terms/verses from any available scripture.
 
 MAPPING SCHEME FOR CHAPTER NUMBERS:
 - "Bhagavad Gita": Chapters are numbered 1 to 18.
+- "Ashtavakra Gita": Chapters are numbered 1 to 20 directly.
+- "Avadhuta Gita": Chapters are numbered 1 to 8 directly.
+- "Devi Mahatmyam": Chapters (Adhyayas) are numbered 1 to 13 directly.
 - "Rigveda": Calculate chapter as (Mandala * 1000) + Hymn. E.g., Mandala 1, Hymn 164 is chapter 1164. Mandala 10, Hymn 129 is chapter 10129.
 - "Mahabharata": Calculate chapter as (Parva * 1000) + Adhyaya. E.g., Adi Parva (Parva 1), Adhyaya 1 is chapter 1001. Bhishma Parva (Parva 6), Adhyaya 25 is chapter 6025.
 - "Valmiki Ramayana": Calculate chapter as (Kanda * 1000) + Sarga. E.g., Balakanda (Kanda 1), Sarga 1 is chapter 1001. Yuddhakanda (Kanda 6), Sarga 128 is chapter 6128.
