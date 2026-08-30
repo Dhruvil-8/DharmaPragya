@@ -7,7 +7,9 @@ import ReadMode from '../components/ReadMode';
 import SavedSanctuary from '../components/SavedSanctuary';
 import ShareCardModal from '../components/ShareCardModal';
 import SidePanel from '../components/SidePanel';
+import SacredHymnModal from '../components/SacredHymnModal';
 import { VerseData } from '../types';
+import { SacredHymn } from '../data/famousSuktams';
 
 const API_BASE_URL = '';
 
@@ -15,6 +17,8 @@ function HomePageContent() {
   const [mode, setMode] = useState<'ask' | 'read'>('ask');
   const [isSanctuaryOpen, setIsSanctuaryOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [selectedHymnModal, setSelectedHymnModal] = useState<SacredHymn | null>(null);
+
   const [askInitialPrompt, setAskInitialPrompt] = useState<{
     query: string;
     sourceFilter?: string;
@@ -93,6 +97,31 @@ function HomePageContent() {
       url.searchParams.set('source', sourceName);
       url.searchParams.set('chapter', String(chapterNumber));
       url.searchParams.set('verse', String(verseNumber));
+      window.history.pushState({}, '', url.toString());
+    }
+  };
+
+  const handleSelectCoordinate = (coord: {
+    sourceName: string;
+    chapterNumber?: number;
+    verseNumber?: number;
+  }) => {
+    setMode('read');
+    setTargetCoordinate({
+      sourceName: coord.sourceName,
+      chapterNumber: coord.chapterNumber || 1,
+      verseNumber: coord.verseNumber,
+    });
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('mode', 'read');
+      url.searchParams.set('source', coord.sourceName);
+      if (coord.chapterNumber) {
+        url.searchParams.set('chapter', String(coord.chapterNumber));
+      }
+      if (coord.verseNumber) {
+        url.searchParams.set('verse', String(coord.verseNumber));
+      }
       window.history.pushState({}, '', url.toString());
     }
   };
@@ -210,6 +239,16 @@ function HomePageContent() {
         onOpenSanctuary={() => setIsSanctuaryOpen(true)}
         mode={mode}
         onModeChange={handleModeChange}
+        onSelectCoordinate={handleSelectCoordinate}
+        onOpenHymnModal={(hymn) => setSelectedHymnModal(hymn)}
+      />
+
+      {/* Full Sacred Hymn & Mantra Modal */}
+      <SacredHymnModal
+        isOpen={!!selectedHymnModal}
+        hymn={selectedHymnModal}
+        onClose={() => setSelectedHymnModal(null)}
+        onOpenInScripture={handleSelectCoordinate}
       />
     </main>
   );

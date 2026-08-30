@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { 
@@ -14,9 +14,14 @@ import {
   Info,
   ChevronRight,
   ArrowLeft,
-  Compass
+  Compass,
+  Sparkles,
+  Search,
+  Flame,
+  Layers
 } from 'lucide-react';
 import { getBookmarks } from '../lib/bookmarks';
+import { FAMOUS_SUKTAMS_AND_MANTRAS, SacredHymn } from '../data/famousSuktams';
 
 interface SidePanelProps {
   isOpen: boolean;
@@ -24,21 +29,31 @@ interface SidePanelProps {
   onOpenSanctuary?: () => void;
   mode?: 'ask' | 'read';
   onModeChange?: (mode: 'ask' | 'read') => void;
+  onSelectCoordinate?: (coord: {
+    sourceName: string;
+    chapterNumber?: number;
+    verseNumber?: number;
+  }) => void;
+  onOpenHymnModal?: (hymn: SacredHymn) => void;
 }
 
-type SidePanelView = 'main' | 'about' | 'related';
+type SidePanelView = 'main' | 'about' | 'related' | 'suktams';
 
 export default function SidePanel({ 
   isOpen, 
   onClose,
   onOpenSanctuary,
   mode = 'ask',
-  onModeChange
+  onModeChange,
+  onSelectCoordinate,
+  onOpenHymnModal
 }: SidePanelProps) {
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [bookmarkCount, setBookmarkCount] = useState(0);
   const [currentView, setCurrentView] = useState<SidePanelView>('main');
+  const [suktamCategory, setSuktamCategory] = useState<string>('ALL');
+  const [suktamSearch, setSuktamSearch] = useState<string>('');
 
   useEffect(() => {
     setMounted(true);
@@ -61,6 +76,8 @@ export default function SidePanel({
   useEffect(() => {
     if (isOpen) {
       setCurrentView('main');
+      setSuktamCategory('ALL');
+      setSuktamSearch('');
     }
   }, [isOpen]);
 
@@ -114,6 +131,47 @@ export default function SidePanel({
     }
   };
 
+  const handleSuktamCardClick = (hymn: SacredHymn) => {
+    if (onOpenHymnModal) {
+      onOpenHymnModal(hymn);
+    } else {
+      handleJumpToScripture(hymn);
+    }
+  };
+
+  const handleJumpToScripture = (hymn: SacredHymn, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    onClose();
+    if (onSelectCoordinate) {
+      onSelectCoordinate({
+        sourceName: hymn.sourceName,
+        chapterNumber: hymn.chapterNumber,
+        verseNumber: hymn.startVerse || hymn.verseNumber,
+      });
+    } else if (onModeChange) {
+      onModeChange('read');
+    }
+  };
+
+  const filteredSuktams = useMemo(() => {
+    return FAMOUS_SUKTAMS_AND_MANTRAS.filter((hymn) => {
+      const matchesCategory = suktamCategory === 'ALL' || hymn.category === suktamCategory;
+      const query = suktamSearch.toLowerCase().trim();
+      if (!query) return matchesCategory;
+
+      const matchesSearch = 
+        hymn.name.toLowerCase().includes(query) ||
+        hymn.sanskritName.toLowerCase().includes(query) ||
+        hymn.exactScripture.toLowerCase().includes(query) ||
+        hymn.deityOrTheme.toLowerCase().includes(query) ||
+        hymn.sourceName.toLowerCase().includes(query) ||
+        hymn.summary.toLowerCase().includes(query) ||
+        hymn.canonicalRef.toLowerCase().includes(query);
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [suktamCategory, suktamSearch]);
+
   if (!isOpen || !mounted) return null;
 
   return createPortal(
@@ -163,8 +221,8 @@ export default function SidePanel({
                 <span>Back</span>
               </button>
               <span className="text-stone-300 dark:text-slate-700">|</span>
-              <h2 id="side-panel-title" className="text-sm font-bold font-cinzel text-saffron-800 dark:text-amber-300">
-                {currentView === 'about' ? 'About Platform' : 'Our Related Sites'}
+              <h2 id="side-panel-title" className="text-sm font-bold font-cinzel text-saffron-800 dark:text-amber-300 truncate">
+                {currentView === 'about' ? 'About Platform' : currentView === 'related' ? 'Our Related Sites' : 'Sacred Suktams & Mantras'}
               </h2>
             </div>
           )}
@@ -256,6 +314,33 @@ export default function SidePanel({
                       Active
                     </span>
                   )}
+                </button>
+
+                {/* 3. Sacred Suktams & Mantras Direct Explorer */}
+                <button
+                  type="button"
+                  onClick={() => setCurrentView('suktams')}
+                  className="w-full flex items-center justify-between p-3.5 bg-gradient-to-r from-saffron-50/80 via-cream-100 to-amber-50/60 dark:from-slate-900 dark:via-[#131b2e] dark:to-slate-900 hover:from-saffron-100 hover:to-amber-100 dark:hover:from-slate-800 dark:hover:to-[#17223b] border border-saffron-300/70 dark:border-amber-500/30 rounded-2xl shadow-xs transition-all cursor-pointer text-left group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-saffron-600 to-terracotta-600 dark:from-amber-500 dark:to-saffron-700 flex items-center justify-center text-white shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                      <Flame className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs sm:text-sm font-bold text-saffron-950 dark:text-amber-200 block font-cinzel">
+                          Sacred Suktams & Mantras
+                        </span>
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider bg-saffron-200/80 dark:bg-amber-950 text-saffron-800 dark:text-amber-300 px-1.5 py-0.5 rounded-full">
+                          Index
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-stone-600 dark:text-slate-400 block mt-0.5">
+                        Purusha, Gayatri, Rudram, Nasadiya & Stotras
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
                 </button>
               </div>
 
@@ -360,7 +445,127 @@ export default function SidePanel({
             </div>
           )}
 
-          {/* VIEW 2: About DharmaPragya Sub-page */}
+          {/* VIEW 2: Sacred Suktams & Mantras Dedicated Sub-Page */}
+          {currentView === 'suktams' && (
+            <div className="space-y-4 animate-fade-in">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="w-4 h-4 text-stone-400 dark:text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={suktamSearch}
+                  onChange={(e) => setSuktamSearch(e.target.value)}
+                  placeholder="Search Purusha, Gayatri, Rudram, Shanti, Gita..."
+                  className="w-full pl-9 pr-3.5 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-cream-400/70 dark:border-amber-500/20 text-stone-800 dark:text-slate-200 placeholder-stone-400 focus:outline-none focus:border-saffron-500 dark:focus:border-amber-400 transition-colors"
+                />
+              </div>
+
+              {/* Category Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-[11px]">
+                {[
+                  { id: 'ALL', label: 'All' },
+                  { id: 'Vedic Suktam', label: 'Vedic Suktams' },
+                  { id: 'Maha Mantra', label: 'Maha Mantras' },
+                  { id: 'Upanishadic Shanti', label: 'Upanishadic' },
+                  { id: 'Gita Shloka', label: 'Gita Shlokas' },
+                  { id: 'Puranic & Epic Stotram', label: 'Epic Stotras' },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setSuktamCategory(cat.id)}
+                    className={`px-2.5 py-1 rounded-full whitespace-nowrap font-medium transition-colors cursor-pointer ${
+                      suktamCategory === cat.id
+                        ? 'bg-saffron-600 dark:bg-amber-600 text-white font-bold shadow-2xs'
+                        : 'bg-white dark:bg-slate-900 text-stone-600 dark:text-slate-400 border border-cream-400/50 dark:border-amber-500/20 hover:bg-cream-200 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Suktams Cards List */}
+              <div className="space-y-3.5">
+                {filteredSuktams.map((hymn) => {
+                  const firstVerse = hymn.verses[0];
+                  return (
+                    <div
+                      key={hymn.id}
+                      onClick={() => handleSuktamCardClick(hymn)}
+                      className="w-full p-4 bg-white dark:bg-slate-900/90 hover:bg-cream-200/90 dark:hover:bg-slate-800/90 border border-cream-400/50 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/40 rounded-2xl shadow-2xs hover:shadow-xs transition-all text-left cursor-pointer group flex flex-col justify-between"
+                    >
+                      <div>
+                        {/* Top Metadata Badges */}
+                        <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                          <span className="text-[9px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-300 bg-saffron-100 dark:bg-amber-950/70 px-2 py-0.5 rounded-full border border-saffron-200 dark:border-amber-600/30">
+                            {hymn.category}
+                          </span>
+                          <span className="text-[10px] font-bold text-stone-500 dark:text-amber-300/80 font-cinzel">
+                            {hymn.exactScripture}
+                          </span>
+                        </div>
+
+                        {/* Titles */}
+                        <h3 className="text-sm font-bold font-cinzel text-saffron-950 dark:text-amber-200 group-hover:text-saffron-700 dark:group-hover:text-amber-300 transition-colors">
+                          {hymn.name}
+                        </h3>
+                        <p className="text-xs font-sanskrit text-saffron-800/90 dark:text-amber-400 font-semibold mt-0.5">
+                          {hymn.sanskritName} • <span className="font-sans text-[11px] font-normal text-stone-500 dark:text-slate-400">{hymn.coordinateText}</span>
+                        </p>
+
+                        {/* Opening Verse Callout */}
+                        {firstVerse && (
+                          <div className="my-2.5 p-2.5 rounded-xl bg-cream-200/60 dark:bg-slate-950/70 border border-cream-300/70 dark:border-amber-900/30">
+                            <p className="text-xs font-sanskrit text-stone-900 dark:text-amber-100/95 leading-relaxed font-semibold line-clamp-2">
+                              {firstVerse.sanskrit}
+                            </p>
+                            {firstVerse.hindi && (
+                              <p className="text-[11px] text-stone-700 dark:text-slate-300 mt-1.5 pt-1.5 border-t border-cream-300/50 dark:border-amber-900/20 font-serif leading-relaxed line-clamp-2">
+                                हिन्दी: {firstVerse.hindi}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        <p className="text-[11px] text-stone-600 dark:text-slate-300 mt-1 leading-relaxed">
+                          {hymn.summary}
+                        </p>
+                      </div>
+
+                      {/* Action Buttons Row */}
+                      <div className="mt-3 pt-2.5 border-t border-cream-300/40 dark:border-slate-800/80 flex items-center justify-between w-full flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5 text-[10px] text-saffron-700 dark:text-amber-400 font-bold uppercase tracking-wider">
+                          <Layers className="w-3.5 h-3.5" />
+                          <span>
+                            {hymn.verses.length} {hymn.verses.length === 1 ? 'Mantra' : 'Mantras / Verses'} (Read All)
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleJumpToScripture(hymn, e)}
+                          className="flex items-center gap-1 text-[10px] font-bold text-stone-600 dark:text-slate-300 hover:text-saffron-700 dark:hover:text-amber-300 px-2 py-1 rounded-lg hover:bg-cream-300/60 dark:hover:bg-slate-800 transition-colors"
+                          title="Jump directly to Scripture Reader"
+                        >
+                          <span>Open in Reader</span>
+                          <ChevronRight className="w-3 h-3 text-saffron-600 dark:text-amber-400" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {filteredSuktams.length === 0 && (
+                  <div className="p-6 text-center text-stone-500 dark:text-slate-400 text-xs">
+                    No Suktams or Mantras found matching &ldquo;{suktamSearch}&rdquo;.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 3: About DharmaPragya Sub-page */}
           {currentView === 'about' && (
             <div className="space-y-4 animate-fade-in">
               <div className="p-4.5 bg-white dark:bg-slate-900/90 rounded-2xl border border-cream-400/50 dark:border-amber-500/20 shadow-2xs">
@@ -396,7 +601,7 @@ export default function SidePanel({
             </div>
           )}
 
-          {/* VIEW 3: Our Related Sites Sub-page */}
+          {/* VIEW 4: Our Related Sites Sub-page */}
           {currentView === 'related' && (
             <div className="space-y-3 animate-fade-in">
               {/* 1-Click: Vedic Jyotish Portal */}
