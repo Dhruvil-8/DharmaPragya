@@ -1,25 +1,54 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   BookOpen, 
-  Sparkles, 
   Copy, 
   Check, 
+  Sparkles, 
+  ExternalLink, 
   Languages, 
   ChevronRight,
-  Loader2,
-  Database
+  Database,
+  Loader2
 } from 'lucide-react';
-import { SacredHymn, HymnVerse } from '../data/famousSuktams';
-import { VedaMantra, VerseData } from '../types';
+import { SacredHymn } from '../data/famousSuktams';
+import { VerseData } from '../types';
+
+interface VedaMantra {
+  id: number;
+  veda_id: string;
+  division_1: number;
+  division_2: number;
+  division_3: number;
+  krama_number: number;
+  sanskrit_svara?: string;
+  sanskrit_plain?: string;
+  transliteration_iast?: string;
+  rishi?: string;
+  devata?: string;
+  chhandas?: string;
+  bhashyas?: Array<{
+    language: string;
+    mantra_vishaya?: string;
+    anvaya?: string;
+    bhavartha?: string;
+  }>;
+}
+
+interface HymnVerse {
+  verseNumber: number;
+  sanskrit: string;
+  transliteration?: string;
+  english?: string;
+  hindi?: string;
+}
 
 interface SacredHymnModalProps {
   isOpen: boolean;
-  onClose: () => void;
   hymn: SacredHymn | null;
+  onClose: () => void;
   onOpenInScripture?: (coord: {
     sourceName: string;
     chapterNumber?: number;
@@ -29,11 +58,10 @@ interface SacredHymnModalProps {
 
 export default function SacredHymnModal({
   isOpen,
-  onClose,
   hymn,
+  onClose,
   onOpenInScripture,
 }: SacredHymnModalProps) {
-  const [mounted, setMounted] = useState(false);
   const [copiedVerseIndex, setCopiedVerseIndex] = useState<number | null>(null);
   const [showHindi, setShowHindi] = useState(true);
   const [showEnglish, setShowEnglish] = useState(true);
@@ -41,11 +69,7 @@ export default function SacredHymnModal({
   const [dbVerses, setDbVerses] = useState<HymnVerse[] | null>(null);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Fetch directly from database when modal opens for a hymn
+  // Direct Database Retrieval on mount/hymn change
   useEffect(() => {
     if (!isOpen || !hymn) {
       setDbVerses(null);
@@ -64,23 +88,28 @@ export default function SacredHymnModal({
           'Samaveda': 'samaveda',
         };
 
-        const vedaId = vedaMap[hymn.sourceName];
+        const vedaId = hymn.vedaId || vedaMap[hymn.sourceName];
 
-        if (vedaId && hymn.chapterNumber) {
+        if (vedaId && (hymn.division1 || hymn.chapterNumber)) {
           // Fetch from /api/veda/read
-          const div1 = hymn.chapterNumber;
-          const div2 = hymn.startVerse || 1;
+          const div1 = hymn.division1 || hymn.chapterNumber || 1;
+          const div2 = hymn.division2 || 1;
           const res = await fetch(`/api/veda/read?veda=${vedaId}&div1=${div1}&div2=${div2}`);
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
-              const mapped: HymnVerse[] = data.map((m: VedaMantra) => {
+              let filtered = data;
+              if (hymn.startVerse && hymn.endVerse && hymn.startVerse === hymn.endVerse) {
+                filtered = data.filter((m: VedaMantra) => m.division_3 === hymn.startVerse);
+              }
+
+              const mapped: HymnVerse[] = filtered.map((m: VedaMantra) => {
                 const hindiBhashya = m.bhashyas?.find(b => b.language === 'hi' || b.language === 'Hindi');
                 const engBhashya = m.bhashyas?.find(b => b.language === 'en' || b.language === 'English');
 
                 return {
                   verseNumber: m.division_3 || m.krama_number,
-                  sanskrit: m.sanskrit_svara || m.sanskrit_plain,
+                  sanskrit: m.sanskrit_svara || m.sanskrit_plain || '',
                   transliteration: m.transliteration_iast,
                   english: engBhashya?.bhavartha || '',
                   hindi: hindiBhashya?.bhavartha || hindiBhashya?.mantra_vishaya || '',
@@ -114,7 +143,7 @@ export default function SacredHymnModal({
                     verseNumber: v.verse_number,
                     sanskrit: v.sanskrit_text,
                     transliteration: v.transliteration,
-                    english: engTrans?.text || v.translation_text || '',
+                    english: engTrans?.text || '',
                     hindi: hiTrans?.text || '',
                   };
                 });
@@ -127,7 +156,7 @@ export default function SacredHymnModal({
           }
         }
       } catch (err) {
-        console.warn('Direct DB fetch fallback to curated hymn data:', err);
+        console.warn('Direct DB fetch error:', err);
       } finally {
         if (isMounted) {
           setIsLoadingDb(false);
@@ -142,181 +171,169 @@ export default function SacredHymnModal({
     };
   }, [isOpen, hymn]);
 
-  useEffect(() => {
-    if (!isOpen) return;
+  if (!isOpen || !hymn) return null;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
+  const versesToRender: HymnVerse[] = dbVerses || (hymn.openingSnippet ? [{
+    verseNumber: hymn.startVerse || 1,
+    sanskrit: hymn.openingSnippet,
+  }] : []);
 
-    document.addEventListener('keydown', handleKeyDown);
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+  const handleCopyVerse = (verse: HymnVerse, index: number) => {
+    let copyText = `${verse.sanskrit}\n`;
+    if (verse.transliteration) copyText += `\n${verse.transliteration}\n`;
+    if (verse.hindi) copyText += `\nहिन्दी: ${verse.hindi}\n`;
+    if (verse.english) copyText += `\nEnglish: ${verse.english}\n`;
+    copyText += `\n— ${hymn.name} (${hymn.canonicalRef})`;
 
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = originalOverflow;
-    };
-  }, [isOpen, onClose]);
-
-  const handleCopyVerse = (verseText: string, index: number) => {
-    navigator.clipboard.writeText(verseText);
+    navigator.clipboard.writeText(copyText);
     setCopiedVerseIndex(index);
-    setTimeout(() => setCopiedVerseIndex(null), 2000);
+    setTimeout(() => setCopiedVerseIndex(null), 2500);
   };
 
-  const handleJumpToReader = () => {
-    if (!hymn) return;
+  const handleOpenInReader = () => {
     onClose();
     if (onOpenInScripture) {
       onOpenInScripture({
         sourceName: hymn.sourceName,
-        chapterNumber: hymn.chapterNumber,
-        verseNumber: hymn.startVerse || hymn.verseNumber,
+        chapterNumber: hymn.chapterNumber || 1,
+        verseNumber: hymn.startVerse || hymn.verseNumber || 1,
       });
     }
   };
 
-  if (!isOpen || !mounted || !hymn) return null;
-
-  // Use database verses if fetched successfully, otherwise curated full verses
-  const displayVerses = (dbVerses && dbVerses.length > 0) ? dbVerses : hymn.verses;
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="hymn-modal-title"
-    >
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-stone-950/80 dark:bg-black/90 backdrop-blur-sm transition-opacity animate-fade-in"
-        onClick={onClose}
-      />
-
-      {/* Modal Container */}
-      <div className="relative w-full max-w-3xl max-h-[90vh] bg-cream-100 dark:bg-[#0b0f19] border border-cream-400 dark:border-amber-500/30 rounded-3xl shadow-2xl flex flex-col z-10 animate-fade-in overflow-hidden">
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-stone-900/60 dark:bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="relative w-full max-w-3xl max-h-[90vh] flex flex-col bg-cream-100 dark:bg-[#0B0F19] border border-cream-300 dark:border-amber-500/30 rounded-3xl shadow-2xl overflow-hidden transition-colors">
+        
         {/* Header Bar */}
-        <div className="px-5 py-4 bg-gradient-to-r from-cream-300 via-cream-200 to-cream-300 dark:from-[#111827] dark:via-[#162032] dark:to-[#0b0f19] border-b border-cream-400/60 dark:border-amber-500/20 flex items-start justify-between shrink-0">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-300 bg-saffron-100 dark:bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-saffron-300/60 dark:border-amber-600/30">
-                {hymn.category}
-              </span>
-              <span className="text-[11px] font-bold text-stone-600 dark:text-amber-200/90 font-cinzel flex items-center gap-1">
-                <Database className="w-3 h-3 text-saffron-600 dark:text-amber-400" />
-                {hymn.exactScripture}
-              </span>
+        <div className="relative p-5 sm:p-6 bg-gradient-to-r from-saffron-50 via-cream-100 to-saffron-50 dark:from-[#0E1526] dark:via-[#0B0F19] dark:to-[#0E1526] border-b border-cream-300/80 dark:border-amber-500/20">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-saffron-800 dark:text-amber-300 bg-saffron-100 dark:bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-saffron-300/60 dark:border-amber-600/30 font-cinzel">
+                  {hymn.category}
+                </span>
+                <span className="text-xs font-bold text-stone-600 dark:text-amber-200/90 font-cinzel">
+                  {hymn.exactScripture}
+                </span>
+                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-300/50">
+                  <Database className="w-3 h-3" />
+                  Direct Database Retrieval
+                </span>
+              </div>
+
+              <h2 className="text-xl sm:text-2xl font-bold font-cinzel text-saffron-950 dark:text-amber-100 pt-1">
+                {hymn.name}
+              </h2>
+              <p className="text-sm font-sanskrit text-saffron-800 dark:text-amber-400 font-bold">
+                {hymn.sanskritName} • <span className="font-sans text-xs font-normal text-stone-500 dark:text-slate-400">{hymn.coordinateText}</span>
+              </p>
             </div>
-            <h2 id="hymn-modal-title" className="text-lg sm:text-xl font-bold font-cinzel text-saffron-950 dark:text-amber-200 leading-tight">
-              {hymn.name}
-            </h2>
-            <p className="text-sm font-sanskrit text-saffron-800 dark:text-amber-400 font-semibold mt-0.5">
-              {hymn.sanskritName} • <span className="font-sans text-xs font-normal text-stone-500 dark:text-slate-400">{hymn.coordinateText}</span>
-            </p>
-          </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-full text-stone-500 dark:text-slate-400 hover:text-saffron-700 dark:hover:text-amber-300 hover:bg-cream-400/50 dark:hover:bg-slate-800 transition-all cursor-pointer"
-            aria-label="Close Hymn View"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Translation & View Controls */}
-        <div className="px-5 py-2.5 bg-cream-200/50 dark:bg-slate-900/60 border-b border-cream-300/60 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-stone-500 dark:text-slate-400 text-[11px] font-medium flex items-center gap-1">
-              <Languages className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
-              Translations:
-            </span>
             <button
               type="button"
-              onClick={() => setShowHindi(!showHindi)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                showHindi 
-                  ? 'bg-saffron-600 text-white shadow-2xs' 
-                  : 'bg-white dark:bg-slate-800 text-stone-600 dark:text-slate-400 border border-cream-300 dark:border-slate-700'
-              }`}
+              onClick={onClose}
+              className="p-2 text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-amber-200 hover:bg-cream-200 dark:hover:bg-slate-800 rounded-full transition-colors"
+              title="Close Hymn View"
             >
-              हिन्दी {showHindi ? '✓' : ''}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowEnglish(!showEnglish)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                showEnglish 
-                  ? 'bg-saffron-600 text-white shadow-2xs' 
-                  : 'bg-white dark:bg-slate-800 text-stone-600 dark:text-slate-400 border border-cream-300 dark:border-slate-700'
-              }`}
-            >
-              English {showEnglish ? '✓' : ''}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowTransliteration(!showTransliteration)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
-                showTransliteration 
-                  ? 'bg-saffron-100 dark:bg-amber-950/80 text-saffron-800 dark:text-amber-300 border border-saffron-300 dark:border-amber-600/40' 
-                  : 'bg-white dark:bg-slate-800 text-stone-500 dark:text-slate-400 border border-cream-300 dark:border-slate-700'
-              }`}
-            >
-              Transliteration
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="flex items-center gap-2 text-[11px] text-stone-500 dark:text-slate-400 font-medium">
-            {isLoadingDb && (
-              <span className="flex items-center gap-1 text-saffron-700 dark:text-amber-400 font-bold animate-pulse">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                <span>Syncing Database...</span>
-              </span>
-            )}
-            <span>
-              Total {displayVerses.length} {displayVerses.length === 1 ? 'Mantra' : 'Mantras / Verses'}
-            </span>
-          </div>
-        </div>
-
-        {/* Scrollable Hymn Verses Body */}
-        <div className="flex-1 px-5 py-5 space-y-4 overflow-y-auto">
-          {/* Overview Callout */}
-          <div className="p-3.5 bg-white dark:bg-slate-900/90 rounded-2xl border border-cream-400/40 dark:border-amber-500/20 shadow-2xs">
-            <p className="text-xs text-stone-700 dark:text-slate-300 leading-relaxed font-serif">
-              <span className="font-bold text-saffron-800 dark:text-amber-300">Essence & Significance: </span>
+          {/* Hymn Theme Summary */}
+          <div className="mt-3 p-3 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-cream-300/60 dark:border-amber-500/10">
+            <p className="text-xs text-stone-700 dark:text-slate-300 leading-relaxed font-sans">
+              <strong className="text-saffron-900 dark:text-amber-300">Essence: </strong>
               {hymn.summary}
             </p>
           </div>
 
-          {/* Sequential Verses List */}
-          <div className="space-y-4">
-            {displayVerses.map((verse, idx) => (
-              <div
-                key={verse.verseNumber || idx}
-                className="p-4 sm:p-5 bg-white dark:bg-slate-900/90 border border-cream-400/60 dark:border-amber-500/20 rounded-2xl shadow-2xs hover:border-saffron-400 dark:hover:border-amber-500/40 transition-all"
+          {/* Controls and Language Filter Switches */}
+          <div className="mt-3 flex items-center justify-between gap-3 flex-wrap pt-2 border-t border-cream-200 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-stone-500 dark:text-slate-400 flex items-center gap-1">
+                <Languages className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
+                Display:
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowHindi(!showHindi)}
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                  showHindi 
+                    ? 'bg-saffron-600 text-white border-saffron-700 dark:bg-amber-600 dark:border-amber-500' 
+                    : 'bg-white dark:bg-slate-800 text-stone-600 dark:text-slate-300 border-cream-300 dark:border-slate-700'
+                }`}
               >
-                {/* Verse Number & Actions Bar */}
-                <div className="flex items-center justify-between pb-2 mb-3 border-b border-cream-300/40 dark:border-slate-800">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-300 font-cinzel">
+                हिन्दी
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowEnglish(!showEnglish)}
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                  showEnglish 
+                    ? 'bg-saffron-600 text-white border-saffron-700 dark:bg-amber-600 dark:border-amber-500' 
+                    : 'bg-white dark:bg-slate-800 text-stone-600 dark:text-slate-300 border-cream-300 dark:border-slate-700'
+                }`}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTransliteration(!showTransliteration)}
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                  showTransliteration 
+                    ? 'bg-saffron-600 text-white border-saffron-700 dark:bg-amber-600 dark:border-amber-500' 
+                    : 'bg-white dark:bg-slate-800 text-stone-600 dark:text-slate-300 border-cream-300 dark:border-slate-700'
+                }`}
+              >
+                IAST
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenInReader}
+              className="flex items-center gap-1.5 px-3 py-1 bg-saffron-100 hover:bg-saffron-200 dark:bg-amber-950/70 dark:hover:bg-amber-900/80 text-saffron-900 dark:text-amber-300 text-xs font-bold font-cinzel rounded-xl border border-saffron-300 dark:border-amber-600/40 transition-colors"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Open in Scripture Library</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable Verses List */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+          {isLoadingDb && (
+            <div className="flex items-center justify-center py-10 gap-3 text-saffron-700 dark:text-amber-400 font-cinzel font-bold text-sm animate-pulse">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Loading complete hymn directly from database...</span>
+            </div>
+          )}
+
+          {!isLoadingDb && versesToRender.map((verse, index) => {
+            const isCopied = copiedVerseIndex === index;
+
+            return (
+              <div 
+                key={index} 
+                className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-cream-300 dark:border-amber-500/20 shadow-2xs hover:border-saffron-400 dark:hover:border-amber-500/40 transition-all space-y-3"
+              >
+                <div className="flex items-center justify-between border-b border-cream-200 dark:border-slate-800 pb-2">
+                  <span className="text-xs font-bold font-cinzel text-saffron-800 dark:text-amber-400">
                     Verse / Mantra {verse.verseNumber}
                   </span>
 
                   <button
                     type="button"
-                    onClick={() => handleCopyVerse(`${verse.sanskrit}\n\n${verse.english || verse.hindi}`, idx)}
-                    className="flex items-center gap-1 text-[10px] font-bold text-stone-500 dark:text-slate-400 hover:text-saffron-700 dark:hover:text-amber-300 px-2 py-1 rounded-lg hover:bg-cream-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                    title="Copy Verse"
+                    onClick={() => handleCopyVerse(verse, index)}
+                    className="flex items-center gap-1 text-[11px] font-medium text-stone-500 dark:text-slate-400 hover:text-saffron-700 dark:hover:text-amber-300 transition-colors px-2 py-1 rounded-md hover:bg-cream-100 dark:hover:bg-slate-800"
+                    title="Copy Verse with Translations"
                   >
-                    {copiedVerseIndex === idx ? (
+                    {isCopied ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Copied!</span>
+                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">Copied!</span>
                       </>
                     ) : (
                       <>
@@ -327,29 +344,25 @@ export default function SacredHymnModal({
                   </button>
                 </div>
 
-                {/* Sanskrit Shloka Text */}
-                <div className="my-2">
-                  <p className="text-sm sm:text-base font-sanskrit text-stone-950 dark:text-amber-100 font-semibold leading-relaxed whitespace-pre-line text-center py-2">
+                {/* Sanskrit Shloka Typography */}
+                <div className="text-center sm:text-left py-1">
+                  <p className="text-base sm:text-lg font-sanskrit text-saffron-950 dark:text-amber-100 font-bold leading-relaxed whitespace-pre-line tracking-wide selection:bg-saffron-200">
                     {verse.sanskrit}
                   </p>
                 </div>
 
-                {/* Roman Transliteration */}
+                {/* IAST Transliteration */}
                 {showTransliteration && verse.transliteration && (
-                  <div className="my-2 px-3 py-2 bg-cream-200/50 dark:bg-slate-950/60 rounded-xl border border-cream-300/50 dark:border-slate-800 text-center">
-                    <p className="text-xs text-stone-600 dark:text-slate-300 italic leading-relaxed">
-                      {verse.transliteration}
-                    </p>
-                  </div>
+                  <p className="text-xs font-serif text-stone-600 dark:text-slate-300 italic tracking-wider">
+                    {verse.transliteration}
+                  </p>
                 )}
 
                 {/* Hindi Translation */}
                 {showHindi && verse.hindi && (
-                  <div className="mt-3 pt-2.5 border-t border-cream-300/40 dark:border-slate-800/80">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-saffron-800 dark:text-amber-400 mb-1">
-                      हिन्दी अनुवाद:
-                    </p>
-                    <p className="text-xs sm:text-sm text-stone-800 dark:text-slate-200 font-serif leading-relaxed">
+                  <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border-l-2 border-saffron-500 dark:border-amber-500">
+                    <p className="text-xs text-stone-800 dark:text-slate-200 leading-relaxed font-sans">
+                      <strong className="text-saffron-900 dark:text-amber-300">हिन्दी अनुवाद: </strong>
                       {verse.hindi}
                     </p>
                   </div>
@@ -357,38 +370,45 @@ export default function SacredHymnModal({
 
                 {/* English Translation */}
                 {showEnglish && verse.english && (
-                  <div className="mt-3 pt-2.5 border-t border-cream-300/40 dark:border-slate-800/80">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-saffron-800 dark:text-amber-400 mb-1 font-cinzel">
-                      English Translation:
-                    </p>
-                    <p className="text-xs sm:text-sm text-stone-800 dark:text-slate-200 leading-relaxed">
+                  <div className="p-3 rounded-xl bg-stone-50 dark:bg-slate-800/50 border-l-2 border-stone-400 dark:border-slate-600">
+                    <p className="text-xs text-stone-800 dark:text-slate-200 leading-relaxed font-sans">
+                      <strong className="text-stone-900 dark:text-slate-100">English Translation: </strong>
                       {verse.english}
                     </p>
                   </div>
                 )}
               </div>
-            ))}
+            );
+          })}
+        </div>
+
+        {/* Footer Bar */}
+        <div className="p-4 bg-cream-200/90 dark:bg-[#070A0F] border-t border-cream-300 dark:border-amber-500/20 flex items-center justify-between gap-3 flex-wrap">
+          <div className="text-xs text-stone-600 dark:text-slate-400">
+            <span>Canonical Reference: </span>
+            <strong className="text-stone-900 dark:text-slate-200 font-cinzel">{hymn.canonicalRef}</strong>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleOpenInReader}
+              className="flex items-center gap-1.5 px-4 py-2 bg-saffron-700 hover:bg-saffron-800 dark:bg-amber-600 dark:hover:bg-amber-500 text-white text-xs font-bold font-cinzel rounded-xl shadow-xs transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Study in Scripture Library</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-cream-100 dark:hover:bg-slate-700 text-stone-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-cream-300 dark:border-slate-700 transition-colors"
+            >
+              Close
+            </button>
           </div>
         </div>
 
-        {/* Footer Bar with Jump to Scripture Action */}
-        <div className="px-5 py-3.5 bg-cream-300/60 dark:bg-[#111827] border-t border-cream-400/50 dark:border-amber-500/20 flex items-center justify-between flex-wrap gap-2 shrink-0">
-          <div className="text-[11px] text-stone-600 dark:text-slate-400">
-            Source: <strong className="text-saffron-900 dark:text-amber-300">{hymn.exactScripture}</strong> ({hymn.canonicalRef})
-          </div>
-
-          <button
-            type="button"
-            onClick={handleJumpToReader}
-            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-saffron-600 to-terracotta-600 dark:from-amber-600 dark:to-saffron-700 text-white text-xs font-bold rounded-xl shadow-xs hover:shadow-md hover:brightness-105 transition-all cursor-pointer"
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Open in Scripture Library</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }

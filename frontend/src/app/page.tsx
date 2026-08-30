@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Header from '../components/Header';
 import AskMode from '../components/AskMode';
 import ReadMode from '../components/ReadMode';
+import SuktamsMode from '../components/SuktamsMode';
 import SavedSanctuary from '../components/SavedSanctuary';
 import ShareCardModal from '../components/ShareCardModal';
 import SidePanel from '../components/SidePanel';
@@ -14,7 +15,7 @@ import { SacredHymn } from '../data/famousSuktams';
 const API_BASE_URL = '';
 
 function HomePageContent() {
-  const [mode, setMode] = useState<'ask' | 'read'>('ask');
+  const [mode, setMode] = useState<'ask' | 'read' | 'suktams'>('ask');
   const [isSanctuaryOpen, setIsSanctuaryOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [selectedHymnModal, setSelectedHymnModal] = useState<SacredHymn | null>(null);
@@ -55,7 +56,9 @@ function HomePageContent() {
       const chapter = params.get('chapter');
       const verse = params.get('verse');
 
-      if (urlMode === 'read' || (source && chapter)) {
+      if (urlMode === 'suktams' || urlMode === 'hymns') {
+        setMode('suktams');
+      } else if (urlMode === 'read' || (source && chapter)) {
         setMode('read');
         if (source && chapter) {
           setTargetCoordinate({
@@ -126,7 +129,7 @@ function HomePageContent() {
     }
   };
 
-  const handleModeChange = (newMode: 'ask' | 'read') => {
+  const handleModeChange = (newMode: 'ask' | 'read' | 'suktams') => {
     setMode(newMode);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -197,6 +200,13 @@ function HomePageContent() {
               onOpenShareModal={handleOpenShareModalFromVerse}
               onAskAboutVerse={handleAskAboutVerse}
               targetCoordinate={targetCoordinate}
+            />
+          </div>
+
+          <div className={mode === 'suktams' ? 'block animate-fade-in' : 'hidden'}>
+            <SuktamsMode 
+              onOpenHymnModal={(h) => setSelectedHymnModal(h)}
+              onSelectCoordinate={handleSelectCoordinate}
             />
           </div>
         </div>

@@ -27,8 +27,8 @@ interface SidePanelProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenSanctuary?: () => void;
-  mode?: 'ask' | 'read';
-  onModeChange?: (mode: 'ask' | 'read') => void;
+  mode?: 'ask' | 'read' | 'suktams';
+  onModeChange?: (mode: 'ask' | 'read' | 'suktams') => void;
   onSelectCoordinate?: (coord: {
     sourceName: string;
     chapterNumber?: number;
@@ -488,7 +488,10 @@ export default function SidePanel({
               {/* Suktams Cards List */}
               <div className="space-y-3.5">
                 {filteredSuktams.map((hymn) => {
-                  const firstVerse = hymn.verses[0];
+                  const verseCount = (hymn.endVerse && hymn.startVerse)
+                    ? (hymn.endVerse - hymn.startVerse + 1)
+                    : 1;
+
                   return (
                     <div
                       key={hymn.id}
@@ -515,16 +518,11 @@ export default function SidePanel({
                         </p>
 
                         {/* Opening Verse Callout */}
-                        {firstVerse && (
+                        {hymn.openingSnippet && (
                           <div className="my-2.5 p-2.5 rounded-xl bg-cream-200/60 dark:bg-slate-950/70 border border-cream-300/70 dark:border-amber-900/30">
                             <p className="text-xs font-sanskrit text-stone-900 dark:text-amber-100/95 leading-relaxed font-semibold line-clamp-2">
-                              {firstVerse.sanskrit}
+                              {hymn.openingSnippet}
                             </p>
-                            {firstVerse.hindi && (
-                              <p className="text-[11px] text-stone-700 dark:text-slate-300 mt-1.5 pt-1.5 border-t border-cream-300/50 dark:border-amber-900/20 font-serif leading-relaxed line-clamp-2">
-                                हिन्दी: {firstVerse.hindi}
-                              </p>
-                            )}
                           </div>
                         )}
 
@@ -538,7 +536,7 @@ export default function SidePanel({
                         <div className="flex items-center gap-1.5 text-[10px] text-saffron-700 dark:text-amber-400 font-bold uppercase tracking-wider">
                           <Layers className="w-3.5 h-3.5" />
                           <span>
-                            {hymn.verses.length} {hymn.verses.length === 1 ? 'Mantra' : 'Mantras / Verses'} (Read All)
+                            {verseCount} {verseCount === 1 ? 'Mantra' : 'Mantras / Verses'} (Read from DB)
                           </span>
                         </div>
 
