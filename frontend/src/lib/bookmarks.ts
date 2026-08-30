@@ -65,3 +65,10 @@ export function removeBookmark(sourceName: string, chapterNumber: number, verseN
   localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(filtered));
   window.dispatchEvent(new Event('dharmapragya_bookmarks_updated'));
 }
+
+export function clearBookmarks(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(BOOKMARKS_STORAGE_KEY);
+  window.dispatchEvent(new Event('dharmapragya_bookmarks_updated'));
+}
+
