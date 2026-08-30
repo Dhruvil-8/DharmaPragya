@@ -23,7 +23,14 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await res.json();
-    return NextResponse.json(data);
+    const headers = new Headers();
+    const cacheControl = res.headers.get('cache-control');
+    if (cacheControl) {
+      headers.set('Cache-Control', cacheControl);
+    } else {
+      headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
+    }
+    return NextResponse.json(data, { headers });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal Server Error';
     return NextResponse.json({ error: message }, { status: 500 });

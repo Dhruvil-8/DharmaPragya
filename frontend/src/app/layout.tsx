@@ -6,6 +6,8 @@ const cinzel = Cinzel({
   variable: "--font-cinzel",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+  preload: true,
 });
 
 const lora = Lora({
@@ -13,12 +15,16 @@ const lora = Lora({
   subsets: ["latin"],
   style: ["normal", "italic"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
+  preload: true,
 });
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
+  preload: true,
 });
 
 const tiroDevanagari = Tiro_Devanagari_Sanskrit({
@@ -26,6 +32,8 @@ const tiroDevanagari = Tiro_Devanagari_Sanskrit({
   subsets: ["devanagari", "latin"],
   weight: ["400"],
   style: ["normal", "italic"],
+  display: "swap",
+  preload: true,
 });
 
 export const viewport: Viewport = {

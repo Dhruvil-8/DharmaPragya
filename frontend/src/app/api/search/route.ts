@@ -27,6 +27,8 @@ export async function GET(req: Request) {
     const cacheControl = res.headers.get('cache-control');
     if (cacheControl) {
       headers.set('Cache-Control', cacheControl);
+    } else {
+      headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
     }
 
     return NextResponse.json(data, { headers });

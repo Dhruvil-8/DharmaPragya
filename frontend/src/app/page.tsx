@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import Header from '../components/Header';
 import AskMode from '../components/AskMode';
 import ReadMode from '../components/ReadMode';
-import SavedVerses from '../components/SavedVerses';
-import ShareCardModal from '../components/ShareCardModal';
-import SidePanel from '../components/SidePanel';
-import SacredHymnModal from '../components/SacredHymnModal';
 import { VerseData } from '../types';
 import { SacredHymn, FAMOUS_SUKTAMS_AND_MANTRAS } from '../data/famousSuktams';
+
+const SavedVerses = dynamic(() => import('../components/SavedVerses'), { ssr: false });
+const ShareCardModal = dynamic(() => import('../components/ShareCardModal'), { ssr: false });
+const SidePanel = dynamic(() => import('../components/SidePanel'), { ssr: false });
+const SacredHymnModal = dynamic(() => import('../components/SacredHymnModal'), { ssr: false });
 
 const API_BASE_URL = '';
 

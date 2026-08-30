@@ -160,6 +160,12 @@ export default function ReadMode({
   const [visibleCount, setVisibleCount] = useState<number>(25);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+  // In-Memory Fast Cache Refs for 0ms Instant Navigation
+  const sectionsCacheRef = useRef<Map<string, SectionData[]>>(new Map());
+  const chapterCacheRef = useRef<Map<string, VerseData[]>>(new Map());
+  const vedaSectionsCacheRef = useRef<Map<string, VedaSection[]>>(new Map());
+  const vedaMantrasCacheRef = useRef<Map<string, VedaMantra[]>>(new Map());
+
   // Direct Universal Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<VerseData[]>([]);
@@ -186,7 +192,7 @@ export default function ReadMode({
     };
   }, [chapterData.length, vedaMantras.length, visibleCount]);
 
-  // Debounced search effect
+  // Debounced search effect with AbortController to cancel stale in-flight queries
   useEffect(() => {
     if (!searchQuery.trim() || searchQuery.trim().length < 2) {
       setSearchResults([]);
@@ -194,12 +200,13 @@ export default function ReadMode({
       setIsSearching(false);
       return;
     }
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
         const [scripRes, vedaRes] = await Promise.all([
-          fetch(`${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery.trim())}`).catch(() => null),
-          fetch(`${apiBaseUrl}/api/veda/search?q=${encodeURIComponent(searchQuery.trim())}`).catch(() => null),
+          fetch(`${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery.trim())}`, { signal: controller.signal }).catch(() => null),
+          fetch(`${apiBaseUrl}/api/veda/search?q=${encodeURIComponent(searchQuery.trim())}`, { signal: controller.signal }).catch(() => null),
         ]);
 
         if (scripRes && scripRes.ok) {
@@ -215,13 +222,18 @@ export default function ReadMode({
         } else {
           setVedaSearchResults([]);
         }
-      } catch (err) {
-        console.error('Search error:', err);
+      } catch (err: unknown) {
+        if ((err as Error)?.name !== 'AbortError') {
+          console.error('Search error:', err);
+        }
       } finally {
         setIsSearching(false);
       }
     }, 250);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [searchQuery, apiBaseUrl]);
 
   // Global Keyboard Shortcuts (Ctrl+K, Esc, [ and ] for chapters)
@@ -340,8 +352,14 @@ export default function ReadMode({
     setCurrentVedaSection(null);
     setVedaMantras([]);
     try {
-      const res = await fetch(`${apiBaseUrl}/api/veda/read?veda=${veda.id}`);
-      const data = await res.json();
+      let data = vedaSectionsCacheRef.current.get(veda.id);
+      if (!data) {
+        const res = await fetch(`${apiBaseUrl}/api/veda/read?veda=${veda.id}`);
+        data = await res.json();
+        if (Array.isArray(data)) {
+          vedaSectionsCacheRef.current.set(veda.id, data);
+        }
+      }
       setVedaSections(Array.isArray(data) ? data : []);
       if (targetDivision) {
         await loadVedaChapter(veda.id, targetDivision, targetDivision2, targetMantraNum);
@@ -363,8 +381,15 @@ export default function ReadMode({
     setCurrentMantraIndex(0);
     setVisibleCount(30);
     try {
-      const res = await fetch(`${apiBaseUrl}/api/veda/read?veda=${vedaID}&div1=${division1}`);
-      const data = await res.json();
+      const vKey = `${vedaID}::${division1}`;
+      let data = vedaMantrasCacheRef.current.get(vKey);
+      if (!data) {
+        const res = await fetch(`${apiBaseUrl}/api/veda/read?veda=${vedaID}&div1=${division1}`);
+        data = await res.json();
+        if (Array.isArray(data)) {
+          vedaMantrasCacheRef.current.set(vKey, data);
+        }
+      }
       const mantrasArray = Array.isArray(data) ? data : [];
       setVedaMantras(mantrasArray);
       setIsTocDrawerOpen(false);
@@ -409,18 +434,32 @@ export default function ReadMode({
     setError(null);
     setCurrentVeda(null);
     try {
-      const res = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}`);
-      const data = await res.json();
-      setSectionList(data);
+      let secData = sectionsCacheRef.current.get(sourceName);
+      if (!secData) {
+        const res = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}`);
+        secData = await res.json();
+        if (Array.isArray(secData)) {
+          sectionsCacheRef.current.set(sourceName, secData);
+        }
+      }
+      setSectionList(Array.isArray(secData) ? secData : []);
 
-      const chRes = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}&chapter=${chapterNum}`);
-      const chData = await chRes.json();
-      setChapterData(chData);
+      const chKey = `${sourceName}::${chapterNum}`;
+      let chData = chapterCacheRef.current.get(chKey);
+      if (!chData) {
+        const chRes = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}&chapter=${chapterNum}`);
+        chData = await chRes.json();
+        if (Array.isArray(chData)) {
+          chapterCacheRef.current.set(chKey, chData);
+        }
+      }
+      const versesArray = Array.isArray(chData) ? chData : [];
+      setChapterData(versesArray);
       setCurrentSection(chapterNum);
       setIsTocDrawerOpen(false);
 
-      if (targetVerseNum && chData.length > 0) {
-        const vIdx = chData.findIndex((v: VerseData) => v.verse_number === targetVerseNum);
+      if (targetVerseNum && versesArray.length > 0) {
+        const vIdx = versesArray.findIndex((v: VerseData) => v.verse_number === targetVerseNum);
         setCurrentVerseIndex(vIdx >= 0 ? vIdx : 0);
         if (vIdx >= 0) {
           setVisibleCount(prev => Math.max(prev, vIdx + 30));
@@ -453,9 +492,15 @@ export default function ReadMode({
     const isGitaText = sourceName === 'Bhagavad Gita' || sourceName.toLowerCase().includes('gita');
     setCurrentCategory(isGitaText ? 'Gita' : (sources.find(s => s.name === sourceName)?.type || null));
     try {
-      const res = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}`);
-      const data = await res.json();
-      setSectionList(data);
+      let data = sectionsCacheRef.current.get(sourceName);
+      if (!data) {
+        const res = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}`);
+        data = await res.json();
+        if (Array.isArray(data)) {
+          sectionsCacheRef.current.set(sourceName, data);
+        }
+      }
+      setSectionList(Array.isArray(data) ? data : []);
       if (Array.isArray(data) && data.length > 0) {
         const chapToLoad = initialChapter || data[0].chapter_number;
         await loadChapter(sourceName, chapToLoad);
@@ -474,9 +519,16 @@ export default function ReadMode({
     setCurrentSection(chapterNumber);
     setCurrentVerseIndex(0);
     try {
-      const res = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}&chapter=${chapterNumber}`);
-      const data = await res.json();
-      setChapterData(data);
+      const chKey = `${sourceName}::${chapterNumber}`;
+      let data = chapterCacheRef.current.get(chKey);
+      if (!data) {
+        const res = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}&chapter=${chapterNumber}`);
+        data = await res.json();
+        if (Array.isArray(data)) {
+          chapterCacheRef.current.set(chKey, data);
+        }
+      }
+      setChapterData(Array.isArray(data) ? data : []);
       setIsTocDrawerOpen(false);
       if (typeof window !== 'undefined') {
         window.scrollTo({ top: 0, behavior: 'smooth' });

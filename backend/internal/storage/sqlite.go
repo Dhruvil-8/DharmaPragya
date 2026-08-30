@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 
 	"dharmapragya/internal/models"
@@ -13,8 +14,12 @@ import (
 )
 
 type Storage struct {
-	db      *sql.DB
-	vedasDB *sql.DB
+	db           *sql.DB
+	vedasDB      *sql.DB
+	sourcesCache []models.Source
+	vedasCache   []models.VedaInfo
+	sectionsMap  map[int][]models.Section
+	cacheMu      sync.RWMutex
 }
 
 func NewSQLiteStorage(scripturesDBPath string, vedasDBPath string) (*Storage, error) {
@@ -63,6 +68,7 @@ func NewSQLiteStorage(scripturesDBPath string, vedasDBPath string) (*Storage, er
 
 			vIndexes := []string{
 				"CREATE INDEX IF NOT EXISTS idx_mantras_veda_divs ON mantras(veda_id, division_1, division_2, division_3);",
+				"CREATE INDEX IF NOT EXISTS idx_mantras_div1_div2 ON mantras(veda_id, division_1, division_2);",
 				"CREATE INDEX IF NOT EXISTS idx_mantras_krama ON mantras(krama_number);",
 				"CREATE INDEX IF NOT EXISTS idx_bhashyas_mantra ON bhashyas(mantra_id);",
 				"CREATE INDEX IF NOT EXISTS idx_word_meanings_mantra ON word_meanings(mantra_id);",
@@ -76,6 +82,7 @@ func NewSQLiteStorage(scripturesDBPath string, vedasDBPath string) (*Storage, er
 
 	indexes := []string{
 		"CREATE INDEX IF NOT EXISTS idx_sources_name ON sources(name);",
+		"CREATE INDEX IF NOT EXISTS idx_sources_name_nocase ON sources(name COLLATE NOCASE);",
 		"CREATE INDEX IF NOT EXISTS idx_sources_type ON sources(type);",
 		"CREATE INDEX IF NOT EXISTS idx_verses_section_id ON verses(section_id);",
 		"CREATE INDEX IF NOT EXISTS idx_verses_section_verse ON verses(section_id, verse_number);",
@@ -89,7 +96,11 @@ func NewSQLiteStorage(scripturesDBPath string, vedasDBPath string) (*Storage, er
 		}
 	}
 
-	s := &Storage{db: db, vedasDB: vDB}
+	s := &Storage{
+		db:          db,
+		vedasDB:     vDB,
+		sectionsMap: make(map[int][]models.Section),
+	}
 	s.ensureFTSIndex()
 
 	return s, nil
@@ -145,6 +156,15 @@ func (s *Storage) Close() error {
 // -------------------------------------------------------------
 
 func (s *Storage) GetSources() ([]models.Source, error) {
+	s.cacheMu.RLock()
+	if len(s.sourcesCache) > 0 {
+		cached := make([]models.Source, len(s.sourcesCache))
+		copy(cached, s.sourcesCache)
+		s.cacheMu.RUnlock()
+		return cached, nil
+	}
+	s.cacheMu.RUnlock()
+
 	rows, err := s.db.Query("SELECT id, name, type FROM sources")
 	if err != nil {
 		return nil, err
@@ -157,10 +177,24 @@ func (s *Storage) GetSources() ([]models.Source, error) {
 		rows.Scan(&src.ID, &src.Name, &src.Type)
 		sources = append(sources, src)
 	}
+
+	s.cacheMu.Lock()
+	s.sourcesCache = sources
+	s.cacheMu.Unlock()
+
 	return sources, nil
 }
 
 func (s *Storage) GetSections(sourceID int) ([]models.Section, error) {
+	s.cacheMu.RLock()
+	if secs, ok := s.sectionsMap[sourceID]; ok {
+		cached := make([]models.Section, len(secs))
+		copy(cached, secs)
+		s.cacheMu.RUnlock()
+		return cached, nil
+	}
+	s.cacheMu.RUnlock()
+
 	rows, err := s.db.Query("SELECT id, source_id, chapter_number, chapter_name FROM sections WHERE source_id = ?", sourceID)
 	if err != nil {
 		return nil, err
@@ -173,6 +207,11 @@ func (s *Storage) GetSections(sourceID int) ([]models.Section, error) {
 		rows.Scan(&sec.ID, &sec.SourceID, &sec.ChapterNumber, &sec.ChapterName)
 		sections = append(sections, sec)
 	}
+
+	s.cacheMu.Lock()
+	s.sectionsMap[sourceID] = sections
+	s.cacheMu.Unlock()
+
 	return sections, nil
 }
 
@@ -368,6 +407,89 @@ func (s *Storage) GetVerseByID(id int) (*models.Verse, error) {
 	return &v, nil
 }
 
+func (s *Storage) GetVersesByIDs(ids []int) ([]*models.Verse, error) {
+	if len(ids) == 0 {
+		return []*models.Verse{}, nil
+	}
+
+	placeholders := strings.Repeat("?,", len(ids))
+	placeholders = placeholders[:len(placeholders)-1]
+
+	var idArgs []interface{}
+	for _, id := range ids {
+		idArgs = append(idArgs, id)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT v.id, v.section_id, v.verse_number, COALESCE(v.sanskrit_text, ''), COALESCE(v.transliteration, ''), COALESCE(v.word_meanings, ''), src.name, sec.chapter_name, sec.chapter_number
+		FROM verses v
+		JOIN sections sec ON v.section_id = sec.id
+		JOIN sources src ON sec.source_id = src.id
+		WHERE v.id IN (%s)
+	`, placeholders)
+
+	rows, err := s.db.Query(query, idArgs...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	verseMap := make(map[int]*models.Verse)
+	for rows.Next() {
+		var v models.Verse
+		err := rows.Scan(&v.ID, &v.SectionID, &v.VerseNumber, &v.SanskritText, &v.Transliteration, &v.WordMeanings, &v.SourceName, &v.ChapterName, &v.ChapterNumber)
+		if err != nil {
+			return nil, err
+		}
+		v.Translations = []models.Translation{}
+		v.Commentaries = []models.Commentary{}
+		verseCopy := v
+		verseMap[v.ID] = &verseCopy
+	}
+
+	// Fetch translations for all verses in 1 batched query
+	tQuery := fmt.Sprintf("SELECT verse_id, language, text, author FROM translations WHERE verse_id IN (%s)", placeholders)
+	tRows, err := s.db.Query(tQuery, idArgs...)
+	if err == nil {
+		defer tRows.Close()
+		for tRows.Next() {
+			var verseID int
+			var t models.Translation
+			if err := tRows.Scan(&verseID, &t.Language, &t.Text, &t.Author); err == nil {
+				if vPtr, exists := verseMap[verseID]; exists {
+					vPtr.Translations = append(vPtr.Translations, t)
+				}
+			}
+		}
+	}
+
+	// Fetch commentaries for all verses in 1 batched query
+	cQuery := fmt.Sprintf("SELECT verse_id, language, text, author FROM commentaries WHERE verse_id IN (%s)", placeholders)
+	cRows, err := s.db.Query(cQuery, idArgs...)
+	if err == nil {
+		defer cRows.Close()
+		for cRows.Next() {
+			var verseID int
+			var c models.Commentary
+			if err := cRows.Scan(&verseID, &c.Language, &c.Text, &c.Author); err == nil {
+				if vPtr, exists := verseMap[verseID]; exists {
+					vPtr.Commentaries = append(vPtr.Commentaries, c)
+				}
+			}
+		}
+	}
+
+	// Preserve the original ranking order
+	var orderedResults []*models.Verse
+	for _, id := range ids {
+		if v, exists := verseMap[id]; exists {
+			orderedResults = append(orderedResults, v)
+		}
+	}
+
+	return orderedResults, nil
+}
+
 func (s *Storage) GetVerseByCoordinate(sourceName string, chapterNumber, verseNumber int) (*models.Verse, error) {
 	query := `
 		SELECT v.id, v.section_id, v.verse_number, COALESCE(v.sanskrit_text, ''), COALESCE(v.transliteration, ''), COALESCE(v.word_meanings, ''), src.name, sec.chapter_name, sec.chapter_number
@@ -540,16 +662,24 @@ func (s *Storage) SearchVerses(query string, sourceFilter string, limit int) ([]
 		}
 	}
 
+	var idsToFetch []int
 	for _, id := range verseIDs {
-		if seenIDs[id] {
-			continue
-		}
-		verse, err := s.GetVerseByID(id)
-		if err == nil && verse != nil {
-			seenIDs[id] = true
-			results = append(results, verse)
-			if len(results) >= limit {
+		if !seenIDs[id] {
+			idsToFetch = append(idsToFetch, id)
+			if len(results)+len(idsToFetch) >= limit {
 				break
+			}
+		}
+	}
+
+	if len(idsToFetch) > 0 {
+		fetchedVerses, err := s.GetVersesByIDs(idsToFetch)
+		if err == nil {
+			for _, v := range fetchedVerses {
+				if !seenIDs[v.ID] {
+					seenIDs[v.ID] = true
+					results = append(results, v)
+				}
 			}
 		}
 	}
@@ -580,6 +710,16 @@ func (s *Storage) GetVedas() ([]models.VedaInfo, error) {
 	if s.vedasDB == nil {
 		return nil, fmt.Errorf("vedas database not connected")
 	}
+
+	s.cacheMu.RLock()
+	if len(s.vedasCache) > 0 {
+		cached := make([]models.VedaInfo, len(s.vedasCache))
+		copy(cached, s.vedasCache)
+		s.cacheMu.RUnlock()
+		return cached, nil
+	}
+	s.cacheMu.RUnlock()
+
 	rows, err := s.vedasDB.Query("SELECT id, name_sanskrit, name_english, shakha, total_mantras, description FROM vedas ORDER BY id")
 	if err != nil {
 		return nil, err
@@ -592,6 +732,11 @@ func (s *Storage) GetVedas() ([]models.VedaInfo, error) {
 		rows.Scan(&v.ID, &v.NameSanskrit, &v.NameEnglish, &v.Shakha, &v.TotalMantras, &v.Description)
 		vedas = append(vedas, v)
 	}
+
+	s.cacheMu.Lock()
+	s.vedasCache = vedas
+	s.cacheMu.Unlock()
+
 	return vedas, nil
 }
 
@@ -687,13 +832,40 @@ func (s *Storage) GetVedaMantras(vedaID string, division1 int, division2 int) ([
 		mantraMap[mantras[i].ID] = &mantras[i]
 	}
 
-	wQuery := `
-		SELECT wm.mantra_id, wm.commentator, wm.language, wm.padartha_text
-		FROM word_meanings wm
-		JOIN mantras m ON wm.mantra_id = m.id
-		WHERE m.veda_id = ? AND m.division_1 = ?
-	`
-	wRows, err := s.vedasDB.Query(wQuery, vedaID, division1)
+	var wQuery string
+	var bQuery string
+	var qArgs []interface{}
+	if division2 > 0 {
+		wQuery = `
+			SELECT wm.mantra_id, wm.commentator, wm.language, wm.padartha_text
+			FROM word_meanings wm
+			JOIN mantras m ON wm.mantra_id = m.id
+			WHERE m.veda_id = ? AND m.division_1 = ? AND m.division_2 = ?
+		`
+		bQuery = `
+			SELECT b.mantra_id, b.author, b.language, COALESCE(b.mantra_vishaya, ''), COALESCE(b.anvaya, ''), COALESCE(b.bhavartha, ''), COALESCE(b.tika, '')
+			FROM bhashyas b
+			JOIN mantras m ON b.mantra_id = m.id
+			WHERE m.veda_id = ? AND m.division_1 = ? AND m.division_2 = ?
+		`
+		qArgs = []interface{}{vedaID, division1, division2}
+	} else {
+		wQuery = `
+			SELECT wm.mantra_id, wm.commentator, wm.language, wm.padartha_text
+			FROM word_meanings wm
+			JOIN mantras m ON wm.mantra_id = m.id
+			WHERE m.veda_id = ? AND m.division_1 = ?
+		`
+		bQuery = `
+			SELECT b.mantra_id, b.author, b.language, COALESCE(b.mantra_vishaya, ''), COALESCE(b.anvaya, ''), COALESCE(b.bhavartha, ''), COALESCE(b.tika, '')
+			FROM bhashyas b
+			JOIN mantras m ON b.mantra_id = m.id
+			WHERE m.veda_id = ? AND m.division_1 = ?
+		`
+		qArgs = []interface{}{vedaID, division1}
+	}
+
+	wRows, err := s.vedasDB.Query(wQuery, qArgs...)
 	if err == nil {
 		defer wRows.Close()
 		for wRows.Next() {
@@ -707,13 +879,7 @@ func (s *Storage) GetVedaMantras(vedaID string, division1 int, division2 int) ([
 		}
 	}
 
-	bQuery := `
-		SELECT b.mantra_id, b.author, b.language, COALESCE(b.mantra_vishaya, ''), COALESCE(b.anvaya, ''), COALESCE(b.bhavartha, ''), COALESCE(b.tika, '')
-		FROM bhashyas b
-		JOIN mantras m ON b.mantra_id = m.id
-		WHERE m.veda_id = ? AND m.division_1 = ?
-	`
-	bRows, err := s.vedasDB.Query(bQuery, vedaID, division1)
+	bRows, err := s.vedasDB.Query(bQuery, qArgs...)
 	if err == nil {
 		defer bRows.Close()
 		for bRows.Next() {
@@ -786,20 +952,40 @@ func (s *Storage) SearchVedas(query string, vedaID string, limit int) ([]models.
 		}
 	}
 
-	var results []models.VedaMantra
+	if len(mantraIDs) == 0 {
+		return []models.VedaMantra{}, nil
+	}
+
+	placeholders := strings.Repeat("?,", len(mantraIDs))
+	placeholders = placeholders[:len(placeholders)-1]
+
+	var idArgs []interface{}
 	for _, mid := range mantraIDs {
+		idArgs = append(idArgs, mid)
+	}
+
+	mQuery := fmt.Sprintf(`
+		SELECT 
+			m.id, m.veda_id, v.name_english, m.krama_number, m.division_1, m.division_2, m.division_3, m.division_4,
+			m.coordinate_str, COALESCE(m.ashtaka_coordinate, ''), COALESCE(m.kauthuma_coordinate, ''), COALESCE(m.ranayaniya_coordinate, ''),
+			m.sanskrit_svara, m.sanskrit_plain, COALESCE(m.padapatha_svara, ''), COALESCE(m.padapatha_plain, ''), COALESCE(m.transliteration_iast, ''),
+			COALESCE(m.rishi, ''), COALESCE(m.devata, ''), COALESCE(m.chhandas, ''), COALESCE(m.svara, ''),
+			COALESCE(m.gana, ''), COALESCE(m.ganaparva, ''), COALESCE(m.rigveda_ref, ''), COALESCE(m.yajurveda_ref, ''), COALESCE(m.atharvaveda_ref, ''), m.is_repetition
+		FROM mantras m
+		JOIN vedas v ON m.veda_id = v.id
+		WHERE m.id IN (%s)
+	`, placeholders)
+
+	mRows, err := s.vedasDB.Query(mQuery, idArgs...)
+	if err != nil {
+		return []models.VedaMantra{}, nil
+	}
+	defer mRows.Close()
+
+	mantraMap := make(map[string]*models.VedaMantra)
+	for mRows.Next() {
 		var m models.VedaMantra
-		err := s.vedasDB.QueryRow(`
-			SELECT 
-				m.id, m.veda_id, v.name_english, m.krama_number, m.division_1, m.division_2, m.division_3, m.division_4,
-				m.coordinate_str, COALESCE(m.ashtaka_coordinate, ''), COALESCE(m.kauthuma_coordinate, ''), COALESCE(m.ranayaniya_coordinate, ''),
-				m.sanskrit_svara, m.sanskrit_plain, COALESCE(m.padapatha_svara, ''), COALESCE(m.padapatha_plain, ''), COALESCE(m.transliteration_iast, ''),
-				COALESCE(m.rishi, ''), COALESCE(m.devata, ''), COALESCE(m.chhandas, ''), COALESCE(m.svara, ''),
-				COALESCE(m.gana, ''), COALESCE(m.ganaparva, ''), COALESCE(m.rigveda_ref, ''), COALESCE(m.yajurveda_ref, ''), COALESCE(m.atharvaveda_ref, ''), m.is_repetition
-			FROM mantras m
-			JOIN vedas v ON m.veda_id = v.id
-			WHERE m.id = ?
-		`, mid).Scan(
+		err := mRows.Scan(
 			&m.ID, &m.VedaID, &m.VedaName, &m.KramaNumber, &m.Division1, &m.Division2, &m.Division3, &m.Division4,
 			&m.CoordinateStr, &m.AshtakaCoordinate, &m.KauthumaCoordinate, &m.RanayaniyaCoordinate,
 			&m.SanskritSvara, &m.SanskritPlain, &m.PadapathaSvara, &m.PadapathaPlain, &m.TransliterationIAST,
@@ -809,35 +995,52 @@ func (s *Storage) SearchVedas(query string, vedaID string, limit int) ([]models.
 		if err == nil {
 			m.WordMeanings = []models.VedaWordMeaning{}
 			m.Bhashyas = []models.VedaBhashya{}
-
-			// Fetch word meanings
-			wRows, err := s.vedasDB.Query("SELECT commentator, language, padartha_text FROM word_meanings WHERE mantra_id = ?", mid)
-			if err == nil {
-				defer wRows.Close()
-				for wRows.Next() {
-					var wm models.VedaWordMeaning
-					if err := wRows.Scan(&wm.Commentator, &wm.Language, &wm.PadarthaText); err == nil {
-						m.WordMeanings = append(m.WordMeanings, wm)
-					}
-				}
-			}
-
-			// Fetch bhashyas
-			bRows, err := s.vedasDB.Query("SELECT author, language, COALESCE(mantra_vishaya, ''), COALESCE(anvaya, ''), COALESCE(bhavartha, ''), COALESCE(tika, '') FROM bhashyas WHERE mantra_id = ?", mid)
-			if err == nil {
-				defer bRows.Close()
-				for bRows.Next() {
-					var bh models.VedaBhashya
-					if err := bRows.Scan(&bh.Author, &bh.Language, &bh.MantraVishaya, &bh.Anvaya, &bh.Bhavartha, &bh.Tika); err == nil {
-						m.Bhashyas = append(m.Bhashyas, bh)
-					}
-				}
-			}
-
-			results = append(results, m)
+			mCopy := m
+			mantraMap[m.ID] = &mCopy
 		}
 	}
 
-	return results, nil
+	// Fetch word meanings for all mantras in 1 batched query
+	wQuery := fmt.Sprintf("SELECT wm.mantra_id, wm.commentator, wm.language, wm.padartha_text FROM word_meanings wm WHERE wm.mantra_id IN (%s)", placeholders)
+	wRows, err := s.vedasDB.Query(wQuery, idArgs...)
+	if err == nil {
+		defer wRows.Close()
+		for wRows.Next() {
+			var mid string
+			var wm models.VedaWordMeaning
+			if err := wRows.Scan(&mid, &wm.Commentator, &wm.Language, &wm.PadarthaText); err == nil {
+				if mPtr, exists := mantraMap[mid]; exists {
+					mPtr.WordMeanings = append(mPtr.WordMeanings, wm)
+				}
+			}
+		}
+	}
+
+	// Fetch bhashyas for all mantras in 1 batched query
+	bQuery := fmt.Sprintf("SELECT b.mantra_id, b.author, b.language, COALESCE(b.mantra_vishaya, ''), COALESCE(b.anvaya, ''), COALESCE(b.bhavartha, ''), COALESCE(b.tika, '') FROM bhashyas b WHERE b.mantra_id IN (%s)", placeholders)
+	bRows, err := s.vedasDB.Query(bQuery, idArgs...)
+	if err == nil {
+		defer bRows.Close()
+		for bRows.Next() {
+			var mid string
+			var bh models.VedaBhashya
+			if err := bRows.Scan(&mid, &bh.Author, &bh.Language, &bh.MantraVishaya, &bh.Anvaya, &bh.Bhavartha, &bh.Tika); err == nil {
+				if mPtr, exists := mantraMap[mid]; exists {
+					mPtr.Bhashyas = append(mPtr.Bhashyas, bh)
+				}
+			}
+		}
+	}
+
+	// Preserve the original rank order
+	var orderedMantras []models.VedaMantra
+	for _, mid := range mantraIDs {
+		if mPtr, exists := mantraMap[mid]; exists {
+			orderedMantras = append(orderedMantras, *mPtr)
+		}
+	}
+
+	return orderedMantras, nil
 }
+
 

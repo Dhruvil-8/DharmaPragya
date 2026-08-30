@@ -4,11 +4,11 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
-import { 
-  X, 
-  Globe, 
-  BookOpen, 
-  ExternalLink, 
+import {
+  X,
+  Globe,
+  BookOpen,
+  ExternalLink,
   Bookmark,
   Sun,
   Moon,
@@ -35,8 +35,8 @@ interface SidePanelProps {
 
 type SidePanelView = 'main' | 'about' | 'related';
 
-export default function SidePanel({ 
-  isOpen, 
+export default function SidePanel({
+  isOpen,
   onClose,
   onOpenSaved,
   mode = 'ask',
@@ -56,7 +56,7 @@ export default function SidePanel({
     };
 
     window.addEventListener('dharmapragya_bookmarks_updated', handleBookmarksUpdate);
-    
+
     // Check initial theme
     const isDarkTheme = document.documentElement.classList.contains('dark');
     setIsDark(isDarkTheme);
@@ -142,12 +142,12 @@ export default function SidePanel({
         <div className="px-5 py-4 bg-gradient-to-r from-cream-300 to-cream-200 dark:from-[#111827] dark:to-[#0b0f19] border-b border-cream-400/50 dark:border-amber-500/20 flex items-center justify-between shrink-0">
           {currentView === 'main' ? (
             <div className="flex items-center gap-3">
-              <Image 
-                src="/logo.png" 
-                alt="DharmaPragya Logo" 
+              <Image
+                src="/logo.png"
+                alt="DharmaPragya Logo"
                 width={32}
                 height={32}
-                className="w-8 h-8 rounded-full shadow-xs object-cover bg-white dark:bg-slate-900 border border-cream-400 dark:border-amber-500/30 shrink-0" 
+                className="w-8 h-8 rounded-full shadow-xs object-cover bg-white dark:bg-slate-900 border border-cream-400 dark:border-amber-500/30 shrink-0"
               />
               <div>
                 <h2 id="side-panel-title" className="text-lg font-bold font-cinzel text-saffron-800 dark:text-amber-300 leading-tight">
@@ -201,18 +201,16 @@ export default function SidePanel({
                 <button
                   type="button"
                   onClick={() => handleModeSelect('ask')}
-                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl transition-all cursor-pointer text-left border ${
-                    mode === 'ask'
-                      ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 dark:from-amber-600 dark:to-saffron-700 text-white border-transparent shadow-xs'
-                      : 'bg-white dark:bg-slate-900/90 text-stone-900 dark:text-slate-100 hover:bg-cream-200 dark:hover:bg-slate-800/90 border-cream-400/40 dark:border-amber-500/20'
-                  }`}
+                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl transition-all cursor-pointer text-left border ${mode === 'ask'
+                    ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 dark:from-amber-600 dark:to-saffron-700 text-white border-transparent shadow-xs'
+                    : 'bg-white dark:bg-slate-900/90 text-stone-900 dark:text-slate-100 hover:bg-cream-200 dark:hover:bg-slate-800/90 border-cream-400/40 dark:border-amber-500/20'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                      mode === 'ask' 
-                        ? 'bg-white/20 text-white' 
-                        : 'bg-saffron-100 dark:bg-amber-950/60 text-saffron-700 dark:text-amber-300'
-                    }`}>
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${mode === 'ask'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-saffron-100 dark:bg-amber-950/60 text-saffron-700 dark:text-amber-300'
+                      }`}>
                       <Compass className="w-4 h-4" />
                     </div>
                     <div>
@@ -235,18 +233,16 @@ export default function SidePanel({
                 <button
                   type="button"
                   onClick={() => handleModeSelect('read')}
-                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl transition-all cursor-pointer text-left border ${
-                    mode === 'read'
-                      ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 dark:from-amber-600 dark:to-saffron-700 text-white border-transparent shadow-xs'
-                      : 'bg-white dark:bg-slate-900/90 text-stone-900 dark:text-slate-100 hover:bg-cream-200 dark:hover:bg-slate-800/90 border-cream-400/40 dark:border-amber-500/20'
-                  }`}
+                  className={`w-full flex items-center justify-between p-3.5 rounded-2xl transition-all cursor-pointer text-left border ${mode === 'read'
+                    ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 dark:from-amber-600 dark:to-saffron-700 text-white border-transparent shadow-xs'
+                    : 'bg-white dark:bg-slate-900/90 text-stone-900 dark:text-slate-100 hover:bg-cream-200 dark:hover:bg-slate-800/90 border-cream-400/40 dark:border-amber-500/20'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                      mode === 'read'
-                        ? 'bg-white/20 text-white'
-                        : 'bg-saffron-100 dark:bg-amber-950/60 text-saffron-700 dark:text-amber-300'
-                    }`}>
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${mode === 'read'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-saffron-100 dark:bg-amber-950/60 text-saffron-700 dark:text-amber-300'
+                      }`}>
                       <BookOpen className="w-4 h-4" />
                     </div>
                     <div>
@@ -381,10 +377,10 @@ export default function SidePanel({
                     </div>
                     <div>
                       <span className="text-xs sm:text-sm font-bold text-stone-800 dark:text-slate-200 block">
-                        Related Sanatan Platforms
+                        Our Related Sites
                       </span>
                       <span className="text-[11px] text-stone-500 dark:text-slate-400 block">
-                        Gita, Upanishads & Veda libraries
+                        Vedic Astrology, Panchang & Directory
                       </span>
                     </div>
                   </div>
@@ -397,33 +393,13 @@ export default function SidePanel({
           {/* VIEW 2: About Platform Sub-Page */}
           {currentView === 'about' && (
             <div className="space-y-4 text-stone-700 dark:text-slate-300 text-xs leading-relaxed animate-fade-in">
-              <div className="p-4 rounded-2xl bg-cream-200/80 dark:bg-slate-900/90 border border-cream-400/60 dark:border-amber-500/20 space-y-2">
+              <div className="p-4 rounded-2xl bg-cream-200/80 dark:bg-slate-900/90 border border-cream-400/60 dark:border-amber-500/20 space-y-3">
                 <h3 className="text-sm font-bold font-cinzel text-saffron-800 dark:text-amber-300">
-                  Timeless Wisdom, Sovereign Intelligence
+                  About DharmaPragya
                 </h3>
-                <p>
-                  <strong>DharmaPragya</strong> is an authentic AI inquiry and scripture research portal designed to illuminate the eternal truths of Sanatan Dharma with verified textual citations.
+                <p className="text-stone-800 dark:text-slate-200 text-xs leading-relaxed">
+                  DharmaPragya is a platform that allows users to explore the wisdom of Sanatan Dharma by asking questions. The system leverages AI to intelligently route questions and synthesize answers based on citations drawn directly from foundational texts like the Srimad Bhagavad Gita, the Vedas, the Upanishads, the Mahabharata, the Ramayana, and the Yoga Sutras and Sanatan Dharma scriptures.
                 </p>
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="font-bold text-stone-900 dark:text-slate-100 uppercase tracking-wider text-[10px]">
-                  Core Capabilities
-                </h4>
-                <ul className="space-y-2 pl-2">
-                  <li className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-saffron-600 dark:bg-amber-400 mt-1.5 shrink-0" />
-                    <span><strong>Grounded Citations:</strong> Synthesizes verified shlokas from Vedas, Bhagavad Gita, Upanishads, and Epics.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-saffron-600 dark:bg-amber-400 mt-1.5 shrink-0" />
-                    <span><strong>Multi-Scripture Reader:</strong> Word-by-word meanings, Devanagari text, IAST transliterations, and multi-language translations.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-saffron-600 dark:bg-amber-400 mt-1.5 shrink-0" />
-                    <span><strong>Offline Local SQLite:</strong> Fast retrieval with zero reliance on third-party scrapers.</span>
-                  </li>
-                </ul>
               </div>
 
               {/* GitHub Project Link */}
@@ -448,34 +424,27 @@ export default function SidePanel({
                 </div>
                 <ExternalLink className="w-3.5 h-3.5 text-stone-400 group-hover:text-saffron-600 dark:group-hover:text-amber-400" />
               </a>
-
-              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-cream-300 dark:border-amber-500/20 text-center space-y-1">
-                <p className="text-[11px] font-sanskrit text-saffron-800 dark:text-amber-300 font-bold">
-                  ॐ असतो मा सद्गमय । तमसो मा ज्योतिर्गमय ।
-                </p>
-                <p className="text-[10px] text-stone-500 dark:text-slate-400">
-                  From ignorance lead me to truth; from darkness lead me to light.
-                </p>
-              </div>
             </div>
           )}
 
           {/* VIEW 3: Related Sites Sub-Page */}
           {currentView === 'related' && (
             <div className="space-y-3 animate-fade-in">
-              <p className="text-xs text-stone-600 dark:text-slate-400 mb-2">
-                Explore our sister platforms dedicated to Sanatan Dharma & Vedic Sciences:
+              <p className="text-xs text-stone-600 dark:text-slate-400 mb-2 font-medium">
+                Explore our other platforms
               </p>
 
               {[
                 {
                   name: 'Vedic Jyotish Portal',
-                  desc: 'Authentic Vedic Astrology, Panchang, Muhurta calculations, and Kundali insights.',
+                  desc: 'AI powered Vedic Astrology chat, Panchang, Muhurta calculations, and Kundali insights',
+                  tag: 'Astrology & Panchang',
                   url: 'https://vedic-jyotish.vercel.app/',
                 },
                 {
                   name: 'Sanatan Dharma Directory',
-                  desc: 'Comprehensive curated directory of authentic Sanatan Dharma texts, traditions, and temples.',
+                  desc: 'Comprehensive curated directory of Sanatan Dharma texts, archives, platforms, and tools',
+                  tag: 'Heritage & Directory',
                   url: 'https://dhruvil-8.github.io/SanatanDharmaDirectory/site/',
                 },
               ].map((site, idx) => (
@@ -486,31 +455,32 @@ export default function SidePanel({
                   rel="noopener noreferrer"
                   className="block p-4 rounded-2xl bg-white dark:bg-slate-900/90 hover:bg-cream-200 dark:hover:bg-slate-800/90 border border-cream-400/40 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/40 shadow-2xs transition-all group cursor-pointer"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h4 className="text-xs font-bold text-stone-900 dark:text-slate-100 group-hover:text-saffron-700 dark:group-hover:text-amber-300 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-saffron-100 dark:bg-amber-950/70 text-saffron-800 dark:text-amber-300 border border-saffron-300/40 dark:border-amber-700/30">
+                          {site.tag}
+                        </span>
+                      </div>
+                      <h4 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-slate-100 group-hover:text-saffron-700 dark:group-hover:text-amber-300 transition-colors">
                         {site.name}
                       </h4>
-                      <p className="text-[11px] text-stone-500 dark:text-slate-400 mt-1 leading-relaxed">
+                      <p className="text-[11px] text-stone-600 dark:text-slate-400 leading-relaxed">
                         {site.desc}
                       </p>
-                      <span className="inline-block mt-2 text-[10px] font-mono text-saffron-700 dark:text-amber-400">
-                        {site.url} &rarr;
-                      </span>
+                      <div className="pt-1 flex items-center gap-1 text-xs font-semibold text-saffron-700 dark:text-amber-400 group-hover:text-saffron-800 dark:group-hover:text-amber-300">
+                        <span>Visit Platform</span>
+                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-stone-400 group-hover:text-saffron-600 dark:group-hover:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="w-8 h-8 rounded-xl bg-cream-200 dark:bg-slate-800 flex items-center justify-center text-stone-500 dark:text-slate-400 group-hover:bg-saffron-100 dark:group-hover:bg-amber-950/60 group-hover:text-saffron-700 dark:group-hover:text-amber-300 transition-colors shrink-0 mt-0.5">
+                      <ExternalLink className="w-4 h-4" />
+                    </div>
                   </div>
                 </a>
               ))}
             </div>
           )}
-        </div>
-
-        {/* Panel Footer */}
-        <div className="p-4 bg-cream-200/80 dark:bg-[#0e1422] border-t border-cream-400/40 dark:border-amber-500/20 text-center shrink-0">
-          <p className="text-[10px] text-stone-500 dark:text-slate-500 font-medium">
-            DharmaPragya &bull; Dedicated to Truth &amp; Dharma
-          </p>
         </div>
       </div>
     </div>,
