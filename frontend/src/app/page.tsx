@@ -6,6 +6,7 @@ import AskMode from '../components/AskMode';
 import ReadMode from '../components/ReadMode';
 import SavedSanctuary from '../components/SavedSanctuary';
 import ShareCardModal from '../components/ShareCardModal';
+import AboutSidePanel from '../components/AboutSidePanel';
 import { VerseData } from '../types';
 
 const API_BASE_URL = '';
@@ -13,6 +14,7 @@ const API_BASE_URL = '';
 function HomePageContent() {
   const [mode, setMode] = useState<'ask' | 'read'>('ask');
   const [isSanctuaryOpen, setIsSanctuaryOpen] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [askInitialPrompt, setAskInitialPrompt] = useState<{
     query: string;
     sourceFilter?: string;
@@ -141,6 +143,7 @@ function HomePageContent() {
         <div className="max-w-4xl mx-auto w-full">
           <Header 
             onOpenSanctuary={() => setIsSanctuaryOpen(true)} 
+            onOpenAbout={() => setIsAboutOpen(true)}
             mode={mode} 
             onModeChange={handleModeChange}
             onHomeClick={handleHomeClick}
@@ -170,8 +173,16 @@ function HomePageContent() {
         </div>
 
         {/* Footer */}
-        <footer className="mt-12 py-6 border-t border-cream-400/40 dark:border-amber-900/30 text-center space-y-1">
-          <p className="font-cinzel text-xs tracking-[0.2em] uppercase font-bold text-saffron-800 dark:text-amber-400">DharmaPragya</p>
+        <footer className="mt-12 py-6 border-t border-cream-400/40 dark:border-amber-900/30 text-center space-y-2">
+          <div className="flex items-center justify-center gap-3 text-xs">
+            <button
+              type="button"
+              onClick={() => setIsAboutOpen(true)}
+              className="font-cinzel tracking-[0.15em] uppercase font-bold text-saffron-800 dark:text-amber-400 hover:underline cursor-pointer"
+            >
+              About DharmaPragya &bull; Ecosystem
+            </button>
+          </div>
           <p className="text-[10px] text-stone-500 dark:text-slate-500 font-medium">
             Synthesizing timeless Sanatan Dharma wisdom with modern intelligence.
           </p>
@@ -190,6 +201,12 @@ function HomePageContent() {
         isOpen={shareModalData.isOpen}
         onClose={() => setShareModalData({ isOpen: false, details: null })}
         verseDetails={shareModalData.details}
+      />
+
+      {/* About & Ecosystem Side Panel */}
+      <AboutSidePanel
+        isOpen={isAboutOpen}
+        onClose={() => setIsAboutOpen(false)}
       />
     </main>
   );

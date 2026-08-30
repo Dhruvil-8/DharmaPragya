@@ -569,7 +569,7 @@ Here are the retrieved verses, word-by-word meanings, and authoritative commenta
 Provide a concise, meticulous, and deeply insightful answer explaining the sacred wisdom of these scriptures in relation to the user's question.
 
 CRITICAL INSTRUCTIONS ON ANSWER LENGTH & CONCISENESS:
-1. SINGLE-VERSE DEDICATION: If the question specifically asks about a single verse, mantra, or coordinate (e.g. "specifically for...", "Chapter X, Verse Y", "Mantra Z"), YOU MUST FOCUS 100% EXCLUSIVELY ON THAT SINGLE VERSE. Do NOT quote, introduce, or discuss other verses.
+1. SINGLE-VERSE DEDICATION: If the question specifically asks about a single verse, mantra, or coordinate (e.g. "specifically for...", "Chapter X, Verse Y", "Mantra Z"), YOU MUST FOCUS 100%% EXCLUSIVELY ON THAT SINGLE VERSE. Do NOT quote, introduce, or discuss other verses.
 2. FOCUS & BREVITY: Deliver a conscious, meticulous, and powerful answer tailored to the question.
    - For specific verse inquiries: Provide 1 to 2 focused paragraphs explaining the verse's Sanskrit terms, philosophical core, and spiritual application.
    - Avoid bloated multi-page essays, long-winded introductions, or unnecessary filler.

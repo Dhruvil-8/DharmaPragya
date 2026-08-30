@@ -51,7 +51,7 @@ The scriptures and Vedic Samhitas are stored across unified SQLite databases (`s
 | **Harivamsha Purana** | 16,711 | Yes | Pending | Pending | Complete 3 Parvas (Harivamsha, Vishnu, Bhavishya) |
 | **16 Principal Upanishads** | 2,196 | Yes | Pending | Pending | Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Taittiriya, Aitareya, Chandogya, Brihadaranyaka, Shvetashvatara, Kaushitaki, Maitri, Amritabindu, Tejobindu |
 
-### Authentic Provenance Credits:
+### Data Sources & Credits:
 - **The Four Vedas**: Digitized Vedic Samhitas, Padapatha, and classical Bhashyas sourced from [VedaKosh](http://www.vedakosh.com) and the [Arya Samaj Vedic Heritage Project](https://aryasamajjamnagar.org/). English Rigveda translations by Ralph T.H. Griffith.
 - **Bhagavad Gita**: Sourced from the open-source [Gita GitHub Project](https://github.com/gita/gita) & [IIT Kanpur Gita Supersite](https://www.gitasupersite.iitk.ac.in/).
 - **Ashtavakra Gita**: Structured Devanagari text with John Henry Richards English and Hindi translations sourced from the [dhrmaorg/ashtavakra_gita](https://github.com/dhrmaorg/ashtavakra_gita) dataset.
@@ -60,6 +60,14 @@ The scriptures and Vedic Samhitas are stored across unified SQLite databases (`s
 - **Mahabharata & Valmiki Ramayana**: Digitized BORI critical editions sourced from the [Bhandarkar Oriental Research Institute Electronic Text (BORI)](https://bombay.indology.info/) and [Muneo Tokunaga Mahabharata Text Archive](https://crux.bham.ac.uk/).
 - **The Mahapuranas & Upanishads**: Digitized, encoded, and structured from [Sanskrit Documents](https://sanskritdocuments.org), [GRETIL (Göttingen Register of Electronic Texts in Indian Languages)](http://gretil.sub.uni-goettingen.de/), and the [Tübingen Purana Project](https://homepages.uni-tuebingen.de/).
 - **Patanjali Yoga Sutras**: Sourced from the [International Gita Society (IGS)](https://www.gita-society.com/wp-content/uploads/PDF/Patanjali-yogasutra.IGS.pdf).
+
+---
+
+## Future Improvement Work
+
+1. **AI Verse Retrieval Precision & Relevance**: Sometimes AI verse retrieval may not be completely correct or fully relevant to specific philosophical questions. Ongoing improvements focus on refining semantic query routing, canonical keyword mapping, and re-ranking.
+2. **Scripture Expansion & Multi-Language Translations**: Ingesting additional scriptures and adding comprehensive multi-language translations (Hindi, English, and regional Indian languages) for texts that currently only contain Sanskrit verses.
+3. **Source Ingestion Verification & Data Quality**: Current sources are parsed and ingested from different digital archives and open repositories, and not all texts have been manually verified or audited end-to-end against critical editions.
 
 ---
 
