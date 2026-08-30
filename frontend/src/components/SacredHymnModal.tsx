@@ -92,14 +92,26 @@ export default function SacredHymnModal({
         if (vedaId && (hymn.division1 || hymn.chapterNumber)) {
           // Fetch from /api/veda/read
           const div1 = hymn.division1 || hymn.chapterNumber || 1;
-          const div2 = hymn.division2 || 1;
-          const res = await fetch(`/api/veda/read?veda=${vedaId}&div1=${div1}&div2=${div2}`);
+          const div2 = hymn.division2;
+          
+          let apiUrl = `/api/veda/read?veda=${vedaId}&div1=${div1}`;
+          // In Yajurveda (Sri Rudram 16.1-66), division_2 varies per mantra, so do not constrain div2
+          if (div2 && vedaId !== 'yajurveda') {
+            apiUrl += `&div2=${div2}`;
+          }
+
+          const res = await fetch(apiUrl);
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
               let filtered = data;
-              if (hymn.startVerse && hymn.endVerse && hymn.startVerse === hymn.endVerse) {
-                filtered = data.filter((m: VedaMantra) => m.division_3 === hymn.startVerse);
+              if (hymn.startVerse && hymn.endVerse) {
+                filtered = data.filter((m: VedaMantra) => {
+                  const vNum = m.division_3 || m.krama_number;
+                  return vNum >= (hymn.startVerse || 1) && vNum <= (hymn.endVerse || 9999);
+                });
+              } else if (hymn.startVerse) {
+                filtered = data.filter((m: VedaMantra) => (m.division_3 || m.krama_number) >= (hymn.startVerse || 1));
               }
 
               const mapped: HymnVerse[] = filtered.map((m: VedaMantra) => {
