@@ -23,9 +23,9 @@ export default function SavedVerses({
     }
   }, [isOpen]);
 
-  const handleRemove = (id: string, e: React.MouseEvent) => {
+  const handleRemove = (item: BookmarkItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    removeBookmark(id);
+    removeBookmark(item.source_name, item.chapter_number, item.verse_number);
     setBookmarks(getBookmarks());
   };
 
@@ -37,7 +37,7 @@ export default function SavedVerses({
   };
 
   const handleVerseClick = (item: BookmarkItem) => {
-    onSelectVerse(item.sourceName, item.chapterNumber, item.verseNumber);
+    onSelectVerse(item.source_name, item.chapter_number, item.verse_number);
     onClose();
   };
 
@@ -110,19 +110,19 @@ export default function SavedVerses({
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold font-cinzel text-saffron-800 dark:text-amber-400 tracking-wider">
-                      {item.sourceName} • Chapter {item.chapterNumber}, Verse {item.verseNumber}
+                      {item.source_name} • Chapter {item.chapter_number}, Verse {item.verse_number}
                     </span>
                     <p className="text-xs sm:text-sm font-sanskrit text-stone-800 dark:text-slate-100 font-semibold line-clamp-2 leading-relaxed">
-                      {item.sanskritText}
+                      {item.sanskrit_text}
                     </p>
                     <p className="text-xs text-stone-600 dark:text-slate-300 line-clamp-2 font-sans leading-relaxed">
-                      {item.translationText}
+                      {item.translation_text}
                     </p>
                   </div>
 
                   <button
                     type="button"
-                    onClick={(e) => handleRemove(item.id, e)}
+                    onClick={(e) => handleRemove(item, e)}
                     className="p-1.5 text-stone-400 hover:text-terracotta-700 dark:text-slate-500 dark:hover:text-red-400 hover:bg-cream-300 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shrink-0"
                     title="Remove from saved"
                   >
