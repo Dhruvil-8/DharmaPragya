@@ -507,19 +507,10 @@ export default function SidePanel({
         </div>
 
         {/* Panel Footer */}
-        <div className="p-4 bg-cream-200/80 dark:bg-[#0e1422] border-t border-cream-400/40 dark:border-amber-500/20 flex items-center justify-between shrink-0">
+        <div className="p-4 bg-cream-200/80 dark:bg-[#0e1422] border-t border-cream-400/40 dark:border-amber-500/20 text-center shrink-0">
           <p className="text-[10px] text-stone-500 dark:text-slate-500 font-medium">
             DharmaPragya &bull; Dedicated to Truth &amp; Dharma
           </p>
-          <a
-            href="https://github.com/Dhruvil-8/DharmaPragya"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] font-bold text-saffron-800 dark:text-amber-400 hover:underline flex items-center gap-1"
-          >
-            <span>GitHub</span>
-            <ExternalLink className="w-2.5 h-2.5" />
-          </a>
         </div>
       </div>
     </div>,
