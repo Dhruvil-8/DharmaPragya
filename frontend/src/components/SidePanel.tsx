@@ -402,7 +402,7 @@ export default function SidePanel({
                   Timeless Wisdom, Sovereign Intelligence
                 </h3>
                 <p>
-                  <strong>DharmaPragya</strong> is a specialized AI inquiry and scripture research portal designed to illuminate the eternal truths of Sanatan Dharma.
+                  <strong>DharmaPragya</strong> is an authentic AI inquiry and scripture research portal designed to illuminate the eternal truths of Sanatan Dharma with verified textual citations.
                 </p>
               </div>
 
@@ -426,6 +426,29 @@ export default function SidePanel({
                 </ul>
               </div>
 
+              {/* GitHub Project Link */}
+              <a
+                href="https://github.com/Dhruvil-8/DharmaPragya"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-slate-900/90 hover:bg-cream-200 dark:hover:bg-slate-800/90 border border-cream-400/50 dark:border-amber-500/20 text-stone-800 dark:text-slate-200 transition-all group cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-stone-900 text-white flex items-center justify-center font-bold text-xs">
+                    GH
+                  </div>
+                  <div>
+                    <span className="font-bold block text-xs group-hover:text-saffron-700 dark:group-hover:text-amber-300">
+                      GitHub Repository
+                    </span>
+                    <span className="text-[10px] text-stone-500 dark:text-slate-400">
+                      Dhruvil-8 / DharmaPragya
+                    </span>
+                  </div>
+                </div>
+                <ExternalLink className="w-3.5 h-3.5 text-stone-400 group-hover:text-saffron-600 dark:group-hover:text-amber-400" />
+              </a>
+
               <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-cream-300 dark:border-amber-500/20 text-center space-y-1">
                 <p className="text-[11px] font-sanskrit text-saffron-800 dark:text-amber-300 font-bold">
                   ॐ असतो मा सद्गमय । तमसो मा ज्योतिर्गमय ।
@@ -441,29 +464,19 @@ export default function SidePanel({
           {currentView === 'related' && (
             <div className="space-y-3 animate-fade-in">
               <p className="text-xs text-stone-600 dark:text-slate-400 mb-2">
-                Curated open resources and digital sanctuaries for Sanatan Dharma:
+                Explore our sister platforms dedicated to Sanatan Dharma & Vedic Sciences:
               </p>
 
               {[
                 {
-                  name: 'Rigveda Samhita Digital Archive',
-                  desc: 'Comprehensive Devanagari texts with Sayana Bhashya and Padapatha',
-                  url: 'https://rigveda.org',
+                  name: 'Vedic Jyotish Portal',
+                  desc: 'Authentic Vedic Astrology, Panchang, Muhurta calculations, and Kundali insights.',
+                  url: 'https://vedic-jyotish.vercel.app/',
                 },
                 {
-                  name: 'Advaita Vedanta Library',
-                  desc: 'Major Upanishads with Adi Shankara commentary & English translations',
-                  url: 'https://advaitavedanta.org',
-                },
-                {
-                  name: 'Bhagavad Gita As It Is Online',
-                  desc: 'Sanskrit verses, word synonyms, translations, and purports',
-                  url: 'https://vedabase.io',
-                },
-                {
-                  name: 'Valmiki Ramayana Sanskrit Corpus',
-                  desc: 'Critically edited Valmiki Ramayana with Tilaka commentary',
-                  url: 'https://valmikiramayan.net',
+                  name: 'Sanatan Dharma Directory',
+                  desc: 'Comprehensive curated directory of authentic Sanatan Dharma texts, traditions, and temples.',
+                  url: 'https://dhruvil-8.github.io/SanatanDharmaDirectory/site/',
                 },
               ].map((site, idx) => (
                 <a
@@ -471,18 +484,21 @@ export default function SidePanel({
                   href={site.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block p-3.5 rounded-2xl bg-white dark:bg-slate-900/90 hover:bg-cream-200 dark:hover:bg-slate-800/90 border border-cream-400/40 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/40 shadow-2xs transition-all group cursor-pointer"
+                  className="block p-4 rounded-2xl bg-white dark:bg-slate-900/90 hover:bg-cream-200 dark:hover:bg-slate-800/90 border border-cream-400/40 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/40 shadow-2xs transition-all group cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h4 className="text-xs font-bold text-stone-900 dark:text-slate-100 group-hover:text-saffron-700 dark:group-hover:text-amber-300 transition-colors">
                         {site.name}
                       </h4>
-                      <p className="text-[11px] text-stone-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                      <p className="text-[11px] text-stone-500 dark:text-slate-400 mt-1 leading-relaxed">
                         {site.desc}
                       </p>
+                      <span className="inline-block mt-2 text-[10px] font-mono text-saffron-700 dark:text-amber-400">
+                        {site.url} &rarr;
+                      </span>
                     </div>
-                    <ExternalLink className="w-3.5 h-3.5 text-stone-400 group-hover:text-saffron-600 dark:group-hover:text-amber-400 shrink-0 mt-0.5" />
+                    <ExternalLink className="w-4 h-4 text-stone-400 group-hover:text-saffron-600 dark:group-hover:text-amber-400 shrink-0 mt-0.5" />
                   </div>
                 </a>
               ))}
@@ -491,10 +507,19 @@ export default function SidePanel({
         </div>
 
         {/* Panel Footer */}
-        <div className="p-4 bg-cream-200/80 dark:bg-[#0e1422] border-t border-cream-400/40 dark:border-amber-500/20 text-center shrink-0">
+        <div className="p-4 bg-cream-200/80 dark:bg-[#0e1422] border-t border-cream-400/40 dark:border-amber-500/20 flex items-center justify-between shrink-0">
           <p className="text-[10px] text-stone-500 dark:text-slate-500 font-medium">
-            DharmaPragya • Dedicated to Truth, Self-Knowledge & Dharma
+            DharmaPragya &bull; Dedicated to Truth &amp; Dharma
           </p>
+          <a
+            href="https://github.com/Dhruvil-8/DharmaPragya"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] font-bold text-saffron-800 dark:text-amber-400 hover:underline flex items-center gap-1"
+          >
+            <span>GitHub</span>
+            <ExternalLink className="w-2.5 h-2.5" />
+          </a>
         </div>
       </div>
     </div>,
