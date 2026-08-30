@@ -253,7 +253,11 @@ function VerseBlock({
   };
 
   return (
-    <article className="bg-white dark:bg-[#0d121d] p-6 md:p-8 rounded-3xl shadow-xs border border-cream-300 dark:border-amber-500/20 hover:border-cream-400 dark:hover:border-amber-500/30 transition-all duration-300 relative overflow-hidden select-text space-y-6">
+    <article 
+      id={`verse-anchor-${verse.verse_number}`}
+      data-verse-number={verse.verse_number}
+      className="bg-white dark:bg-[#0d121d] p-6 md:p-8 rounded-3xl shadow-xs border border-cream-300 dark:border-amber-500/20 hover:border-cream-400 dark:hover:border-amber-500/30 transition-all duration-300 relative overflow-hidden select-text space-y-6 scroll-mt-28"
+    >
       
       {/* Header Info & Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cream-300/60 dark:border-amber-500/20">

@@ -261,7 +261,11 @@ function VedicVerseBlock({
   };
 
   return (
-    <article className="w-full bg-white dark:bg-[#0d121d] rounded-3xl p-5 md:p-8 shadow-xs border border-cream-300 dark:border-amber-500/20 hover:border-cream-400 dark:hover:border-amber-500/30 transition-all duration-300 relative flex flex-col justify-between space-y-6">
+    <article 
+      id={`veda-mantra-${index}`}
+      data-mantra-anchor={`mantra-anchor-${mantra.division_3}`}
+      className="w-full bg-white dark:bg-[#0d121d] rounded-3xl p-5 md:p-8 shadow-xs border border-cream-300 dark:border-amber-500/20 hover:border-cream-400 dark:hover:border-amber-500/30 transition-all duration-300 relative flex flex-col justify-between space-y-6 scroll-mt-28"
+    >
       
       {/* 1. Header & Arsha Quad-Metadata Chips */}
       <div className="space-y-3 border-b border-cream-300/60 dark:border-amber-500/20 pb-4">

@@ -60,8 +60,6 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-sans);
-  background-image: radial-gradient(rgba(217, 119, 6, 0.03) 1px, transparent 1px);
-  background-size: 24px 24px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -72,7 +70,6 @@ body {
 html.dark body {
   background-color: #070a0f;
   color: #f8fafc;
-  background-image: radial-gradient(rgba(245, 158, 11, 0.05) 1px, transparent 1px);
 }
 
 /* ─── Smooth UI animations ─── */

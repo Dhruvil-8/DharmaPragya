@@ -179,10 +179,6 @@ function HomePageContent() {
       {/* Visual Background Ornaments */}
       <div 
         aria-hidden="true" 
-        className="fixed inset-0 pointer-events-none opacity-40 dark:opacity-20 bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:24px_24px] transition-opacity" 
-      />
-      <div 
-        aria-hidden="true" 
         className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-saffron-200/40 via-amber-100/20 to-transparent dark:from-amber-950/20 dark:via-transparent dark:to-transparent pointer-events-none blur-3xl" 
       />
 
