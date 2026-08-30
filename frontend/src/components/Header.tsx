@@ -99,11 +99,11 @@ export default function Header({
           title="DharmaPragya Home - Return to main sanctuary"
           aria-label="DharmaPragya Home"
         >
-          <div className="flex flex-col items-end">
+          <div className="hidden sm:flex flex-col items-end">
             <h1 className="text-base sm:text-lg font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-saffron-700 to-terracotta-800 dark:from-amber-300 dark:to-saffron-400 font-cinzel leading-none group-hover:brightness-110 transition-all">
               DharmaPragya
             </h1>
-            <span className="text-[9px] text-saffron-700 dark:text-amber-400/80 font-semibold tracking-wider uppercase mt-0.5 hidden xs:inline">
+            <span className="text-[9px] text-saffron-700 dark:text-amber-400/80 font-semibold tracking-wider uppercase mt-0.5 hidden md:inline">
               Wisdom of Sanatan Dharma
             </span>
           </div>
