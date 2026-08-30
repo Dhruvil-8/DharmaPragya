@@ -578,7 +578,7 @@ function VedicVerseBlock({
                 ? 'bg-saffron-50 dark:bg-amber-950/40 text-saffron-700 dark:text-amber-300 border-saffron-300 dark:border-amber-600'
                 : 'bg-cream-200 dark:bg-slate-900 hover:bg-saffron-100 dark:hover:bg-slate-800 text-stone-600 dark:text-slate-400 border border-cream-400 dark:border-amber-500/20'
             }`}
-            title={bookmarked ? "Bookmarked to Sanctuary" : "Bookmark to Sanctuary"}
+            title={bookmarked ? "Saved to Bookmarks" : "Save Verse"}
           >
             <Bookmark className={`w-3.5 h-3.5 ${bookmarked ? 'fill-current text-saffron-600 dark:text-amber-400' : ''}`} />
             <span>{bookmarked ? 'Saved' : 'Save'}</span>

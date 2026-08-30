@@ -314,7 +314,7 @@ function VerseBlock({
                 ? 'bg-saffron-500 dark:bg-amber-600 text-white border-saffron-600 dark:border-amber-500 shadow-2xs'
                 : 'bg-cream-200 dark:bg-slate-800 text-stone-700 dark:text-slate-300 hover:text-saffron-800 dark:hover:text-amber-300 border border-cream-400 dark:border-amber-500/20'
             }`}
-            title={isBookmarked ? "Remove from Sanctuary" : "Save to Sanctuary"}
+            title={isBookmarked ? "Remove from Saved Verses" : "Save Verse"}
           >
             <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
           </button>

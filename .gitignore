@@ -31,7 +31,7 @@ backend/vendor/
 *.sqlite3
 *-wal
 *-shm
-*-shm
+*.backup
 
 # Ingestion & Scripts
 *.mp3

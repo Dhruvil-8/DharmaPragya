@@ -10,7 +10,7 @@ import Image from 'next/image';
 import SidePanel from './SidePanel';
 
 interface HeaderProps {
-  onOpenSanctuary?: () => void;
+  onOpenSaved?: () => void;
   onOpenAbout?: () => void;
   mode?: 'ask' | 'read';
   onModeChange?: (mode: 'ask' | 'read') => void;
@@ -18,7 +18,7 @@ interface HeaderProps {
 }
 
 export default function Header({ 
-  onOpenSanctuary, 
+  onOpenSaved,
   onOpenAbout, 
   mode, 
   onModeChange, 
@@ -96,7 +96,7 @@ export default function Header({
           type="button"
           onClick={handleBrandClick}
           className="flex items-center shrink-0 cursor-pointer group focus:outline-none transition-transform active:scale-95 z-10 ml-auto"
-          title="DharmaPragya Home - Return to main sanctuary"
+          title="DharmaPragya Home"
           aria-label="DharmaPragya Home"
         >
           <div className="relative w-8 h-8 rounded-full overflow-hidden border border-saffron-400/50 dark:border-amber-500/40 shadow-2xs group-hover:border-saffron-600 dark:group-hover:border-amber-400 transition-colors">
@@ -116,7 +116,7 @@ export default function Header({
       <SidePanel 
         isOpen={internalAboutOpen} 
         onClose={() => setInternalAboutOpen(false)}
-        onOpenSanctuary={onOpenSanctuary}
+        onOpenSaved={onOpenSaved}
         mode={mode}
         onModeChange={onModeChange}
       />

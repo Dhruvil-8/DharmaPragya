@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Header from '../components/Header';
 import AskMode from '../components/AskMode';
 import ReadMode from '../components/ReadMode';
-import SavedSanctuary from '../components/SavedSanctuary';
+import SavedVerses from '../components/SavedVerses';
 import ShareCardModal from '../components/ShareCardModal';
 import SidePanel from '../components/SidePanel';
 import SacredHymnModal from '../components/SacredHymnModal';
@@ -15,7 +15,7 @@ const API_BASE_URL = '';
 
 function HomePageContent() {
   const [mode, setMode] = useState<'ask' | 'read'>('ask');
-  const [isSanctuaryOpen, setIsSanctuaryOpen] = useState(false);
+  const [isSavedOpen, setIsSavedOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [selectedHymnModal, setSelectedHymnModal] = useState<SacredHymn | null>(null);
 
@@ -43,6 +43,7 @@ function HomePageContent() {
   const [targetCoordinate, setTargetCoordinate] = useState<{
     sourceName: string;
     chapterNumber: number;
+    division2?: number;
     verseNumber?: number;
   } | null>(null);
 
@@ -53,6 +54,7 @@ function HomePageContent() {
       const urlMode = params.get('mode');
       const source = params.get('source');
       const chapter = params.get('chapter');
+      const div2 = params.get('div2');
       const verse = params.get('verse');
       const hymnId = params.get('hymn') || params.get('suktam');
 
@@ -69,11 +71,12 @@ function HomePageContent() {
           setTargetCoordinate({
             sourceName: source,
             chapterNumber: parseInt(chapter, 10),
+            division2: div2 ? parseInt(div2, 10) : undefined,
             verseNumber: verse ? parseInt(verse, 10) : undefined,
           });
         }
-      } else if (urlMode === 'saved') {
-        setIsSanctuaryOpen(true);
+      } else if (urlMode === 'saved' || urlMode === 'bookmarks') {
+        setIsSavedOpen(true);
       } else if (urlMode === 'suktams' || urlMode === 'hymns') {
         setIsAboutOpen(true);
       }
@@ -94,7 +97,7 @@ function HomePageContent() {
     });
   };
 
-  const handleSelectVerseFromSanctuary = (sourceName: string, chapterNumber: number, verseNumber: number) => {
+  const handleSelectSavedVerse = (sourceName: string, chapterNumber: number, verseNumber: number) => {
     setMode('read');
     setTargetCoordinate({
       sourceName,
@@ -111,29 +114,45 @@ function HomePageContent() {
     }
   };
 
-  const handleSelectCoordinate = (coord: {
-    sourceName: string;
-    chapterNumber?: number;
-    verseNumber?: number;
-  }) => {
-    setMode('read');
-    setTargetCoordinate({
-      sourceName: coord.sourceName,
-      chapterNumber: coord.chapterNumber || 1,
-      verseNumber: coord.verseNumber,
+  const handleAskAboutVerse = (verse: VerseData) => {
+    setMode('ask');
+    setAskInitialPrompt({
+      query: `Please explain the philosophical meaning, context, and spiritual significance of ${verse.source_name} Chapter ${verse.chapter_number}, Verse ${verse.verse_number}: "${verse.sanskrit_text}".`,
+      sourceFilter: verse.source_name,
+      timestamp: Date.now(),
     });
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
-      url.searchParams.set('mode', 'read');
-      url.searchParams.set('source', coord.sourceName);
-      if (coord.chapterNumber) {
-        url.searchParams.set('chapter', String(coord.chapterNumber));
-      }
-      if (coord.verseNumber) {
-        url.searchParams.set('verse', String(coord.verseNumber));
-      }
+      url.searchParams.set('mode', 'ask');
       window.history.pushState({}, '', url.toString());
     }
+  };
+
+  const handleSelectCoordinate = (coord: {
+    sourceName: string;
+    chapterNumber?: number;
+    division2?: number;
+    verseNumber?: number;
+  }) => {
+    setMode('read');
+    if (coord.chapterNumber) {
+      setTargetCoordinate({
+        sourceName: coord.sourceName,
+        chapterNumber: coord.chapterNumber,
+        division2: coord.division2,
+        verseNumber: coord.verseNumber,
+      });
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.set('mode', 'read');
+        url.searchParams.set('source', coord.sourceName);
+        url.searchParams.set('chapter', String(coord.chapterNumber));
+        if (coord.division2) url.searchParams.set('div2', String(coord.division2));
+        if (coord.verseNumber) url.searchParams.set('verse', String(coord.verseNumber));
+        window.history.pushState({}, '', url.toString());
+      }
+    }
+    setIsAboutOpen(false);
   };
 
   const handleModeChange = (newMode: 'ask' | 'read') => {
@@ -149,39 +168,29 @@ function HomePageContent() {
     setMode('ask');
     setTargetCoordinate(null);
     if (typeof window !== 'undefined') {
-      const cleanUrl = window.location.origin + window.location.pathname;
-      window.history.pushState({}, '', cleanUrl);
-    }
-  };
-
-  const handleAskAboutVerse = (verse: VerseData) => {
-    setMode('ask');
-    const coordinate = verse.chapter_name && !verse.chapter_name.includes('Chapter')
-      ? `${verse.source_name} (${verse.chapter_name})`
-      : `${verse.source_name} Chapter ${verse.chapter_number}, Verse ${verse.verse_number}`;
-    const promptQuery = `Please provide a focused and profound explanation specifically for ${coordinate}:\n"${verse.sanskrit_text}"`;
-    setAskInitialPrompt({
-      query: promptQuery,
-      sourceFilter: verse.source_name,
-      timestamp: Date.now(),
-    });
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('mode', 'ask');
+      const url = new URL(window.location.origin + window.location.pathname);
       window.history.pushState({}, '', url.toString());
     }
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-gradient-to-b from-cream-100 via-cream-200 to-cream-300 dark:from-[#070A0F] dark:via-[#0B0F19] dark:to-[#070A0F] text-stone-900 dark:text-slate-100 relative overflow-x-hidden selection:bg-saffron-200 dark:selection:bg-amber-900/50 selection:text-saffron-700 dark:selection:text-amber-200 transition-colors duration-300">
-      {/* Decorative background radial glow */}
-      <div className="absolute top-[-8%] left-[50%] translate-x-[-50%] w-[700px] h-[500px] bg-gradient-to-b from-saffron-300/8 dark:from-amber-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+    <main className="min-h-screen bg-cream-100 dark:bg-[#070A0F] text-stone-900 dark:text-slate-100 flex flex-col items-center justify-between relative overflow-x-hidden font-sans transition-colors duration-300">
+      
+      {/* Visual Background Ornaments */}
+      <div 
+        aria-hidden="true" 
+        className="fixed inset-0 pointer-events-none opacity-40 dark:opacity-20 bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:24px_24px] transition-opacity" 
+      />
+      <div 
+        aria-hidden="true" 
+        className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-saffron-200/40 via-amber-100/20 to-transparent dark:from-amber-950/20 dark:via-transparent dark:to-transparent pointer-events-none blur-3xl" 
+      />
 
       {/* 100% Fixed Header with Backdrop Blur */}
       <header className="fixed top-0 left-0 right-0 z-50 w-full bg-cream-100/95 dark:bg-[#070A0F]/95 backdrop-blur-md border-b border-cream-300/60 dark:border-amber-900/30 py-2.5 px-4 sm:px-8 shadow-xs transition-colors">
         <div className="max-w-4xl mx-auto w-full">
           <Header 
-            onOpenSanctuary={() => setIsSanctuaryOpen(true)} 
+            onOpenSaved={() => setIsSavedOpen(true)} 
             onOpenAbout={() => setIsAboutOpen(true)}
             mode={mode} 
             onModeChange={handleModeChange}
@@ -228,11 +237,11 @@ function HomePageContent() {
         </footer>
       </div>
 
-      {/* Personal Saved Sanctuary Drawer */}
-      <SavedSanctuary
-        isOpen={isSanctuaryOpen}
-        onClose={() => setIsSanctuaryOpen(false)}
-        onSelectVerse={handleSelectVerseFromSanctuary}
+      {/* Personal Saved Verses Drawer */}
+      <SavedVerses
+        isOpen={isSavedOpen}
+        onClose={() => setIsSavedOpen(false)}
+        onSelectVerse={handleSelectSavedVerse}
       />
 
       {/* Share / Export Card Modal */}
@@ -246,7 +255,7 @@ function HomePageContent() {
       <SidePanel
         isOpen={isAboutOpen}
         onClose={() => setIsAboutOpen(false)}
-        onOpenSanctuary={() => setIsSanctuaryOpen(true)}
+        onOpenSaved={() => setIsSavedOpen(true)}
         mode={mode}
         onModeChange={handleModeChange}
         onSelectCoordinate={handleSelectCoordinate}

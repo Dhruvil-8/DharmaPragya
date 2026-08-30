@@ -36,6 +36,7 @@ interface ReadModeProps {
   targetCoordinate?: {
     sourceName: string;
     chapterNumber: number;
+    division2?: number;
     verseNumber?: number;
   } | null;
 }
@@ -313,7 +314,7 @@ export default function ReadMode({
 
     if (matchedVeda) {
       setCurrentCategory('VEDAS');
-      loadVedaSource(matchedVeda, targetCoordinate.chapterNumber, targetCoordinate.verseNumber);
+      loadVedaSource(matchedVeda, targetCoordinate.chapterNumber, targetCoordinate.division2, targetCoordinate.verseNumber);
       return;
     }
 
@@ -330,7 +331,7 @@ export default function ReadMode({
   }, [targetCoordinate, sources, vedas]);
 
   // ---------------- Veda Handlers ----------------
-  const loadVedaSource = async (veda: VedaInfo, targetDivision?: number, targetMantraNum?: number) => {
+  const loadVedaSource = async (veda: VedaInfo, targetDivision?: number, targetDivision2?: number, targetMantraNum?: number) => {
     setIsLoading(true);
     setError(null);
     setCurrentVeda(veda);
@@ -343,7 +344,7 @@ export default function ReadMode({
       const data = await res.json();
       setVedaSections(Array.isArray(data) ? data : []);
       if (targetDivision) {
-        await loadVedaChapter(veda.id, targetDivision, targetMantraNum);
+        await loadVedaChapter(veda.id, targetDivision, targetDivision2, targetMantraNum);
       } else if (Array.isArray(data) && data.length > 0) {
         await loadVedaChapter(veda.id, data[0].section_number);
       }
@@ -355,7 +356,7 @@ export default function ReadMode({
     }
   };
 
-  const loadVedaChapter = async (vedaID: string, division1: number, targetMantraNum?: number) => {
+  const loadVedaChapter = async (vedaID: string, division1: number, targetDivision2?: number, targetMantraNum?: number) => {
     setIsLoading(true);
     setError(null);
     setCurrentVedaSection(division1);
@@ -368,20 +369,31 @@ export default function ReadMode({
       setVedaMantras(mantrasArray);
       setIsTocDrawerOpen(false);
 
-      if (targetMantraNum && mantrasArray.length > 0) {
-        const mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_3 === targetMantraNum || m.krama_number === targetMantraNum);
-        setCurrentMantraIndex(mIdx >= 0 ? mIdx : 0);
-        if (mIdx >= 0) {
-          setVisibleCount(prev => Math.max(prev, mIdx + 30));
+      if (mantrasArray.length > 0) {
+        let mIdx = -1;
+        if (targetDivision2 && targetMantraNum) {
+          mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_2 === targetDivision2 && m.division_3 === targetMantraNum);
         }
-        setTimeout(() => {
-          const el = document.getElementById(`mantra-anchor-${targetMantraNum}`) || 
-                     document.getElementById(`verse-anchor-${targetMantraNum}`) || 
-                     document.getElementById(`mantra-anchor-${mIdx + 1}`);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 200);
-      } else if (typeof window !== 'undefined') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (mIdx < 0 && targetDivision2) {
+          mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_2 === targetDivision2);
+        }
+        if (mIdx < 0 && targetMantraNum) {
+          mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_3 === targetMantraNum || m.krama_number === targetMantraNum);
+        }
+
+        if (mIdx >= 0) {
+          setCurrentMantraIndex(mIdx);
+          setVisibleCount(prev => Math.max(prev, mIdx + 30));
+          setTimeout(() => {
+            const el = document.getElementById(`veda-mantra-${mIdx}`) || 
+                       document.getElementById(`mantra-anchor-${targetMantraNum}`) || 
+                       document.getElementById(`verse-anchor-${targetMantraNum}`) || 
+                       document.getElementById(`mantra-anchor-${mIdx + 1}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
+        } else if (typeof window !== 'undefined') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Failed to load Veda mantras';
@@ -1582,7 +1594,7 @@ export default function ReadMode({
             /* Continuous Book View for Vedas with Progressive Lazy Batching */
             <div className="space-y-6">
               {vedaMantras.slice(0, visibleCount).map((mantra, idx) => (
-                <div key={mantra.id} id={`verse-anchor-${idx + 1}`}>
+                <div key={mantra.id} id={`veda-mantra-${idx}`} className="scroll-mt-28">
                   <VedicVerseBlock
                     mantra={mantra}
                     index={idx}

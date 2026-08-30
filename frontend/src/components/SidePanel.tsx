@@ -23,7 +23,7 @@ import { getBookmarks } from '../lib/bookmarks';
 interface SidePanelProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpenSanctuary?: () => void;
+  onOpenSaved?: () => void;
   mode?: 'ask' | 'read';
   onModeChange?: (mode: 'ask' | 'read') => void;
   onSelectCoordinate?: (coord: {
@@ -38,7 +38,7 @@ type SidePanelView = 'main' | 'about' | 'related';
 export default function SidePanel({ 
   isOpen, 
   onClose,
-  onOpenSanctuary,
+  onOpenSaved,
   mode = 'ask',
   onModeChange
 }: SidePanelProps) {
@@ -114,10 +114,10 @@ export default function SidePanel({
     onClose();
   };
 
-  const handleSanctuaryClick = () => {
+  const handleSavedClick = () => {
     onClose();
-    if (onOpenSanctuary) {
-      onOpenSanctuary();
+    if (onOpenSaved) {
+      onOpenSaved();
     }
   };
 
@@ -276,14 +276,9 @@ export default function SidePanel({
                       <Flame className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs sm:text-sm font-bold text-saffron-950 dark:text-amber-200 block font-cinzel">
-                          Sacred Suktams & Mantras
-                        </span>
-                        <span className="text-[9px] font-extrabold uppercase tracking-wider bg-saffron-200/80 dark:bg-amber-950 text-saffron-800 dark:text-amber-300 px-1.5 py-0.5 rounded-full">
-                          New Page
-                        </span>
-                      </div>
+                      <span className="text-xs sm:text-sm font-bold text-saffron-950 dark:text-amber-200 block font-cinzel">
+                        Sacred Suktams & Mantras
+                      </span>
                       <span className="text-[11px] text-stone-600 dark:text-slate-400 block mt-0.5">
                         Purusha, Gayatri, Rudram, Nasadiya & Stotras
                       </span>
@@ -299,10 +294,10 @@ export default function SidePanel({
                   Features & Settings
                 </span>
 
-                {/* Saved Sanctuary Button */}
+                {/* Saved Verses Button */}
                 <button
                   type="button"
-                  onClick={handleSanctuaryClick}
+                  onClick={handleSavedClick}
                   className="w-full flex items-center justify-between p-3.5 bg-white dark:bg-slate-900/90 hover:bg-cream-200 dark:hover:bg-slate-800/90 border border-cream-400/40 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/40 rounded-2xl shadow-2xs transition-all cursor-pointer text-left group"
                 >
                   <div className="flex items-center gap-3">
@@ -311,7 +306,7 @@ export default function SidePanel({
                     </div>
                     <div>
                       <span className="text-xs sm:text-sm font-bold text-stone-800 dark:text-slate-200 block">
-                        Saved Sanctuary
+                        Saved Verses
                       </span>
                       <span className="text-[11px] text-stone-500 dark:text-slate-400 block">
                         Your bookmarked verses ({bookmarkCount})
@@ -336,7 +331,7 @@ export default function SidePanel({
                         Theme
                       </span>
                       <span className="text-[11px] text-stone-500 dark:text-slate-400 block">
-                        Currently: {isDark ? 'Dark Sanctuary' : 'Light Paper'}
+                        Currently: {isDark ? 'Dark Mode' : 'Light Theme'}
                       </span>
                     </div>
                   </div>

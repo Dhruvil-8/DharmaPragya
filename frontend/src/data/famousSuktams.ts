@@ -8,9 +8,9 @@ export interface SacredHymn {
   sourceName: string;
   isVeda?: boolean;
   vedaId?: 'rigveda' | 'yajurveda' | 'samaveda' | 'atharvaveda';
-  division1?: number;           // Mandala / Kanda / Prapathaka
+  division1?: number;           // Mandala / Adhyaya / Kanda / Prapathaka
   division2?: number;           // Sukta / Anuvaka / Dashati
-  chapterNumber?: number;       // For scriptures.db
+  chapterNumber?: number;       // For scriptures.db and generic routing
   startVerse?: number;
   endVerse?: number;
   verseNumber?: number;
@@ -29,7 +29,7 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     name: 'Purusha Suktam',
     sanskritName: 'पुरुष सूक्तम्',
     category: 'Vedic Suktam',
-    deityOrTheme: 'Supreme Cosmic Being (Purusha) & Manifestation of the Universe',
+    deityOrTheme: 'Supreme Cosmic Being (Purusha) & Cosmic Manifestation',
     exactScripture: 'Rigveda Samhita (ऋग्वेद संहिता)',
     sourceName: 'Rigveda',
     isVeda: true,
@@ -125,6 +125,26 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     openingSnippet: 'अग्निमीळे पुरोहितं यज्ञस्य देवमृत्विजम्। होतारं रत्नधातमम्॥'
   },
   {
+    id: 'ganapati-suktam-rigveda',
+    name: 'Ganapati Suktam (Brahmanaspati Suktam)',
+    sanskritName: 'गणपति सूक्तम् (ब्रह्मणस्पति सूक्त)',
+    category: 'Vedic Suktam',
+    deityOrTheme: 'Lord of Wisdom, Seers & Cosmic Intellect (Ganesha / Brahmanaspati)',
+    exactScripture: 'Rigveda Samhita (ऋग्वेद संहिता)',
+    sourceName: 'Rigveda',
+    isVeda: true,
+    vedaId: 'rigveda',
+    division1: 2,
+    division2: 23,
+    chapterNumber: 2,
+    startVerse: 1,
+    endVerse: 19,
+    coordinateText: 'Rigveda • Mandala 2, Sukta 23 (Verses 1–19)',
+    canonicalRef: 'Rigveda 2.23.1',
+    summary: 'The foundational Vedic invocation of the Supreme Leader of all divine faculties (Gananam Tva Ganapatim Havamahe), the foremost seer among seers and lord of sacred prayers.',
+    openingSnippet: 'गणानां त्वा गणपतिं हवामहे कविं कवीनामुपमश्रवस्तमम्। ज्येष्ठराजं ब्रह्मणां ब्रह्मणस्पत आ नः शृण्वन्नूतिभिः सीद सादनम्॥'
+  },
+  {
     id: 'gayatri-mantra',
     name: 'Gayatri Maha Mantra',
     sanskritName: 'गायत्री महामंत्र (सावित्री मंत्र)',
@@ -186,27 +206,47 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
   },
 
   // ══════════════════════════════════════════════════════════════════════════
-  // 2. YAJURVEDIC & ATHARVAVEDIC SUKTAMS (यजुर्वेद एवं अथर्ववेद संहिता)
+  // 2. YAJURVEDIC, SAMAVEDIC & ATHARVAVEDIC SUKTAMS (यजुर्वेद, सामवेद एवं अथर्ववेद संहिता)
   // ══════════════════════════════════════════════════════════════════════════
   {
     id: 'sri-rudram-namakam',
-    name: 'Sri Rudram (Namakam)',
-    sanskritName: 'श्रीरुद्रम् (नमकम्)',
+    name: 'Sri Rudram (Shatarudriya)',
+    sanskritName: 'श्रीरुद्रम् (शतशिरारुद्र / नमकम्)',
     category: 'Vedic Suktam',
     deityOrTheme: 'Bhagavan Shiva / Rudra (All-Pervading Divine Reality)',
-    exactScripture: 'Yajurveda Taittiriya Samhita (कृष्ण यजुर्वेद तैत्तिरीय संहिता)',
+    exactScripture: 'Yajurveda Samhita (शुक्ल यजुर्वेद वाजसनेयि संहिता)',
     sourceName: 'Yajur Veda',
     isVeda: true,
     vedaId: 'yajurveda',
-    division1: 4,
-    division2: 5,
-    chapterNumber: 4,
+    division1: 16,
+    division2: 1,
+    chapterNumber: 16,
     startVerse: 1,
     endVerse: 66,
-    coordinateText: 'Yajurveda (Taittiriya Samhita) • Kanda 4, Prapāṭhaka 5',
-    canonicalRef: 'TS 4.5.1–66 / Shukla Yajurveda 16',
+    coordinateText: 'Yajurveda (Vajasaneyi Samhita) • Adhyaya 16 (Verses 1–66)',
+    canonicalRef: 'Yajurveda 16.1–66 / Taittiriya Samhita 4.5',
     summary: 'The sacred Vedic invocation recognizing the all-pervading divine reality of Rudra-Shiva across forests, rivers, mountains, warriors, saints, cosmos, and nature.',
-    openingSnippet: 'नमस्ते रुद्र मन्यव उतो त इषवे नमः। बाहुभ्यामुत ते नमः॥'
+    openingSnippet: 'नमस्ते रुद्र मन्यवऽउतो तऽइषवे नमः। बाहुभ्यामुत ते नमः॥'
+  },
+  {
+    id: 'samaveda-opening-invocations',
+    name: 'Samaveda Archika Invocations (Agna Aayahi)',
+    sanskritName: 'सामवेद आर्चिक मंगलाचरण',
+    category: 'Vedic Suktam',
+    deityOrTheme: 'Celestial Musical Harmonies & Sacred Divine Light (Agni/Soma)',
+    exactScripture: 'Samaveda Samhita (सामवेद संहिता)',
+    sourceName: 'Samaveda',
+    isVeda: true,
+    vedaId: 'samaveda',
+    division1: 1,
+    division2: 1,
+    chapterNumber: 1,
+    startVerse: 1,
+    endVerse: 5,
+    coordinateText: 'Samaveda • Purvarchika, Prapathaka 1, Dashati 1',
+    canonicalRef: 'Samaveda 1.1.1–5',
+    summary: 'The celestial musical opening chants of the Samaveda, revered by Sri Krishna in the Gita as the most sublime manifestation among all the Vedas.',
+    openingSnippet: 'अग्न आ याहि वीतये गृणानो हव्यदातये । नि होता सत्सि बर्हिषि ॥'
   },
   {
     id: 'prithvi-suktam',
@@ -243,7 +283,7 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     chapterNumber: 1,
     startVerse: 1,
     endVerse: 18,
-    coordinateText: 'Isha Upanishad • Shanti Patha & Verses 1–18',
+    coordinateText: 'Isha Upanishad • Verses 1–18',
     canonicalRef: 'Isha Upanishad 1–18',
     summary: 'The famous Upanishadic declaration that Brahman is Infinite, the universe is Infinite; taking Infinity from Infinity leaves Infinity perfectly whole.',
     openingSnippet: 'ॐ पूर्णमदः पूर्णमिदं पूर्णात्पूर्णमुदच्यते। पूर्णस्य पूर्णमादाय पूर्णमेवावशिष्यते॥'
@@ -263,6 +303,54 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     canonicalRef: 'Brihadaranyaka 1.3.28',
     summary: 'The universal prayer leading the human spirit from the unreal to the Real, from darkness to Light, and from mortality to Immortality.',
     openingSnippet: 'ॐ असतो मा सद्गमय। तमसो मा ज्योतिर्गमय। मृत्योर्मा अमृतं गमय॥'
+  },
+  {
+    id: 'mandukya-ayam-atma-brahma',
+    name: 'Mandukya Upanishad (Ayam Atma Brahma & Turiya)',
+    sanskritName: 'सर्वं ह्येतद् ब्रह्म (माण्डूक्योपनिषद्)',
+    category: 'Upanishadic Shanti',
+    deityOrTheme: 'The 4 States of Consciousness (Waking, Dream, Sleep, Turiya) & Omkara',
+    exactScripture: 'Mandukya Upanishad (माण्डूक्योपनिषद्)',
+    sourceName: 'Mandukya Upanishad',
+    chapterNumber: 1,
+    startVerse: 1,
+    endVerse: 12,
+    coordinateText: 'Mandukya Upanishad • Verses 1–12',
+    canonicalRef: 'Mandukya Upanishad 1–12',
+    summary: 'The master Upanishad analyzing the entire cosmos through the single syllable OM and the four states of consciousness, culminating in the silent Fourth (Turiya).',
+    openingSnippet: 'ॐ इत्येतदक्षरमिदं सर्वं तस्योपव्याख्यानं भूतं भवद् भविष्यदिति सर्वमोङ्कार एव। सर्वं ह्येतद् ब्रह्मायमात्मा ब्रह्म सोऽयमात्मा चतुष्पात्॥'
+  },
+  {
+    id: 'amritabindu-mind-mastery',
+    name: 'Mastery of Mind (Mana Eva Manushyanam)',
+    sanskritName: 'मन एव मनुष्याणां कारणं बन्धमोक्षयोः (अमृतबिन्दूपनिषद्)',
+    category: 'Upanishadic Shanti',
+    deityOrTheme: 'The Mind as the Master Key to Bondage & Liberation',
+    exactScripture: 'Amritabindu Upanishad (अमृतबिन्दूपनिषद्)',
+    sourceName: 'Amritabindu Upanishad',
+    chapterNumber: 1,
+    startVerse: 1,
+    endVerse: 5,
+    coordinateText: 'Amritabindu Upanishad • Verses 1–5',
+    canonicalRef: 'Amritabindu 1–5',
+    summary: 'The timeless Upanishadic realization: the mind alone is the cause of human bondage and liberation. Attached to objects it binds; freed from desires it liberates.',
+    openingSnippet: 'मन एव मनुष्याणां कारणं बन्धमोक्षयोः। बन्धाय विषयासक्तं मुक्त्यै निर्विषयं स्मृतम्॥'
+  },
+  {
+    id: 'kena-upanishad-wisdom',
+    name: 'Kena Upanishad (Keneshitam Patati - The Hidden Mover)',
+    sanskritName: 'केनेषितं पतति प्रेषितं मनः (केनोपनिषद्)',
+    category: 'Upanishadic Shanti',
+    deityOrTheme: 'The Unseen Power Behind Senses, Mind and Life Breath',
+    exactScripture: 'Kena Upanishad (केनोपनिषद्)',
+    sourceName: 'Kena Upanishad',
+    chapterNumber: 1,
+    startVerse: 1,
+    endVerse: 8,
+    coordinateText: 'Kena Upanishad • Khanda 1 (Verses 1–8)',
+    canonicalRef: 'Kena Upanishad 1.1–8',
+    summary: 'The profound inquiry into the conscious power by which the mind thinks, speech speaks, eyes see, and ears hear—Brahman, which mind cannot comprehend but by which mind is known.',
+    openingSnippet: 'केनेषितं पतति प्रेषितं मनः। केन प्राणः प्रथमः प्रैति युक्तः। केनेषितां वाचमिमां वदन्ति। चक्षुः श्रोत्रं क उ देवो युनक्ति॥'
   },
   {
     id: 'sahana-vavatu',
@@ -382,8 +470,24 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
   },
 
   // ══════════════════════════════════════════════════════════════════════════
-  // 5. PURANAS & EPICS (पुराण, रामायण एवं महाभारत)
+  // 5. ITIHASAS & EPICS (वाल्मीकि रामायण एवं महाभारत)
   // ══════════════════════════════════════════════════════════════════════════
+  {
+    id: 'vishnu-sahasranama-complete',
+    name: 'Vishnu Sahasranama Stotram (Complete 1,000 Divine Names)',
+    sanskritName: 'विष्णुसहस्रनाम स्तोत्रम् (महाभारत - सम्पूर्ण)',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'The 1,000 Divine Names of Mahavishnu (Bhishma-Yudhishthira Samvada)',
+    exactScripture: 'Mahabharata (महाभारत)',
+    sourceName: 'Mahabharata',
+    chapterNumber: 13135,
+    startVerse: 1,
+    endVerse: 142,
+    coordinateText: 'Mahabharata • Anushasana Parva, Adhyaya 135 (Verses 1–142)',
+    canonicalRef: 'MBH Anushasana Parva 135.1–142',
+    summary: 'Grandfather Bhishma’s supreme discourse from the bed of arrows answering Yudhishthira’s question: "Kim ekam daivatam loke..." by chanting the 1,000 names of Bhagavan Vishnu.',
+    openingSnippet: 'किमेकं दैवतं लोके किं वाप्येकं परायणम्। स्तुवन्तः कं कमर्चन्तः प्राप्नुयुर्मानवाः शुभम्॥ विश्वं विष्णुर्वषट्कारो भूतभव्यभवत्प्रभुः।'
+  },
   {
     id: 'aditya-hridaya-stotram',
     name: 'Aditya Hridaya Stotram',
@@ -401,28 +505,112 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     openingSnippet: 'ततो युद्धपरिश्रान्तं समरे चिन्तया स्थितम्। रावणं चाग्रतो दृष्ट्वा युध्दाय समुपस्थितम्॥'
   },
   {
-    id: 'vishnu-sahasranama',
-    name: 'Vishnu Sahasranama Stotram',
-    sanskritName: 'विष्णुसहस्रनाम स्तोत्रम् (महाभारत)',
+    id: 'samkshepa-ramayana',
+    name: 'Samkshepa Ramayana (Mula Ramayana)',
+    sanskritName: 'संक्षेप रामायण (मूल रामायण)',
     category: 'Puranic & Epic Stotram',
-    deityOrTheme: 'The 1,000 Divine Names of Mahavishnu',
+    deityOrTheme: 'Divine Virtues & Complete Life of Sri Rama',
+    exactScripture: 'Valmiki Ramayana (वाल्मीकि रामायण)',
+    sourceName: 'Valmiki Ramayana',
+    chapterNumber: 1001,
+    startVerse: 1,
+    endVerse: 18,
+    coordinateText: 'Valmiki Ramayana • Balakanda, Sarga 1 (Verses 1–18)',
+    canonicalRef: 'VR Balakanda 1.1–18',
+    summary: 'The foundational first chapter of the Ramayana where Sage Narada narrates to Sage Valmiki the exemplary qualities and divine life of Sri Rama.',
+    openingSnippet: 'तपःस्वाध्यायनिरतं तपस्वी वाग्विदां वरम्। नारदं परिपप्रच्छ वाल्मीकिर्मुनिपुङ्गवम्॥'
+  },
+  {
+    id: 'ma-nishada-ramayana',
+    name: 'Ma Nishada (The First Shloka of Classical Sanskrit)',
+    sanskritName: 'मा निषाद प्रतिष्ठां त्वम् (आदिकाव्य प्रथम श्लोक)',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Birth of Poetry (Chhandas) & Compassion (Karuna)',
+    exactScripture: 'Valmiki Ramayana (वाल्मीकि रामायण)',
+    sourceName: 'Valmiki Ramayana',
+    chapterNumber: 1002,
+    startVerse: 15,
+    endVerse: 15,
+    coordinateText: 'Valmiki Ramayana • Balakanda, Sarga 2, Verse 15',
+    canonicalRef: 'VR Balakanda 2.15',
+    summary: 'The spontaneous utterance of Sage Valmiki born of profound grief and compassion upon witnessing the separation of krauncha birds, creating the Anushtubh meter.',
+    openingSnippet: 'मा निषाद प्रतिष्ठां त्वमगमः शाश्वतीः समाः। यत्क्रौञ्चमिथुनादेकमवधीः काममोहितम्॥'
+  },
+  {
+    id: 'narayanam-namaskritya',
+    name: 'Narayanam Namaskritya (Mahabharata Mangalacharana)',
+    sanskritName: 'नारायणं नमस्कृत्य (महाभारत मंगलाचरण)',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Invocations to Narayana, Nara & Devi Saraswati',
     exactScripture: 'Mahabharata (महाभारत)',
     sourceName: 'Mahabharata',
-    chapterNumber: 13149,
+    chapterNumber: 1001,
+    startVerse: 0,
+    endVerse: 1,
+    coordinateText: 'Mahabharata • Adi Parva, Adhyaya 1, Verse 0',
+    canonicalRef: 'MBH Adi Parva 1.0',
+    summary: 'The universal mangalacharana of the Itihasas and Puranas, bowing to Sri Narayana, Nara, and Goddess Saraswati before commencing the victory of Dharma.',
+    openingSnippet: 'नारायणं नमस्कृत्य नरं चैव नरोत्तमम्। देवीं सरस्वतीं चैव ततो जयमुदीरयेत्॥'
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // 6. MAHA PURANAS (श्रीमद्भागवत, देवीभागवत, शिवपुराण, ब्रह्मपुराण, गरुडपुराण, देवीमाहात्म्य)
+  // ══════════════════════════════════════════════════════════════════════════
+  {
+    id: 'devi-bhagavata-gayatri-sahasranama',
+    name: 'Gayatri Sahasranama Stotram',
+    sanskritName: 'गायत्री सहस्रनाम स्तोत्रम् (देवीभागवत महापुराण)',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'The 1,000 Names of Mahadevi Gayatri (Remover of all sins)',
+    exactScripture: 'Devi Bhagavata Purana (देवीभागवत महापुराण)',
+    sourceName: 'Devi Bhagavata Purana',
+    chapterNumber: 102,
     startVerse: 1,
-    endVerse: 13,
-    coordinateText: 'Mahabharata • Anushasana Parva, Adhyaya 149 (Verses 1–13)',
-    canonicalRef: 'MBH Anushasana Parva 149',
-    summary: 'Grandfather Bhishma’s crowning teaching to Yudhishthira from the bed of arrows, revealing the 1,000 holy names of the Supreme Lord as the easiest path to liberation.',
-    openingSnippet: 'यस्य स्मरणमात्रेण जन्मसंसारबन्धनात्। विमुच्यते नमस्तस्मै विष्णवे प्रभविष्णवे॥'
+    endVerse: 35,
+    coordinateText: 'Devi Bhagavata Purana • Skandha 12, Adhyaya 6 (Verses 1–35)',
+    canonicalRef: 'Devi Bhagavata 12.6.1–35',
+    summary: 'Lord Narayana revealing the sacred 1,000 holy names of Mother Gayatri to Sage Narada, bestowing supreme wisdom, longevity, and liberation.',
+    openingSnippet: 'श‍ृणु वक्ष्यामि यत्नेन गायत्र्यष्टसहस्रकम्। नाम्नां शुभानां दिव्यानां सर्वपापविनाशनम्॥'
+  },
+  {
+    id: 'bhagavata-mangalacharana',
+    name: 'Bhagavata Mangalacharana (Janmadyasya Yatah)',
+    sanskritName: 'श्रीमद्भागवत मंगलाचरण (जन्माद्यस्य यतः)',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Supreme Self-Luminous Reality (Param Satyam)',
+    exactScripture: 'Srimad Bhagavata Purana (श्रीमद्भागवत महापुराण)',
+    sourceName: 'Bhagavata Purana',
+    chapterNumber: 8,
+    startVerse: 1,
+    endVerse: 3,
+    coordinateText: 'Bhagavata Purana • Skandha 1, Adhyaya 1 (Verses 1–3)',
+    canonicalRef: 'Bhagavata Purana 1.1.1–3',
+    summary: 'The profound opening meditation of the Bhagavata Purana on the self-effulgent Supreme Reality from whom cosmic creation, maintenance, and dissolution proceed.',
+    openingSnippet: 'जन्माद्यस्य यतोऽन्वयादितरतश्चार्थेष्वभिज्ञः स्वराट् तेने ब्रह्म हृदा य आदिकवये मुह्यन्ति यत्सूरयः। सत्यं परं धीमहि॥'
+  },
+  {
+    id: 'bhagavata-virat-purusha',
+    name: 'Meditation on Cosmic Virat Purusha',
+    sanskritName: 'विराट् पुरुष ध्यान (श्रीमद्भागवत)',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Cosmic Form of Bhagavan as the Universe',
+    exactScripture: 'Srimad Bhagavata Purana (श्रीमद्भागवत महापुराण)',
+    sourceName: 'Bhagavata Purana',
+    chapterNumber: 10,
+    startVerse: 1,
+    endVerse: 15,
+    coordinateText: 'Bhagavata Purana • Skandha 2, Adhyaya 1 (Verses 1–15)',
+    canonicalRef: 'Bhagavata Purana 2.1.1–15',
+    summary: 'Shukadeva Gosvami instructing King Parikshit on fixing the mind upon the universal form of the Lord where mountains are bones, rivers are veins, and clouds are hair.',
+    openingSnippet: 'विशेषस्तस्य देहोऽयं स्थविष्ठश्च स्थवीयसाम्। यत्रेदं व्यज्यते विश्वं खं वायं ज्योतिराम्बुभूः॥'
   },
   {
     id: 'devi-mahatmyam-ya-devi',
     name: 'Aparajita Stuti (Ya Devi Sarva-Bhuteshu)',
     sanskritName: 'अपराजिता स्तुति (या देवी सर्वभूतेषु)',
     category: 'Puranic & Epic Stotram',
-    deityOrTheme: 'Divine Mother in All Manifest Aspects',
-    exactScripture: 'Devi Mahatmyam / Markandeya Purana (देवी माहात्म्यम्)',
+    deityOrTheme: 'Divine Mother Residing in All Manifest Beings',
+    exactScripture: 'Devi Mahatmyam (देवी माहात्म्यम्)',
     sourceName: 'Devi Mahatmyam',
     chapterNumber: 5,
     startVerse: 14,
@@ -432,6 +620,154 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     summary: 'The celestial hymn sung by the Gods in the Himalayas, revering the Divine Mother residing in all beings as consciousness, intellect, peace, compassion, and motherly love.',
     openingSnippet: 'या देवी सर्वभूतेषु चेतनेत्यभिधीयते। नमस्तस्यै नमस्तस्यै नमस्तस्यै नमो नमः॥'
   },
+  {
+    id: 'devi-mahatmyam-narayani-stuti',
+    name: 'Narayani Stuti (Sarva Mangala Mangalye)',
+    sanskritName: 'नारायणी स्तुति (सर्वमङ्गलमाङ्गल्ये)',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Auspicious Mother Narayani (Protector of the Three Worlds)',
+    exactScripture: 'Devi Mahatmyam (देवी माहात्म्यम्)',
+    sourceName: 'Devi Mahatmyam',
+    chapterNumber: 10,
+    startVerse: 37,
+    endVerse: 50,
+    coordinateText: 'Devi Mahatmyam • Chapter 10, Verses 37–50',
+    canonicalRef: 'Devi Mahatmyam 10.37–50',
+    summary: 'The supreme prayer of praise to the Divine Mother Narayani, who is the most auspicious of all that is auspicious, the fulfiller of all objectives, and refuge of all souls.',
+    openingSnippet: 'सर्वमङ्गलमाङ्गल्ये शिवे सर्वार्थसाधिके। शरण्ये त्र्यम्बके गौरि नारायणि नमोऽस्तु ते॥'
+  },
+  {
+    id: 'devi-mahatmyam-shakradi',
+    name: 'Shakradi Stuti (Hymn of the Gods to Mahashakti)',
+    sanskritName: 'शक्रादि स्तुति (देवी माहात्म्यम्)',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Victory of Mahashakti & Protection of Dharma',
+    exactScripture: 'Devi Mahatmyam (देवी माहात्म्यम्)',
+    sourceName: 'Devi Mahatmyam',
+    chapterNumber: 4,
+    startVerse: 1,
+    endVerse: 27,
+    coordinateText: 'Devi Mahatmyam • Chapter 4 (Shakradi Stuti), Verses 1–27',
+    canonicalRef: 'Devi Mahatmyam 4.1–27',
+    summary: 'The magnificent stotra chanted by Indra and the Devas extolling the Goddess whose cosmic power upholds order and crushes arrogance.',
+    openingSnippet: 'शक्रादयः सुरगणा निहतेऽतिवीर्ये तस्मिन्दुरात्मनि सुरारिबले च देव्या। तां तुष्टुवुः प्रणतिनम्रशिरोधरांसा वाग्भिः प्रहर्षपुलकोद्गमचारुदेहाः॥'
+  },
+  {
+    id: 'devi-bhagavata-sarvottama',
+    name: 'Devi Sarvottama Varnanam (Supreme Mahadevi)',
+    sanskritName: 'देवी सर्वोत्तमा वर्णना (देवीभागवत महापुराण)',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Primordial Mahashakti as the Cause of all Trinity',
+    exactScripture: 'Devi Bhagavata Purana (देवीभागवत महापुराण)',
+    sourceName: 'Devi Bhagavata Purana',
+    chapterNumber: 4,
+    startVerse: 1,
+    endVerse: 15,
+    coordinateText: 'Devi Bhagavata Purana • Skandha 1, Adhyaya 4',
+    canonicalRef: 'Devi Bhagavata 1.4',
+    summary: 'The sublime discourse establishing Mahadevi as the unmanifest cause from whom Brahma, Vishnu, and Shiva receive the power of creation, protection, and dissolution.',
+    openingSnippet: 'सर्वकारणकारणतां परां शक्तिं सनातनीम्। प्रणम्य जगदुत्पत्तिस्थितिसंहारकारिणीम्॥'
+  },
+  {
+    id: 'devi-bhagavata-hayagriva',
+    name: 'Hayagriva Avatara Stuti & Katha',
+    sanskritName: 'हयग्रीवावतार स्तुति एवं कथा (देवीभागवत)',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Bhagavan Hayagriva (Preserver of the Vedas & Wisdom)',
+    exactScripture: 'Devi Bhagavata Purana (देवीभागवत महापुराण)',
+    sourceName: 'Devi Bhagavata Purana',
+    chapterNumber: 5,
+    startVerse: 1,
+    endVerse: 15,
+    coordinateText: 'Devi Bhagavata Purana • Skandha 1, Adhyaya 5',
+    canonicalRef: 'Devi Bhagavata 1.5',
+    summary: 'The sacred narrative of Lord Hayagriva manifesting to protect the eternal Vedic mantras and impart divine enlightenment.',
+    openingSnippet: 'हयग्रीवाय विद्महे दूर्वाश्यामाय धीमहि। तन्नो देवः प्रचोदयात्॥'
+  },
+  {
+    id: 'shiva-purana-omkara',
+    name: 'Shiva Purana (Omkaropadesha & Shiva Tattva)',
+    sanskritName: 'शिवपुराण ओंकारोपदेश एवं शिवतत्त्व महिमा',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Pranava (Omkara) & Formless Shiva Tattva',
+    exactScripture: 'Shiva Purana (शिवपुराण - विद्येश्वरसंहिता)',
+    sourceName: 'Shiva Purana',
+    chapterNumber: 9,
+    startVerse: 1,
+    endVerse: 12,
+    coordinateText: 'Shiva Purana • Vidyeshvara Samhita, Adhyaya 8',
+    canonicalRef: 'Shiva Purana 1.8',
+    summary: 'Sage instruction from the Vidyeshvara Samhita revealing the five-fold sacred Pranava (Omkara) and the transcendent truth of Lord Shiva.',
+    openingSnippet: 'ओङ्कारप्रणवोद्देशो मन्त्रराजोऽयमुत्तमः। शिवलिङ्गस्य माहात्म्यं सर्वपापप्रणाशनम्॥'
+  },
+  {
+    id: 'shiva-purana-linga-mahima',
+    name: 'Shiva Purana (Shivalinga Mahima & Transcendence)',
+    sanskritName: 'शिवपुराण शिवलिङ्ग महिमा वर्णन',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Formless Pillar of Infinite Light (Jyotirlinga)',
+    exactScripture: 'Shiva Purana (शिवपुराण - विद्येश्वरसंहिता)',
+    sourceName: 'Shiva Purana',
+    chapterNumber: 5,
+    startVerse: 1,
+    endVerse: 15,
+    coordinateText: 'Shiva Purana • Vidyeshvara Samhita, Adhyaya 4',
+    canonicalRef: 'Shiva Purana 1.4',
+    summary: 'The revelation of the Shivalinga as the formless emblem of the infinite cosmic pillar of consciousness transcending beginning and end.',
+    openingSnippet: 'शिवलिङ्गार्चनं पुण्यं सर्वकामफलप्रदम्। भुक्तिमुक्तिप्रदं साक्षात्परब्रह्मस्वरूपिणम्॥'
+  },
+  {
+    id: 'brahma-purana-cosmic-invocations',
+    name: 'Brahma Purana Primordial Cosmic Invocations',
+    sanskritName: 'ब्रह्मपुराण ब्रह्माण्ड सृष्टि एवं मंगलाचरण',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Cosmic Evolution, Narayana & Sages’ Gathering at Naimisharanya',
+    exactScripture: 'Brahma Purana (ब्रह्मपुराण)',
+    sourceName: 'Brahma Purana',
+    chapterNumber: 1,
+    startVerse: 1,
+    endVerse: 10,
+    coordinateText: 'Brahma Purana • Adhyaya 1 (Verses 1–10)',
+    canonicalRef: 'Brahma Purana 1.1–10',
+    summary: 'The inaugural chapter of the Adi Purana (Brahma Purana) opening with cosmic prayers to the Primordial Creator and the assembly of sages.',
+    openingSnippet: 'ब्रह्मणे नमस्कृत्य जगत्कारणहेतवे। प्रवक्ष्यामि पुराणं तु ब्रह्मणा यदुदाहृतम्॥'
+  },
+  {
+    id: 'garuda-purana-achara-invocations',
+    name: 'Garuda Purana (Achara Kanda Divine Invocations)',
+    sanskritName: 'गरुडपुराण आचारकाण्ड मंगलाचरण',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Bhagavan Vishnu, Righteous Conduct (Achara) & Liberation',
+    exactScripture: 'Garuda Purana (गरुडपुराण)',
+    sourceName: 'Garuda Purana',
+    chapterNumber: 1,
+    startVerse: 1,
+    endVerse: 10,
+    coordinateText: 'Garuda Purana • Achara Kanda, Adhyaya 1',
+    canonicalRef: 'Garuda Purana 1.1',
+    summary: 'The opening invocations of the Garuda Purana celebrating Sri Hari Vishnu as the dispeller of all darkness and guide on the path of Dharma.',
+    openingSnippet: 'नारायणं परं ब्रह्म सर्वलोकैककारणम्। प्रपद्ये शरणं नित्यं भवबन्धविमुक्तये॥'
+  },
+  {
+    id: 'harivamsha-vasudeva-mahatmya',
+    name: 'Vasudeva Mahatmya & Stuti (Harivamsha Purana)',
+    sanskritName: 'वासुदेव माहात्म्य एवं स्तुति (हरिवंशपुराण)',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Supreme Glory & Divine Play of Sri Krishna',
+    exactScripture: 'Harivamsha Purana (हरिवंशपुराण)',
+    sourceName: 'Harivamsha Purana',
+    chapterNumber: 166,
+    startVerse: 1,
+    endVerse: 10,
+    coordinateText: 'Harivamsha Purana • Harivamsha Parva, Adhyaya 111',
+    canonicalRef: 'Harivamsha 111.1–10',
+    summary: 'The exalted glory of Sri Krishna Vasudeva in the Harivamsha, recounting the divine incarnation that enlivened the earth and safeguarded Dharma.',
+    openingSnippet: 'जय माधव गोविन्द जय दामोदर प्रभो। जय वासुदेव देवेश जगदानन्दकारक॥'
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // 7. YOGA & ADVAITA CLASSICS (अष्टावक्र गीता, अवधूत गीता एवं पातञ्जल योगसूत्र)
+  // ══════════════════════════════════════════════════════════════════════════
   {
     id: 'ashtavakra-gita-liberation',
     name: 'Ashtavakra Gita (Direct Self-Realization)',
@@ -447,6 +783,22 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     canonicalRef: 'Ashtavakra Gita 1.1–20',
     summary: 'Sage Ashtavakra’s uncompromising direct transmission of Advaita wisdom to King Janaka on realizing oneself as the witness consciousness free from all bondage right now.',
     openingSnippet: 'मुक्तिमिच्छसि चेत्तात विषयान् विषवत्त्यज। क्षमार्जवदयातोषसत्यं पीयूषवद्भज॥'
+  },
+  {
+    id: 'avadhuta-gita-pure-consciousness',
+    name: 'Avadhuta Gita (Song of the Free Soul)',
+    sanskritName: 'अवधूत गीता (शुद्ध चैतन्य स्वरूप)',
+    category: 'Puranic & Epic Stotram',
+    deityOrTheme: 'Unconditioned Non-Dual Awareness (Avadhuta Dattatreya)',
+    exactScripture: 'Avadhuta Gita (अवधूत गीता)',
+    sourceName: 'Avadhuta Gita',
+    chapterNumber: 1,
+    startVerse: 1,
+    endVerse: 15,
+    coordinateText: 'Avadhuta Gita • Chapter 1 (Verses 1–15)',
+    canonicalRef: 'Avadhuta Gita 1.1–15',
+    summary: 'Lord Dattatreya’s spontaneous song of transcendent freedom, declaring the Self as uncreated, infinite, and ever-pure consciousness untouched by maya.',
+    openingSnippet: 'ईश्वराअनुग्रहादेव पुंसां अद्वैतवासना। महद्भयपरित्राणाद् विप्राणां उपजायते॥'
   },
   {
     id: 'patanjali-yoga-sutra-1-2',

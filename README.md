@@ -16,6 +16,7 @@ The core idea is that anyone should be able to explore the wisdom of Sanatan Dha
 ## Key Features
 - **Ask AI Mode:** Ask philosophical questions with intelligent routing across scriptures and multi-layer synthesis with verified citations.
 - **Reading Mode:** Browse sacred scriptures with Devanagari Sanskrit, IAST transliteration, word-by-word Anvaya, multiple translations, and classical commentaries.
+- **Sacred Suktams & Mantras Index (`/suktams`):** Canonical directory of 33+ verified Vedic Suktams, Maha Mantras, Upanishadic Shanti Pathas, and Puranic/Epic Stotras with precision deep-linking to exact verses in the unified database.
 - **Authentic Recitation:** Stream authentic Sanskrit audio recitation for the Srimad Bhagavad Gita.
 
 ---
