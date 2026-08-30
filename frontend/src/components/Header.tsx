@@ -91,22 +91,14 @@ export default function Header({
           </div>
         )}
 
-        {/* Right: Brand Logo & Title (Clicking returns to Home / Ask AI) */}
+        {/* Right: Clean Circular Brand Logo Emblem (No text to prevent mobile header overlap) */}
         <button
           type="button"
           onClick={handleBrandClick}
-          className="flex items-center gap-2 shrink-0 cursor-pointer text-right group focus:outline-none transition-transform active:scale-95 z-10 ml-auto"
+          className="flex items-center shrink-0 cursor-pointer group focus:outline-none transition-transform active:scale-95 z-10 ml-auto"
           title="DharmaPragya Home - Return to main sanctuary"
           aria-label="DharmaPragya Home"
         >
-          <div className="flex flex-col items-end">
-            <span className="font-cinzel text-xs sm:text-sm font-bold tracking-widest text-saffron-950 dark:text-amber-200 group-hover:text-saffron-700 dark:group-hover:text-amber-300 transition-colors">
-              धर्मप्रज्ञा
-            </span>
-            <span className="text-[9px] tracking-wider text-saffron-700/80 dark:text-amber-400/80 uppercase font-semibold">
-              DharmaPragya
-            </span>
-          </div>
           <div className="relative w-8 h-8 rounded-full overflow-hidden border border-saffron-400/50 dark:border-amber-500/40 shadow-2xs group-hover:border-saffron-600 dark:group-hover:border-amber-400 transition-colors">
             <Image
               src="/logo.png"

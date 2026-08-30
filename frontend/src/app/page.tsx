@@ -250,7 +250,6 @@ function HomePageContent() {
         mode={mode}
         onModeChange={handleModeChange}
         onSelectCoordinate={handleSelectCoordinate}
-        onOpenHymnModal={(hymn) => setSelectedHymnModal(hymn)}
       />
 
       {/* Full Sacred Hymn & Mantra Modal */}
