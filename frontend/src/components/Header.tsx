@@ -4,8 +4,7 @@ import React, { useState } from 'react';
 import { 
   Menu, 
   Compass, 
-  BookOpen,
-  Sparkles
+  BookOpen 
 } from 'lucide-react';
 import Image from 'next/image';
 import SidePanel from './SidePanel';
@@ -13,8 +12,8 @@ import SidePanel from './SidePanel';
 interface HeaderProps {
   onOpenSanctuary?: () => void;
   onOpenAbout?: () => void;
-  mode?: 'ask' | 'read' | 'suktams';
-  onModeChange?: (mode: 'ask' | 'read' | 'suktams') => void;
+  mode?: 'ask' | 'read';
+  onModeChange?: (mode: 'ask' | 'read') => void;
   onHomeClick?: () => void;
 }
 
@@ -59,14 +58,14 @@ export default function Header({
           </button>
         </div>
 
-        {/* Absolute Dead Center: Integrated 3-Mode Segment Switcher */}
+        {/* Absolute Dead Center: Integrated 2-Mode Segment Switcher */}
         {mode && onModeChange && (
           <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10">
             <div className="bg-cream-300/90 dark:bg-slate-900/90 p-1 rounded-full border border-cream-400/70 dark:border-amber-500/20 flex shadow-2xs">
               <button
                 type="button"
                 onClick={() => onModeChange('ask')}
-                className={`flex items-center gap-1.5 py-1 px-3 sm:px-3.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
+                className={`flex items-center gap-1.5 py-1 px-3 sm:px-4 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
                   mode === 'ask'
                     ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 dark:from-amber-500 dark:to-saffron-600 text-white shadow-xs'
                     : 'text-saffron-900 dark:text-slate-300 hover:text-saffron-700 dark:hover:text-amber-300 hover:bg-cream-200 dark:hover:bg-slate-800/80'
@@ -79,7 +78,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => onModeChange('read')}
-                className={`flex items-center gap-1.5 py-1 px-3 sm:px-3.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
+                className={`flex items-center gap-1.5 py-1 px-3 sm:px-4 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
                   mode === 'read'
                     ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 dark:from-amber-500 dark:to-saffron-600 text-white shadow-xs'
                     : 'text-saffron-900 dark:text-slate-300 hover:text-saffron-700 dark:hover:text-amber-300 hover:bg-cream-200 dark:hover:bg-slate-800/80'
@@ -87,19 +86,6 @@ export default function Header({
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Read</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onModeChange('suktams')}
-                className={`flex items-center gap-1.5 py-1 px-3 sm:px-3.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
-                  mode === 'suktams'
-                    ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 dark:from-amber-500 dark:to-saffron-600 text-white shadow-xs'
-                    : 'text-saffron-900 dark:text-slate-300 hover:text-saffron-700 dark:hover:text-amber-300 hover:bg-cream-200 dark:hover:bg-slate-800/80'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Suktams</span>
               </button>
             </div>
           </div>

@@ -4,18 +4,17 @@ import { useState, useEffect, Suspense } from 'react';
 import Header from '../components/Header';
 import AskMode from '../components/AskMode';
 import ReadMode from '../components/ReadMode';
-import SuktamsMode from '../components/SuktamsMode';
 import SavedSanctuary from '../components/SavedSanctuary';
 import ShareCardModal from '../components/ShareCardModal';
 import SidePanel from '../components/SidePanel';
 import SacredHymnModal from '../components/SacredHymnModal';
 import { VerseData } from '../types';
-import { SacredHymn } from '../data/famousSuktams';
+import { SacredHymn, FAMOUS_SUKTAMS_AND_MANTRAS } from '../data/famousSuktams';
 
 const API_BASE_URL = '';
 
 function HomePageContent() {
-  const [mode, setMode] = useState<'ask' | 'read' | 'suktams'>('ask');
+  const [mode, setMode] = useState<'ask' | 'read'>('ask');
   const [isSanctuaryOpen, setIsSanctuaryOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [selectedHymnModal, setSelectedHymnModal] = useState<SacredHymn | null>(null);
@@ -55,10 +54,16 @@ function HomePageContent() {
       const source = params.get('source');
       const chapter = params.get('chapter');
       const verse = params.get('verse');
+      const hymnId = params.get('hymn') || params.get('suktam');
 
-      if (urlMode === 'suktams' || urlMode === 'hymns') {
-        setMode('suktams');
-      } else if (urlMode === 'read' || (source && chapter)) {
+      if (hymnId) {
+        const found = FAMOUS_SUKTAMS_AND_MANTRAS.find(h => h.id === hymnId);
+        if (found) {
+          setSelectedHymnModal(found);
+        }
+      }
+
+      if (urlMode === 'read' || (source && chapter)) {
         setMode('read');
         if (source && chapter) {
           setTargetCoordinate({
@@ -69,6 +74,8 @@ function HomePageContent() {
         }
       } else if (urlMode === 'saved') {
         setIsSanctuaryOpen(true);
+      } else if (urlMode === 'suktams' || urlMode === 'hymns') {
+        setIsAboutOpen(true);
       }
     }
   }, []);
@@ -129,7 +136,7 @@ function HomePageContent() {
     }
   };
 
-  const handleModeChange = (newMode: 'ask' | 'read' | 'suktams') => {
+  const handleModeChange = (newMode: 'ask' | 'read') => {
     setMode(newMode);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -200,13 +207,6 @@ function HomePageContent() {
               onOpenShareModal={handleOpenShareModalFromVerse}
               onAskAboutVerse={handleAskAboutVerse}
               targetCoordinate={targetCoordinate}
-            />
-          </div>
-
-          <div className={mode === 'suktams' ? 'block animate-fade-in' : 'hidden'}>
-            <SuktamsMode 
-              onOpenHymnModal={(h) => setSelectedHymnModal(h)}
-              onSelectCoordinate={handleSelectCoordinate}
             />
           </div>
         </div>
