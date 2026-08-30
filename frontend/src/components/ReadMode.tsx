@@ -1221,25 +1221,25 @@ export default function ReadMode({
               <button 
                 key={src.id} 
                 onClick={() => loadSource(src.name)} 
-                className="group p-5 bg-gradient-to-br from-white via-saffron-50/30 to-amber-50/20 dark:from-[#0d121d] dark:via-amber-950/20 dark:to-[#0d121d] border-2 border-saffron-400/80 dark:border-amber-500/50 hover:border-saffron-500 dark:hover:border-amber-400 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-40 cursor-pointer hover:-translate-y-0.5"
+                className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-40 cursor-pointer hover:-translate-y-0.5"
               >
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-300 bg-saffron-100 dark:bg-amber-950/70 px-2.5 py-0.5 rounded-full border border-saffron-300 dark:border-amber-600/40">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-saffron-700 dark:text-amber-400 bg-saffron-50 dark:bg-slate-800 px-2 py-0.5 rounded border border-saffron-200 dark:border-amber-500/20">
                       Gita (गीता)
                     </span>
                     <span className="text-[11px] font-bold text-saffron-700 dark:text-amber-400 font-cinzel">
                       {src.name === 'Bhagavad Gita' ? '701 Verses' : src.name === 'Ashtavakra Gita' ? '298 Verses' : '271 Verses'}
                     </span>
                   </div>
-                  <p className="text-lg font-bold font-cinzel text-saffron-950 dark:text-amber-300 group-hover:text-saffron-700 dark:group-hover:text-amber-200 transition-colors mt-1">
+                  <p className="text-base font-bold font-cinzel text-saffron-950 dark:text-amber-300 group-hover:text-saffron-700 dark:group-hover:text-amber-200 transition-colors">
                     {src.name}
                   </p>
-                  <p className="text-[11px] text-stone-600 dark:text-slate-400 font-medium">
+                  <p className="text-[11px] text-stone-500 dark:text-slate-400 font-medium mt-0.5">
                     {src.name === 'Bhagavad Gita' ? '18 Adhyayas • Word-by-Word & Commentaries' : src.name === 'Ashtavakra Gita' ? '20 Prakaranas • English & Hindi Translations' : '8 Chapters • Authentic Sanskrit Text'}
                   </p>
                 </div>
-                <div className="flex justify-end items-center w-full pt-2 border-t border-saffron-200/60 dark:border-amber-900/40">
+                <div className="flex justify-end items-center w-full pt-2">
                   <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 transform group-hover:translate-x-1 transition-transform" />
                 </div>
               </button>

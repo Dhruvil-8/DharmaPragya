@@ -6,7 +6,7 @@ import AskMode from '../components/AskMode';
 import ReadMode from '../components/ReadMode';
 import SavedSanctuary from '../components/SavedSanctuary';
 import ShareCardModal from '../components/ShareCardModal';
-import AboutSidePanel from '../components/AboutSidePanel';
+import SidePanel from '../components/SidePanel';
 import { VerseData } from '../types';
 
 const API_BASE_URL = '';
@@ -180,7 +180,7 @@ function HomePageContent() {
               onClick={() => setIsAboutOpen(true)}
               className="font-cinzel tracking-[0.15em] uppercase font-bold text-saffron-800 dark:text-amber-400 hover:underline cursor-pointer"
             >
-              About DharmaPragya &bull; Ecosystem
+              About DharmaPragya
             </button>
           </div>
           <p className="text-[10px] text-stone-500 dark:text-slate-500 font-medium">
@@ -203,10 +203,13 @@ function HomePageContent() {
         verseDetails={shareModalData.details}
       />
 
-      {/* About & Ecosystem Side Panel */}
-      <AboutSidePanel
+      {/* Comprehensive Side Panel */}
+      <SidePanel
         isOpen={isAboutOpen}
         onClose={() => setIsAboutOpen(false)}
+        onOpenSanctuary={() => setIsSanctuaryOpen(true)}
+        mode={mode}
+        onModeChange={handleModeChange}
       />
     </main>
   );
