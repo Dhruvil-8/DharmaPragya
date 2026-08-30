@@ -6,7 +6,6 @@ import {
   BookOpen, 
   Copy, 
   Check, 
-  Sparkles, 
   ExternalLink, 
   Languages, 
   ChevronRight,

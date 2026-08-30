@@ -15,7 +15,6 @@ import {
   ChevronRight,
   ArrowLeft,
   Compass,
-  Sparkles,
   Search,
   Flame,
   Layers
@@ -27,8 +26,8 @@ interface SidePanelProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenSanctuary?: () => void;
-  mode?: 'ask' | 'read' | 'suktams';
-  onModeChange?: (mode: 'ask' | 'read' | 'suktams') => void;
+  mode?: 'ask' | 'read';
+  onModeChange?: (mode: 'ask' | 'read') => void;
   onSelectCoordinate?: (coord: {
     sourceName: string;
     chapterNumber?: number;
