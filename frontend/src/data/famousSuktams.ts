@@ -202,7 +202,7 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     coordinateText: 'Rigveda • Mandala 10, Anuvaka 12, Sukta 191 (Verses 1–4)',
     canonicalRef: 'Rigveda 10.191.1–4',
     summary: 'The final hymn of the Rigveda, a glorious universal call for humanity to walk together, speak with one voice, and unite in heart and purpose.',
-    openingSnippet: 'संगच्छध्वं संवदध्वं सं वो मनांसि जानताम्। देवा भागं यथा पूर्वे सञ्जानाना उपासते॥'
+    openingSnippet: 'संसमिद्युवसे वृषन्नग्ने विश्वान्यर्य आ। संगच्छध्वं संवदध्वं सं वो मनांसि जानताम्॥'
   },
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -285,7 +285,7 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     coordinateText: 'Atharvaveda • Kanda 6, Sukta 108 (Verses 1–5)',
     canonicalRef: 'Atharvaveda 6.108.1–5',
     summary: 'The celebrated Vedic prayer for sharp intellect, memory, cosmic clarity, and illumination, invoking Varuna, Agni, Indra, and the Devas to bestow divine wisdom.',
-    openingSnippet: 'मेधां मे वरुणो ददातु मेधामग्निः प्रजापतिः। मेधामिन्द्रश्च वायुश्च मेधां धाता ददातु मे स्वाहा॥'
+    openingSnippet: 'त्वं नो मेधे प्रथमा गोभिरश्वेभिरा गहि। त्वं सूर्यस्य रश्मिभिस्त्वं नो असि यज्ञिया॥'
   },
   {
     id: 'shraddha-suktam',
@@ -413,7 +413,7 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     coordinateText: 'Amritabindu Upanishad • Verses 1–5',
     canonicalRef: 'Amritabindu 1–5',
     summary: 'The timeless Upanishadic realization: the mind alone is the cause of human bondage and liberation. Attached to objects it binds; freed from desires it liberates.',
-    openingSnippet: 'मन एव मनुष्याणां कारणं बन्धमोक्षयोः। बन्धाय विषयासक्तं मुक्त्यै निर्विषयं स्मृतम्॥'
+    openingSnippet: 'मनो हि द्विविधं प्रोक्तं शुद्धं चाशुद्धमेव च। मन एव मनुष्याणां कारणं बन्धमोक्षयोः॥'
   },
   {
     id: 'kena-upanishad-wisdom',
@@ -477,7 +477,7 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     coordinateText: 'Shvetashvatara Upanishad • Chapter 2, Verse 5 & 3.8',
     canonicalRef: 'Shvetashvatara 2.5 & 3.8',
     summary: 'The grand declaration addressing all humanity as children of immortality who can know the Supreme Radiant Being beyond all darkness.',
-    openingSnippet: 'शृण्वन्तु विश्वे अमृतस्य पुत्रा आ ये धामानि दिव्यानि तस्थुः। वेदाहमेतं पुरुषं महान्तमादित्यवर्णं तमसः परस्तात्॥'
+    openingSnippet: 'युजे वां ब्रह्म पूर्व्यं नमोभिर्वि श्लोक एतु पथ्येव सूरेः। शृण्वन्तु विश्वे अमृतस्य पुत्रा आ ये धामानि दिव्यानि तस्थुः॥'
   },
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -560,10 +560,10 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     exactScripture: 'Mahabharata (महाभारत)',
     sourceName: 'Mahabharata',
     chapterNumber: 13135,
-    startVerse: 1,
+    startVerse: 2,
     endVerse: 142,
-    coordinateText: 'Mahabharata • Anushasana Parva, Adhyaya 135 (Verses 1–142)',
-    canonicalRef: 'MBH Anushasana Parva 135.1–142',
+    coordinateText: 'Mahabharata • Anushasana Parva, Adhyaya 135 (Verses 2–142)',
+    canonicalRef: 'MBH Anushasana Parva 135.2–142',
     summary: 'Grandfather Bhishma’s supreme discourse from the bed of arrows answering Yudhishthira’s question: "Kim ekam daivatam loke..." by chanting the 1,000 names of Bhagavan Vishnu.',
     openingSnippet: 'किमेकं दैवतं लोके किं वाप्येकं परायणम्। स्तुवन्तः कं कमर्चन्तः प्राप्नुयुर्मानवाः शुभम्॥ विश्वं विष्णुर्वषट्कारो भूतभव्यभवत्प्रभुः।'
   },
@@ -608,10 +608,10 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     exactScripture: 'Valmiki Ramayana (वाल्मीकि रामायण)',
     sourceName: 'Valmiki Ramayana',
     chapterNumber: 1002,
-    startVerse: 15,
-    endVerse: 15,
-    coordinateText: 'Valmiki Ramayana • Balakanda, Sarga 2, Verse 15',
-    canonicalRef: 'VR Balakanda 2.15',
+    startVerse: 14,
+    endVerse: 14,
+    coordinateText: 'Valmiki Ramayana • Balakanda, Sarga 2, Verse 14',
+    canonicalRef: 'VR Balakanda 2.14',
     summary: 'The spontaneous utterance of Sage Valmiki born of profound grief and compassion upon witnessing the separation of krauncha birds, creating the Anushtubh meter.',
     openingSnippet: 'मा निषाद प्रतिष्ठां त्वमगमः शाश्वतीः समाः। यत्क्रौञ्चमिथुनादेकमवधीः काममोहितम्॥'
   },
@@ -644,10 +644,10 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     exactScripture: 'Devi Bhagavata Purana (देवीभागवत महापुराण)',
     sourceName: 'Devi Bhagavata Purana',
     chapterNumber: 102,
-    startVerse: 1,
+    startVerse: 5,
     endVerse: 35,
-    coordinateText: 'Devi Bhagavata Purana • Skandha 12, Adhyaya 6 (Verses 1–35)',
-    canonicalRef: 'Devi Bhagavata 12.6.1–35',
+    coordinateText: 'Devi Bhagavata Purana • Skandha 12, Adhyaya 6 (Verses 5–35)',
+    canonicalRef: 'Devi Bhagavata 12.6.5–35',
     summary: 'Lord Narayana revealing the sacred 1,000 holy names of Mother Gayatri to Sage Narada, bestowing supreme wisdom, longevity, and liberation.',
     openingSnippet: 'श‍ृणु वक्ष्यामि यत्नेन गायत्र्यष्टसहस्रकम्। नाम्नां शुभानां दिव्यानां सर्वपापविनाशनम्॥'
   },
@@ -676,10 +676,10 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     exactScripture: 'Srimad Bhagavata Purana (श्रीमद्भागवत महापुराण)',
     sourceName: 'Bhagavata Purana',
     chapterNumber: 10,
-    startVerse: 1,
-    endVerse: 15,
-    coordinateText: 'Bhagavata Purana • Skandha 2, Adhyaya 1 (Verses 1–15)',
-    canonicalRef: 'Bhagavata Purana 2.1.1–15',
+    startVerse: 24,
+    endVerse: 35,
+    coordinateText: 'Bhagavata Purana • Skandha 2, Adhyaya 1 (Verse 24)',
+    canonicalRef: 'Bhagavata Purana 2.1.24',
     summary: 'Shukadeva Gosvami instructing King Parikshit on fixing the mind upon the universal form of the Lord where mountains are bones, rivers are veins, and clouds are hair.',
     openingSnippet: 'विशेषस्तस्य देहोऽयं स्थविष्ठश्च स्थवीयसाम्। यत्रेदं व्यज्यते विश्वं खं वायं ज्योतिराम्बुभूः॥'
   },
@@ -692,12 +692,12 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     exactScripture: 'Devi Mahatmyam (देवी माहात्म्यम्)',
     sourceName: 'Devi Mahatmyam',
     chapterNumber: 5,
-    startVerse: 14,
-    endVerse: 36,
-    coordinateText: 'Devi Mahatmyam • Chapter 5, Verses 14–36',
-    canonicalRef: 'Devi Mahatmyam 5.14–36',
+    startVerse: 8,
+    endVerse: 20,
+    coordinateText: 'Devi Mahatmyam • Chapter 5 (Aparajita Stuti), Verses 8–20',
+    canonicalRef: 'Devi Mahatmyam 5.8–20',
     summary: 'The celestial hymn sung by the Gods in the Himalayas, revering the Divine Mother residing in all beings as consciousness, intellect, peace, compassion, and motherly love.',
-    openingSnippet: 'या देवी सर्वभूतेषु चेतनेत्यभिधीयते। नमस्तस्यै नमस्तस्यै नमस्तस्यै नमो नमः॥'
+    openingSnippet: 'नमः प्रकृत्यै भद्रायै नियताः प्रणताः स्म ताम्। या देवी सर्वभूतेषु चेतनेत्यभिधीयते नमस्तस्यै नमो नमः॥'
   },
   {
     id: 'devi-mahatmyam-narayani-stuti',
@@ -708,10 +708,10 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     exactScripture: 'Devi Mahatmyam (देवी माहात्म्यम्)',
     sourceName: 'Devi Mahatmyam',
     chapterNumber: 10,
-    startVerse: 37,
-    endVerse: 50,
-    coordinateText: 'Devi Mahatmyam • Chapter 10, Verses 37–50',
-    canonicalRef: 'Devi Mahatmyam 10.37–50',
+    startVerse: 31,
+    endVerse: 55,
+    coordinateText: 'Devi Mahatmyam • Chapter 10/11 (Narayani Stuti), Verses 31–55',
+    canonicalRef: 'Devi Mahatmyam 11.1–25',
     summary: 'The supreme prayer of praise to the Divine Mother Narayani, who is the most auspicious of all that is auspicious, the fulfiller of all objectives, and refuge of all souls.',
     openingSnippet: 'सर्वमङ्गलमाङ्गल्ये शिवे सर्वार्थसाधिके। शरण्ये त्र्यम्बके गौरि नारायणि नमोऽस्तु ते॥'
   },
@@ -724,10 +724,10 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     exactScripture: 'Devi Mahatmyam (देवी माहात्म्यम्)',
     sourceName: 'Devi Mahatmyam',
     chapterNumber: 4,
-    startVerse: 1,
+    startVerse: 2,
     endVerse: 27,
-    coordinateText: 'Devi Mahatmyam • Chapter 4 (Shakradi Stuti), Verses 1–27',
-    canonicalRef: 'Devi Mahatmyam 4.1–27',
+    coordinateText: 'Devi Mahatmyam • Chapter 4 (Shakradi Stuti), Verses 2–27',
+    canonicalRef: 'Devi Mahatmyam 4.2–27',
     summary: 'The magnificent stotra chanted by Indra and the Devas extolling the Goddess whose cosmic power upholds order and crushes arrogance.',
     openingSnippet: 'शक्रादयः सुरगणा निहतेऽतिवीर्ये तस्मिन्दुरात्मनि सुरारिबले च देव्या। तां तुष्टुवुः प्रणतिनम्रशिरोधरांसा वाग्भिः प्रहर्षपुलकोद्गमचारुदेहाः॥'
   },
@@ -809,7 +809,7 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     coordinateText: 'Brahma Purana • Adhyaya 1 (Verses 1–10)',
     canonicalRef: 'Brahma Purana 1.1–10',
     summary: 'The inaugural chapter of the Adi Purana (Brahma Purana) opening with cosmic prayers to the Primordial Creator and the assembly of sages.',
-    openingSnippet: 'ब्रह्मणे नमस्कृत्य जगत्कारणहेतवे। प्रवक्ष्यामि पुराणं तु ब्रह्मणा यदुदाहृतम्॥'
+    openingSnippet: 'यस्मात् सर्वमिदं प्रपञ्चरचितं मायाजगज्जायते। यस्मिंस्तिष्ठति याति चान्तसमये कल्पानुकल्पे पुनः। तं वन्दे पुरुषोत्तमाख्यममलं नित्यं विभुं निश्चलम्॥'
   },
   {
     id: 'garuda-purana-achara-invocations',
@@ -841,7 +841,7 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     coordinateText: 'Harivamsha Purana • Harivamsha Parva, Adhyaya 111',
     canonicalRef: 'Harivamsha 111.1–10',
     summary: 'The exalted glory of Sri Krishna Vasudeva in the Harivamsha, recounting the divine incarnation that enlivened the earth and safeguarded Dharma.',
-    openingSnippet: 'जय माधव गोविन्द जय दामोदर प्रभो। जय वासुदेव देवेश जगदानन्दकारक॥'
+    openingSnippet: 'भूय एव महाबाहो कृष्णस्य जगतां पतेः। माहात्म्यं श्रोतुमिच्छामि परमं द्विजसत्तम॥'
   },
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -861,7 +861,7 @@ export const FAMOUS_SUKTAMS_AND_MANTRAS: SacredHymn[] = [
     coordinateText: 'Ashtavakra Gita • Chapter 1 (Verses 1–20)',
     canonicalRef: 'Ashtavakra Gita 1.1–20',
     summary: 'Sage Ashtavakra’s uncompromising direct transmission of Advaita wisdom to King Janaka on realizing oneself as the witness consciousness free from all bondage right now.',
-    openingSnippet: 'मुक्तिमिच्छसि चेत्तात विषयान् विषवत्त्यज। क्षमार्जवदयातोषसत्यं पीयूषवद्भज॥'
+    openingSnippet: 'जनक उवाच — कथं ज्ञानमवाप्नोति कथं मुक्तिर्भविष्यति। अष्टावक्र उवाच — मुक्तिमिच्छसि चेत्तात विषयान्विषवत्त्यज॥'
   },
   {
     id: 'avadhuta-gita-pure-consciousness',

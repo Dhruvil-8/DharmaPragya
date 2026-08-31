@@ -322,30 +322,34 @@ export default function ReadMode({
       for (const sel of selectors) {
         const el = document.getElementById(sel) || document.querySelector(sel);
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.classList.add('ring-2', 'ring-saffron-500', 'dark:ring-amber-400', 'ring-offset-2', 'transition-all');
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.classList.add('ring-2', 'ring-saffron-500', 'dark:ring-amber-400', 'ring-offset-2', 'rounded-3xl', 'transition-all');
           setTimeout(() => {
-            el.classList.remove('ring-2', 'ring-saffron-500', 'dark:ring-amber-400', 'ring-offset-2');
+            el.classList.remove('ring-2', 'ring-saffron-500', 'dark:ring-amber-400', 'ring-offset-2', 'rounded-3xl');
           }, 3500);
           return;
         }
       }
-      if (attempts < 7) {
-        setTimeout(tryScroll, 120);
+      if (attempts < 15) {
+        setTimeout(tryScroll, 100);
       }
     };
-    setTimeout(tryScroll, 60);
+    setTimeout(tryScroll, 80);
   };
 
   // Deep-linking navigation
   useEffect(() => {
     if (!targetCoordinate) return;
 
+    const reqSource = targetCoordinate.sourceName.trim().toLowerCase();
+
+    // 1. Precise Veda Match
     const matchedVeda = vedas.find(v => 
-      v.name_english.toLowerCase().includes(targetCoordinate.sourceName.toLowerCase()) ||
-      v.id.toLowerCase() === targetCoordinate.sourceName.toLowerCase() ||
-      targetCoordinate.sourceName.toLowerCase().includes(v.id.toLowerCase()) ||
-      targetCoordinate.sourceName.toLowerCase().includes(v.name_english.toLowerCase())
+      v.id.toLowerCase() === reqSource ||
+      v.name_english.toLowerCase() === reqSource ||
+      v.name_sanskrit.toLowerCase() === reqSource ||
+      v.name_english.toLowerCase().startsWith(reqSource) ||
+      reqSource.startsWith(v.id.toLowerCase())
     );
 
     if (matchedVeda) {
@@ -354,11 +358,15 @@ export default function ReadMode({
       return;
     }
 
-    const matchedSource = sources.find(
-      s => s.name.toLowerCase() === targetCoordinate.sourceName.toLowerCase() ||
-           s.name.toLowerCase().includes(targetCoordinate.sourceName.toLowerCase()) ||
-           targetCoordinate.sourceName.toLowerCase().includes(s.name.toLowerCase())
-    );
+    // 2. Exact Scripture Match first (to prevent partial matches like 'Ashtavakra Gita' -> 'Bhagavad Gita')
+    let matchedSource = sources.find(s => s.name.toLowerCase() === reqSource);
+
+    // 3. Fallback Scripture Match (prefix or includes)
+    if (!matchedSource) {
+      matchedSource = sources.find(
+        s => s.name.toLowerCase().startsWith(reqSource) || reqSource.startsWith(s.name.toLowerCase())
+      );
+    }
 
     if (matchedSource) {
       const isGitaText = matchedSource.name === 'Bhagavad Gita' || matchedSource.name.toLowerCase().includes('gita');
@@ -1671,7 +1679,7 @@ export default function ReadMode({
             /* Continuous Book View for Vedas with Progressive Lazy Batching */
             <div className="space-y-6">
               {vedaMantras.slice(0, visibleCount).map((mantra, idx) => (
-                <div key={mantra.id} id={`veda-mantra-${idx}`} className="scroll-mt-28">
+                <div key={mantra.id} id={`veda-mantra-${idx}`} className="scroll-mt-36">
                   <VedicVerseBlock
                     mantra={mantra}
                     index={idx}
@@ -1726,7 +1734,7 @@ export default function ReadMode({
             /* Continuous Book View for Scriptures with Progressive Lazy Batching */
             <div className="space-y-6">
               {chapterData.slice(0, visibleCount).map((verse, idx) => (
-                <div key={verse.id} id={`verse-anchor-${verse.verse_number}`}>
+                <div key={verse.id} id={`verse-anchor-${verse.verse_number}`} className="scroll-mt-36">
                   <VerseBlock 
                     verse={verse} 
                     index={idx} 
