@@ -7,12 +7,9 @@ import {
   Copy, 
   Check, 
   ExternalLink, 
-  Languages, 
   ChevronRight,
   ChevronDown,
   Loader2,
-  ZoomIn,
-  ZoomOut,
   Sparkles
 } from 'lucide-react';
 import { SacredHymn } from '../data/famousSuktams';
@@ -59,6 +56,9 @@ interface SacredHymnModalProps {
   }) => void;
 }
 
+// Module-level in-memory cache for instant 0ms retrieval
+const hymnVersesCache = new Map<string, HymnVerse[]>();
+
 export default function SacredHymnModal({
   isOpen,
   hymn,
@@ -66,21 +66,26 @@ export default function SacredHymnModal({
   onOpenInScripture,
 }: SacredHymnModalProps) {
   const [copiedVerseIndex, setCopiedVerseIndex] = useState<number | null>(null);
-  const [showHindi, setShowHindi] = useState(true);
-  const [showEnglish, setShowEnglish] = useState(true);
-  const [showTransliteration, setShowTransliteration] = useState(true);
-  const [fontSize, setFontSize] = useState<'md' | 'lg' | 'xl'>('lg');
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [dbVerses, setDbVerses] = useState<HymnVerse[] | null>(null);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
   const versesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Direct Database Retrieval on mount/hymn change
+  // Direct Database Retrieval with in-memory caching
   useEffect(() => {
     if (!isOpen || !hymn) {
       setDbVerses(null);
       setIsLoadingDb(false);
       setIsSummaryOpen(false);
+      setVisibleCount(20);
+      return;
+    }
+
+    // Check in-memory cache first for instant 0ms load
+    if (hymnVersesCache.has(hymn.id)) {
+      setDbVerses(hymnVersesCache.get(hymn.id)!);
+      setIsLoadingDb(false);
       return;
     }
 
@@ -134,6 +139,7 @@ export default function SacredHymnModal({
               });
 
               if (isMounted && mapped.length > 0) {
+                hymnVersesCache.set(hymn.id, mapped);
                 setDbVerses(mapped);
               }
             }
@@ -148,6 +154,8 @@ export default function SacredHymnModal({
                 filtered = data.filter((v: VerseData) => 
                   v.verse_number >= (hymn.startVerse || 1) && v.verse_number <= (hymn.endVerse || 9999)
                 );
+              } else if (hymn.startVerse) {
+                filtered = data.filter((v: VerseData) => v.verse_number >= (hymn.startVerse || 1));
               }
 
               if (filtered.length > 0) {
@@ -165,6 +173,7 @@ export default function SacredHymnModal({
                 });
 
                 if (isMounted && mapped.length > 0) {
+                  hymnVersesCache.set(hymn.id, mapped);
                   setDbVerses(mapped);
                 }
               }
@@ -186,6 +195,27 @@ export default function SacredHymnModal({
       isMounted = false;
     };
   }, [isOpen, hymn]);
+
+  // Lock background scroll and listen for Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen || !hymn) return null;
 
@@ -218,47 +248,25 @@ export default function SacredHymnModal({
     }
   };
 
-  const handleJumpToVerse = (vNum: number) => {
-    const el = document.getElementById(`modal-verse-${vNum}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
-  const getSanskritFontSizeClass = () => {
-    switch (fontSize) {
-      case 'md':
-        return 'text-base sm:text-lg leading-relaxed';
-      case 'xl':
-        return 'text-xl sm:text-3xl leading-loose font-semibold';
-      case 'lg':
-      default:
-        return 'text-lg sm:text-2xl leading-relaxed sm:leading-loose';
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-stone-900/70 dark:bg-black/85 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-stone-950/75 backdrop-blur-sm animate-fade-in">
       <div 
-        className="relative w-full max-w-4xl h-[96vh] sm:h-[90vh] flex flex-col bg-cream-100 dark:bg-[#0B0F19] border border-cream-300 dark:border-amber-500/30 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden transition-colors"
+        className="relative w-full max-w-3xl h-[92vh] sm:h-[88vh] flex flex-col bg-cream-50 dark:bg-[#0B0F19] border border-cream-300/80 dark:border-amber-500/20 rounded-3xl shadow-2xl overflow-hidden transition-colors"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-hymn-title"
       >
         
-        {/* 1. Sleek Compact Header Bar */}
-        <div className="relative px-4 py-3 sm:px-6 sm:py-4 bg-gradient-to-r from-cream-200 via-cream-100 to-cream-200 dark:from-[#0E1526] dark:via-[#0B0F19] dark:to-[#0E1526] border-b border-cream-300/80 dark:border-amber-500/20 shrink-0">
+        {/* 1. Header Bar */}
+        <div className="relative px-4 py-3.5 sm:px-6 sm:py-4 bg-gradient-to-r from-cream-100 via-cream-50 to-cream-100 dark:from-[#0E1526] dark:via-[#0B0F19] dark:to-[#0E1526] border-b border-cream-300/70 dark:border-amber-500/15 shrink-0">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1 min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-saffron-800 dark:text-amber-300 bg-saffron-100 dark:bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-saffron-300/60 dark:border-amber-600/30 font-cinzel">
+                <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-saffron-800 dark:text-amber-300 bg-saffron-100/90 dark:bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-saffron-300/60 dark:border-amber-600/30 font-cinzel">
                   {hymn.category}
                 </span>
                 <span className="text-xs font-medium text-stone-600 dark:text-amber-200/90 truncate font-sans">
                   {hymn.exactScripture}
-                </span>
-                <span className="text-[11px] text-stone-500 dark:text-slate-400 font-mono hidden sm:inline">
-                  • {hymn.coordinateText}
                 </span>
               </div>
 
@@ -270,30 +278,19 @@ export default function SacredHymnModal({
               </p>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={handleOpenInReader}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-saffron-600 hover:bg-saffron-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-stone-950 text-xs font-bold font-cinzel rounded-xl shadow-xs transition-all cursor-pointer"
-                title="Open in Full Scripture Library Reader"
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>Study in Library</span>
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-2 text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-amber-200 hover:bg-cream-200 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer"
-                title="Close (Esc)"
-                aria-label="Close modal"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-amber-200 hover:bg-cream-200 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer shrink-0"
+              title="Close (Esc)"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Collapsible Essence / Theme info */}
-          <div className="mt-2.5 pt-2 border-t border-cream-300/50 dark:border-amber-500/10">
+          <div className="mt-2 pt-2 border-t border-cream-200/80 dark:border-amber-500/10">
             <button
               type="button"
               onClick={() => setIsSummaryOpen(!isSummaryOpen)}
@@ -305,7 +302,7 @@ export default function SacredHymnModal({
             </button>
 
             {isSummaryOpen && (
-              <div className="mt-2 p-3 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-cream-300/70 dark:border-amber-500/20 text-xs text-stone-700 dark:text-slate-300 leading-relaxed animate-fade-in font-sans">
+              <div className="mt-2 p-3 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-cream-300/70 dark:border-amber-500/20 text-xs text-stone-700 dark:text-slate-300 leading-relaxed animate-fade-in font-sans">
                 <p>
                   <strong className="text-saffron-900 dark:text-amber-300">Theme: </strong>
                   {hymn.deityOrTheme}
@@ -319,122 +316,32 @@ export default function SacredHymnModal({
           </div>
         </div>
 
-        {/* 2. Reading Controls Bar (Languages, Font Size, Verse Jump) */}
-        <div className="px-4 py-2.5 sm:px-6 bg-cream-200/90 dark:bg-[#070A0F]/90 border-b border-cream-300/60 dark:border-amber-500/15 flex items-center justify-between gap-2 flex-wrap shrink-0">
-          
-          {/* Language display checkboxes/pills */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            <span className="text-[11px] font-bold text-stone-500 dark:text-slate-400 flex items-center gap-1">
-              <Languages className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
-              <span className="hidden sm:inline">Display:</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => setShowHindi(!showHindi)}
-              className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                showHindi 
-                  ? 'bg-saffron-600 text-white border-saffron-700 dark:bg-amber-600 dark:border-amber-500 shadow-2xs' 
-                  : 'bg-white dark:bg-slate-800 text-stone-600 dark:text-slate-400 border-cream-300 dark:border-slate-700'
-              }`}
-            >
-              हिन्दी
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowEnglish(!showEnglish)}
-              className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                showEnglish 
-                  ? 'bg-saffron-600 text-white border-saffron-700 dark:bg-amber-600 dark:border-amber-500 shadow-2xs' 
-                  : 'bg-white dark:bg-slate-800 text-stone-600 dark:text-slate-400 border-cream-300 dark:border-slate-700'
-              }`}
-            >
-              English
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowTransliteration(!showTransliteration)}
-              className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
-                showTransliteration 
-                  ? 'bg-saffron-600 text-white border-saffron-700 dark:bg-amber-600 dark:border-amber-500 shadow-2xs' 
-                  : 'bg-white dark:bg-slate-800 text-stone-600 dark:text-slate-400 border-cream-300 dark:border-slate-700'
-              }`}
-            >
-              IAST
-            </button>
-          </div>
-
-          {/* Right Controls: Font Scale & Jump to verse */}
-          <div className="flex items-center gap-2">
-            {/* Font Size Adjuster */}
-            <div className="flex items-center bg-white dark:bg-slate-800 border border-cream-300 dark:border-slate-700 rounded-lg p-0.5">
-              <button
-                type="button"
-                onClick={() => setFontSize(fontSize === 'xl' ? 'lg' : 'md')}
-                className={`p-1 rounded text-stone-600 dark:text-slate-300 hover:text-saffron-700 dark:hover:text-amber-300 cursor-pointer ${fontSize === 'md' ? 'opacity-40' : ''}`}
-                title="Decrease font size"
-                disabled={fontSize === 'md'}
-              >
-                <ZoomOut className="w-3.5 h-3.5" />
-              </button>
-              <span className="text-[10px] font-bold px-1 text-stone-600 dark:text-slate-300 uppercase">
-                {fontSize}
-              </span>
-              <button
-                type="button"
-                onClick={() => setFontSize(fontSize === 'md' ? 'lg' : 'xl')}
-                className={`p-1 rounded text-stone-600 dark:text-slate-300 hover:text-saffron-700 dark:hover:text-amber-300 cursor-pointer ${fontSize === 'xl' ? 'opacity-40' : ''}`}
-                title="Increase font size"
-                disabled={fontSize === 'xl'}
-              >
-                <ZoomIn className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Quick Verse Jump (if multiple verses) */}
-            {versesToRender.length > 3 && (
-              <select
-                onChange={(e) => handleJumpToVerse(Number(e.target.value))}
-                defaultValue=""
-                className="text-[11px] font-bold bg-white dark:bg-slate-800 text-stone-700 dark:text-slate-300 border border-cream-300 dark:border-slate-700 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-saffron-500 cursor-pointer"
-                title="Jump to specific verse"
-              >
-                <option value="" disabled>Jump to Verse</option>
-                {versesToRender.map((v) => (
-                  <option key={v.verseNumber} value={v.verseNumber}>
-                    Verse {v.verseNumber}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        </div>
-
-        {/* 3. Scrollable Verses Feed */}
+        {/* 2. Scrollable Verses Feed */}
         <div 
           ref={versesContainerRef}
           className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 select-text"
         >
           {isLoadingDb && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3 text-saffron-700 dark:text-amber-400 font-cinzel font-bold text-sm animate-pulse">
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-saffron-700 dark:text-amber-400 font-cinzel font-bold text-sm animate-pulse">
               <Loader2 className="w-6 h-6 animate-spin text-saffron-600 dark:text-amber-400" />
-              <span>Loading complete verses...</span>
+              <span>Loading sacred verses...</span>
             </div>
           )}
 
-          {!isLoadingDb && versesToRender.map((verse, index) => {
+          {!isLoadingDb && versesToRender.slice(0, visibleCount).map((verse, index) => {
             const isCopied = copiedVerseIndex === index;
 
             return (
               <article 
                 id={`modal-verse-${verse.verseNumber}`}
                 key={index} 
-                className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900/90 border border-cream-300 dark:border-amber-500/20 shadow-xs hover:border-saffron-400 dark:hover:border-amber-500/40 transition-all space-y-4 scroll-mt-6"
+                className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0F172A]/90 border border-cream-300/70 dark:border-amber-500/15 shadow-xs hover:border-saffron-400/60 dark:hover:border-amber-500/30 transition-all space-y-3.5 scroll-mt-6"
               >
-                {/* Verse Header & Actions */}
-                <div className="flex items-center justify-between border-b border-cream-200 dark:border-slate-800 pb-2.5">
+                {/* Verse Header */}
+                <div className="flex items-center justify-between border-b border-cream-200 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs sm:text-sm font-bold font-cinzel text-saffron-800 dark:text-amber-400">
-                      Verse / Mantra {verse.verseNumber}
+                      Verse {verse.verseNumber}
                     </span>
                     <span className="text-[10px] text-stone-400 dark:text-slate-500 font-mono">
                       ({index + 1} of {versesToRender.length})
@@ -463,14 +370,14 @@ export default function SacredHymnModal({
 
                 {/* Sanskrit Shloka Typography */}
                 <div className="py-2 text-center sm:text-left">
-                  <p className={`font-sanskrit text-saffron-950 dark:text-amber-100 font-bold whitespace-pre-line tracking-wide selection:bg-saffron-200 dark:selection:bg-amber-900/50 ${getSanskritFontSizeClass()}`}>
+                  <p className="font-sanskrit text-base sm:text-xl md:text-2xl text-saffron-950 dark:text-amber-100 font-bold leading-relaxed sm:leading-loose whitespace-pre-line tracking-wide selection:bg-saffron-200 dark:selection:bg-amber-900/50">
                     {verse.sanskrit}
                   </p>
                 </div>
 
                 {/* IAST Transliteration */}
-                {showTransliteration && verse.transliteration && (
-                  <div className="p-3 rounded-xl bg-cream-100/70 dark:bg-slate-800/40 border border-cream-300/40 dark:border-slate-700/40">
+                {verse.transliteration && (
+                  <div className="p-3 rounded-xl bg-cream-100/60 dark:bg-slate-800/40 border border-cream-200 dark:border-slate-700/40">
                     <p className="text-xs sm:text-sm font-serif text-stone-700 dark:text-slate-300 italic tracking-wider leading-relaxed">
                       {verse.transliteration}
                     </p>
@@ -478,20 +385,20 @@ export default function SacredHymnModal({
                 )}
 
                 {/* Hindi Translation */}
-                {showHindi && verse.hindi && (
-                  <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/25 border-l-3 border-saffron-500 dark:border-amber-500">
+                {verse.hindi && (
+                  <div className="p-3.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border-l-3 border-saffron-500 dark:border-amber-500">
                     <p className="text-xs sm:text-sm text-stone-800 dark:text-slate-200 leading-relaxed font-sans">
-                      <strong className="text-saffron-900 dark:text-amber-300 font-medium">हिन्दी अनुवाद: </strong>
+                      <strong className="text-saffron-900 dark:text-amber-300 font-medium">हिन्दी: </strong>
                       {verse.hindi}
                     </p>
                   </div>
                 )}
 
                 {/* English Translation */}
-                {showEnglish && verse.english && (
-                  <div className="p-3.5 rounded-xl bg-stone-50 dark:bg-slate-800/40 border-l-3 border-stone-400 dark:border-slate-600">
+                {verse.english && (
+                  <div className="p-3.5 rounded-xl bg-stone-50 dark:bg-slate-800/30 border-l-3 border-stone-400 dark:border-slate-600">
                     <p className="text-xs sm:text-sm text-stone-800 dark:text-slate-200 leading-relaxed font-sans">
-                      <strong className="text-stone-900 dark:text-slate-100 font-medium">English Translation: </strong>
+                      <strong className="text-stone-900 dark:text-slate-100 font-medium">English: </strong>
                       {verse.english}
                     </p>
                   </div>
@@ -499,10 +406,23 @@ export default function SacredHymnModal({
               </article>
             );
           })}
+
+          {/* Progressive Load Next Batch */}
+          {!isLoadingDb && visibleCount < versesToRender.length && (
+            <div className="py-4 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setVisibleCount(prev => prev + 30)}
+                className="px-6 py-2.5 bg-white dark:bg-slate-900 hover:bg-cream-100 dark:hover:bg-slate-800 rounded-2xl border border-cream-300 dark:border-amber-500/30 text-xs font-bold text-saffron-900 dark:text-amber-300 transition-all cursor-pointer shadow-xs hover:scale-105"
+              >
+                Showing {Math.min(visibleCount, versesToRender.length)} of {versesToRender.length} • Load More Verses ↓
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* 4. Responsive Footer Bar */}
-        <div className="px-4 py-3 sm:px-6 bg-cream-200/90 dark:bg-[#070A0F] border-t border-cream-300 dark:border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
+        {/* 3. Footer Action Bar (Single Primary Study Button & Reference) */}
+        <div className="px-4 py-3 sm:px-6 bg-cream-100/90 dark:bg-[#070A0F]/95 border-t border-cream-300/70 dark:border-amber-500/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
           <div className="text-[11px] sm:text-xs text-stone-600 dark:text-slate-400 truncate max-w-full sm:max-w-md">
             <span>Ref: </span>
             <strong className="text-stone-900 dark:text-slate-200 font-cinzel">{hymn.canonicalRef}</strong>
@@ -512,7 +432,7 @@ export default function SacredHymnModal({
             <button
               type="button"
               onClick={handleOpenInReader}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2 bg-saffron-600 hover:bg-saffron-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-stone-950 text-xs font-bold font-cinzel rounded-xl shadow-xs transition-all cursor-pointer"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 bg-saffron-600 hover:bg-saffron-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-stone-950 text-xs font-bold font-cinzel rounded-xl shadow-xs transition-all cursor-pointer"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span>Study in Scripture Library</span>
@@ -521,7 +441,7 @@ export default function SacredHymnModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2 sm:px-4 sm:py-2 bg-white dark:bg-slate-800 hover:bg-cream-100 dark:hover:bg-slate-700 text-stone-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-cream-300 dark:border-slate-700 transition-colors cursor-pointer"
+              className="px-3.5 py-2 bg-white dark:bg-slate-800 hover:bg-cream-200 dark:hover:bg-slate-700 text-stone-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-cream-300 dark:border-slate-700 transition-colors cursor-pointer"
             >
               Close
             </button>
@@ -532,4 +452,3 @@ export default function SacredHymnModal({
     </div>
   );
 }
-
