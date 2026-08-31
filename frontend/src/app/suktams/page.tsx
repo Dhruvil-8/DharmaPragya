@@ -133,11 +133,6 @@ function SuktamsPageContent() {
         {/* Hero Section */}
         <section className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-cream-100 via-saffron-50 to-cream-200 dark:from-[#0E1526] dark:via-[#0B0F19] dark:to-[#090D16] border border-cream-300 dark:border-amber-500/20 shadow-sm relative overflow-hidden">
           <div className="space-y-2.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-saffron-100/80 dark:bg-amber-950/70 border border-saffron-300 dark:border-amber-600/30 text-saffron-900 dark:text-amber-300 text-xs font-bold font-cinzel">
-              <Database className="w-3.5 h-3.5" />
-              <span>Direct Database Canonical Link</span>
-            </div>
-
             <h1 className="text-2xl sm:text-3xl font-extrabold font-cinzel text-saffron-950 dark:text-amber-100 tracking-wide">
               Sacred Suktams & Mantras
             </h1>
@@ -145,7 +140,7 @@ function SuktamsPageContent() {
               पवित्र सूक्त, महामंत्र एवं प्रमुख स्तोत्र संग्रह
             </p>
             <p className="text-xs sm:text-sm text-stone-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-              Explore authentic Vedic Suktams, Upanishadic Shanti Pathas, Bhagavad Gita Mahashlokas, and Puranic & Epic Stotrams retrieved directly from the canonical database.
+              Explore authentic Vedic Suktams, Upanishadic Shanti Pathas, Bhagavad Gita Mahashlokas, and Puranic & Epic Stotrams with verse-by-verse recitation and complete translations.
             </p>
           </div>
 
@@ -233,32 +228,33 @@ function SuktamsPageContent() {
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-cream-200 dark:border-slate-800 flex items-center justify-between gap-2">
-                <span className="text-[11px] font-bold text-stone-500 dark:text-slate-400 truncate">
+              <div className="pt-3 border-t border-cream-200 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-[11px] font-bold text-stone-500 dark:text-slate-400 truncate max-w-[150px] sm:max-w-[200px]">
                   {hymn.canonicalRef}
                 </span>
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedHymnModal(hymn)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-saffron-600 dark:bg-amber-500 text-white dark:text-stone-950 text-xs font-bold shadow-2xs hover:bg-saffron-700 dark:hover:bg-amber-400 transition-all cursor-pointer"
-                  >
-                    <BookOpen className="w-3.5 h-3.5" />
-                    <span>Read Full</span>
-                  </button>
+                <div className="flex items-center gap-2 shrink-0 ml-auto">
                   <button
                     type="button"
                     onClick={() => handleOpenInScripture({
                       sourceName: hymn.sourceName,
-                      chapterNumber: hymn.chapterNumber || hymn.division1,
+                      chapterNumber: hymn.chapterNumber || hymn.division1 || 1,
                       division2: hymn.division2,
-                      verseNumber: hymn.startVerse || hymn.verseNumber,
+                      verseNumber: hymn.startVerse || hymn.verseNumber || 1,
                     })}
-                    className="p-1.5 text-stone-400 hover:text-saffron-700 dark:text-slate-400 dark:hover:text-amber-300 rounded-xl hover:bg-cream-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                    title="Study in Reader"
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-stone-600 hover:text-saffron-800 dark:text-slate-300 dark:hover:text-amber-300 rounded-xl hover:bg-cream-200 dark:hover:bg-slate-800 text-xs font-semibold transition-colors cursor-pointer border border-cream-300 dark:border-slate-700"
+                    title="Open directly in Scripture Library reader"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Study</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedHymnModal(hymn)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-saffron-600 dark:bg-amber-500 text-white dark:text-stone-950 text-xs font-bold shadow-2xs hover:bg-saffron-700 dark:hover:bg-amber-400 transition-all cursor-pointer"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Read Hymn</span>
                   </button>
                 </div>
               </div>

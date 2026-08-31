@@ -314,6 +314,29 @@ export default function ReadMode({
     fetchSourcesAndVedas();
   }, [apiBaseUrl]);
 
+  // Helper for rock-solid smooth scrolling to target verse/mantra with visual pulse
+  const scrollToTargetElement = (selectors: string[]) => {
+    let attempts = 0;
+    const tryScroll = () => {
+      attempts++;
+      for (const sel of selectors) {
+        const el = document.getElementById(sel) || document.querySelector(sel);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-saffron-500', 'dark:ring-amber-400', 'ring-offset-2', 'transition-all');
+          setTimeout(() => {
+            el.classList.remove('ring-2', 'ring-saffron-500', 'dark:ring-amber-400', 'ring-offset-2');
+          }, 3500);
+          return;
+        }
+      }
+      if (attempts < 7) {
+        setTimeout(tryScroll, 120);
+      }
+    };
+    setTimeout(tryScroll, 60);
+  };
+
   // Deep-linking navigation
   useEffect(() => {
     if (!targetCoordinate) return;
@@ -321,7 +344,8 @@ export default function ReadMode({
     const matchedVeda = vedas.find(v => 
       v.name_english.toLowerCase().includes(targetCoordinate.sourceName.toLowerCase()) ||
       v.id.toLowerCase() === targetCoordinate.sourceName.toLowerCase() ||
-      targetCoordinate.sourceName.toLowerCase().includes(v.id.toLowerCase())
+      targetCoordinate.sourceName.toLowerCase().includes(v.id.toLowerCase()) ||
+      targetCoordinate.sourceName.toLowerCase().includes(v.name_english.toLowerCase())
     );
 
     if (matchedVeda) {
@@ -331,7 +355,9 @@ export default function ReadMode({
     }
 
     const matchedSource = sources.find(
-      s => s.name.toLowerCase() === targetCoordinate.sourceName.toLowerCase()
+      s => s.name.toLowerCase() === targetCoordinate.sourceName.toLowerCase() ||
+           s.name.toLowerCase().includes(targetCoordinate.sourceName.toLowerCase()) ||
+           targetCoordinate.sourceName.toLowerCase().includes(s.name.toLowerCase())
     );
 
     if (matchedSource) {
@@ -397,7 +423,7 @@ export default function ReadMode({
       if (mantrasArray.length > 0) {
         let mIdx = -1;
         if (targetDivision2 && targetMantraNum) {
-          mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_2 === targetDivision2 && m.division_3 === targetMantraNum);
+          mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_2 === targetDivision2 && (m.division_3 === targetMantraNum || m.krama_number === targetMantraNum));
         }
         if (mIdx < 0 && targetDivision2) {
           mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_2 === targetDivision2);
@@ -409,13 +435,12 @@ export default function ReadMode({
         if (mIdx >= 0) {
           setCurrentMantraIndex(mIdx);
           setVisibleCount(prev => Math.max(prev, mIdx + 30));
-          setTimeout(() => {
-            const el = document.getElementById(`veda-mantra-${mIdx}`) || 
-                       document.getElementById(`mantra-anchor-${targetMantraNum}`) || 
-                       document.getElementById(`verse-anchor-${targetMantraNum}`) || 
-                       document.getElementById(`mantra-anchor-${mIdx + 1}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 300);
+          scrollToTargetElement([
+            `veda-mantra-${mIdx}`,
+            `mantra-anchor-${targetMantraNum}`,
+            `[data-mantra-anchor="mantra-anchor-${targetMantraNum}"]`,
+            `mantra-anchor-${mIdx + 1}`,
+          ]);
         } else if (typeof window !== 'undefined') {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -464,10 +489,10 @@ export default function ReadMode({
         if (vIdx >= 0) {
           setVisibleCount(prev => Math.max(prev, vIdx + 30));
         }
-        setTimeout(() => {
-          const el = document.getElementById(`verse-anchor-${targetVerseNum}`);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 150);
+        scrollToTargetElement([
+          `verse-anchor-${targetVerseNum}`,
+          `[data-verse-number="${targetVerseNum}"]`,
+        ]);
       } else {
         setCurrentVerseIndex(0);
         if (typeof window !== 'undefined') {

@@ -53,13 +53,13 @@ The scriptures and Vedic Samhitas are stored across unified SQLite databases (`s
 | **16 Principal Upanishads** | 2,196 | Yes | Pending | Pending | Isha, Kena, Katha, Prashna, Mundaka, Mandukya, Taittiriya, Aitareya, Chandogya, Brihadaranyaka, Shvetashvatara, Kaushitaki, Maitri, Amritabindu, Tejobindu |
 
 ### Data Sources & Credits:
-- **The Four Vedas**: Digitized Vedic Samhitas, Padapatha, and classical Bhashyas sourced from [VedaKosh](http://www.vedakosh.com) and the [Arya Samaj Vedic Heritage Project](https://aryasamajjamnagar.org/). English Rigveda translations by Ralph T.H. Griffith.
+- **The Four Vedas**: Digitized Vedic Samhitas, Padapatha, and classical Bhashyas sourced from [VedaKosh](http://www.vedakosh.com). English Rigveda [translations](https://github.com/VedaWebProject/vedaweb-data) by Ralph T.H. Griffith.
 - **Bhagavad Gita**: Sourced from the open-source [Gita GitHub Project](https://github.com/gita/gita) & [IIT Kanpur Gita Supersite](https://www.gitasupersite.iitk.ac.in/).
 - **Ashtavakra Gita**: Structured Devanagari text with John Henry Richards English and Hindi translations sourced from the [dhrmaorg/ashtavakra_gita](https://github.com/dhrmaorg/ashtavakra_gita) dataset.
 - **Avadhuta Gita**: Sourced from [Wikisource Sanskrit (अवधूतगीता)](https://sa.wikisource.org/wiki/अवधूतगीता).
 - **Devi Mahatmyam (Durga Saptashati)**: Sourced from [SanskritDocuments](https://sanskritdocuments.org/doc_devii/durga700.html) and Gita Press Gorakhpur editions.
-- **Mahabharata & Valmiki Ramayana**: Digitized BORI critical editions sourced from the [Bhandarkar Oriental Research Institute Electronic Text (BORI)](https://bombay.indology.info/) and [Muneo Tokunaga Mahabharata Text Archive](https://crux.bham.ac.uk/).
-- **The Mahapuranas & Upanishads**: Digitized, encoded, and structured from [Sanskrit Documents](https://sanskritdocuments.org), [GRETIL (Göttingen Register of Electronic Texts in Indian Languages)](http://gretil.sub.uni-goettingen.de/), and the [Tübingen Purana Project](https://homepages.uni-tuebingen.de/).
+- **Mahabharata & Valmiki Ramayana**: Digitized BORI critical editions sourced from the [Bhandarkar Oriental Research Institute Electronic Text (BORI)](https://bombay.indology.info/).
+- **The Mahapuranas & Upanishads**: Digitized, encoded, and structured from [Sanskrit Documents](https://sanskritdocuments.org).
 - **Patanjali Yoga Sutras**: Sourced from the [International Gita Society (IGS)](https://www.gita-society.com/wp-content/uploads/PDF/Patanjali-yogasutra.IGS.pdf).
 
 ---

@@ -67,12 +67,12 @@ function HomePageContent() {
         }
       }
 
-      if (urlMode === 'read' || (source && chapter)) {
+      if (urlMode === 'read' || source) {
         setMode('read');
-        if (source && chapter) {
+        if (source) {
           setTargetCoordinate({
             sourceName: source,
-            chapterNumber: parseInt(chapter, 10),
+            chapterNumber: chapter ? parseInt(chapter, 10) : 1,
             division2: div2 ? parseInt(div2, 10) : undefined,
             verseNumber: verse ? parseInt(verse, 10) : undefined,
           });

@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/read/', '/embed/', '/llms.txt', '/openapi.json'],
+        allow: ['/', '/read/', '/suktams/', '/embed/', '/llms.txt', '/openapi.json'],
         disallow: ['/api/'],
       },
       {
@@ -23,7 +23,7 @@ export default function robots(): MetadataRoute.Robots {
           'cohere-ai',
           'Omgilibot',
         ],
-        allow: ['/', '/read/', '/llms.txt', '/openapi.json'],
+        allow: ['/', '/read/', '/suktams/', '/llms.txt', '/openapi.json'],
         disallow: ['/api/'],
       },
     ],
