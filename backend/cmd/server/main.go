@@ -18,22 +18,43 @@ import (
 type gzipResponseWriter struct {
 	io.Writer
 	http.ResponseWriter
+	wroteHeader bool
 }
 
-func (w gzipResponseWriter) Write(b []byte) (int, error) {
+func (w *gzipResponseWriter) WriteHeader(status int) {
+	w.wroteHeader = true
+	if status == http.StatusNotModified || status == http.StatusNoContent {
+		w.Header().Del("Content-Encoding")
+	}
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *gzipResponseWriter) Write(b []byte) (int, error) {
+	if !w.wroteHeader {
+		w.WriteHeader(http.StatusOK)
+	}
 	return w.Writer.Write(b)
+}
+
+func (w *gzipResponseWriter) Flush() {
+	if f, ok := w.Writer.(interface{ Flush() error }); ok {
+		_ = f.Flush()
+	}
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
 }
 
 func gzipMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		if r.Method == http.MethodOptions || !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			next(w, r)
 			return
 		}
 		w.Header().Set("Content-Encoding", "gzip")
 		gz := gzip.NewWriter(w)
 		defer gz.Close()
-		gzw := gzipResponseWriter{Writer: gz, ResponseWriter: w}
+		gzw := &gzipResponseWriter{Writer: gz, ResponseWriter: w}
 		next(gzw, r)
 	}
 }
@@ -90,6 +111,7 @@ func main() {
 	defer db.Close()
 
 	handler := api.NewHandler(db)
+	defer handler.Close()
 
 	http.HandleFunc("/api/read", gzipMiddleware(handler.ReadVerses))
 	http.HandleFunc("/api/search", gzipMiddleware(handler.SearchVerses))

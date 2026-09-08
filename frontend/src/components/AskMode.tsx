@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ConversationalMessage, ChatHistoryMessage, VerseData } from '../types';
 import VerseBlock from './VerseBlock';
+import { useSpeechHandler } from '../hooks/useSpeechHandler';
 import { Compass, AlertCircle, ArrowRight, FileText, Mic, MicOff, Volume2, VolumeX, RefreshCw, User, Bot, CheckCircle2, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 
 interface AskModeProps {
@@ -23,15 +24,8 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
   const [sessionQueryCount, setSessionQueryCount] = useState(0);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [isListening, setIsListening] = useState(false);
-  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
-  const [voicesList, setVoicesList] = useState<SpeechSynthesisVoice[]>([]);
   const [expandedVerseMap, setExpandedVerseMap] = useState<Record<string, boolean>>({});
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const isUserAtBottomRef = useRef(true);
   const scrollThrottleRef = useRef<number | null>(null);
@@ -39,6 +33,23 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
 
   const isLimitReached = sessionQueryCount >= MAX_QUERIES_PER_SESSION;
   const remainingQueries = Math.max(0, MAX_QUERIES_PER_SESSION - sessionQueryCount);
+
+  const handleTranscript = useCallback((transcript: string) => {
+    setQuery(prev => (prev ? `${prev} ${transcript}` : transcript));
+  }, []);
+
+  const {
+    isListening,
+    startListening,
+    stopListening,
+    speakingMessageId,
+    speakAnswer,
+    stopSpeaking,
+  } = useSpeechHandler({
+    language,
+    isLimitReached,
+    onTranscript: handleTranscript,
+  });
 
   // Track if user is scrolled near the bottom
   useEffect(() => {
@@ -65,181 +76,6 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
     }, 80);
   };
 
-  useEffect(() => {
-    const updateVoices = () => {
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        setVoicesList(window.speechSynthesis.getVoices());
-      }
-    };
-
-    updateVoices();
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = updateVoices;
-    }
-
-    return () => {
-      clearSpeechHeartbeat();
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.onvoiceschanged = null;
-      }
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      if (scrollThrottleRef.current) {
-        clearTimeout(scrollThrottleRef.current);
-      }
-    };
-  }, []);
-
-  const startListening = () => {
-    if (isLimitReached) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Please try Chrome, Edge, or Safari.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    const langMap: Record<string, string> = {
-      english: 'en-IN',
-      hindi: 'hi-IN',
-      gujarati: 'gu-IN',
-      marathi: 'mr-IN',
-      tamil: 'ta-IN',
-      telugu: 'te-IN',
-      bengali: 'bn-IN',
-      kannada: 'kn-IN',
-    };
-    recognition.lang = langMap[language] || 'en-IN';
-
-    recognition.onstart = () => {
-      setIsListening(true);
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setQuery(prev => (prev ? `${prev} ${transcript}` : transcript));
-      setIsListening(false);
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onerror = (event: any) => {
-      console.warn("Speech recognition error:", event.error);
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    try {
-      recognition.start();
-    } catch (e) {
-      console.error("Speech start error:", e);
-      setIsListening(false);
-    }
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-    setIsListening(false);
-  };
-
-  const speechIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const clearSpeechHeartbeat = () => {
-    if (speechIntervalRef.current) {
-      clearInterval(speechIntervalRef.current);
-      speechIntervalRef.current = null;
-    }
-  };
-
-  const speakAnswer = (messageId: string, markdownText: string) => {
-    if (language !== 'english') {
-      return;
-    }
-
-    if (typeof window === 'undefined' || !window.speechSynthesis) {
-      alert("Text-to-speech is not supported in this browser.");
-      return;
-    }
-
-    if (speakingMessageId === messageId) {
-      clearSpeechHeartbeat();
-      window.speechSynthesis.cancel();
-      setSpeakingMessageId(null);
-      return;
-    }
-
-    clearSpeechHeartbeat();
-    window.speechSynthesis.cancel();
-
-    const cleanText = markdownText
-      .replace(/#+\s/g, '')
-      .replace(/\*\*/g, '')
-      .replace(/\*/g, '')
-      .replace(/`{1,3}[^`]*`{1,3}/g, '')
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-      .replace(/>\s?/g, '')
-      .trim();
-
-    if (!cleanText) return;
-
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utteranceRef.current = utterance;
-
-    const availableVoices = voicesList.length > 0 ? voicesList : window.speechSynthesis.getVoices();
-
-    // Prefer high-quality English voices (en-IN for accurate Indic philosophical pronunciation, or standard en)
-    const englishVoice =
-      availableVoices.find(v => v.lang.toLowerCase() === 'en-in') ||
-      availableVoices.find(v => v.lang.toLowerCase().includes('en-in')) ||
-      availableVoices.find(v => v.lang.toLowerCase().startsWith('en-')) ||
-      availableVoices.find(v => v.lang.toLowerCase().startsWith('en')) ||
-      availableVoices[0];
-
-    if (englishVoice) {
-      utterance.voice = englishVoice;
-      utterance.lang = englishVoice.lang;
-    } else {
-      utterance.lang = 'en-US';
-    }
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
-
-    utterance.onstart = () => {
-      setSpeakingMessageId(messageId);
-      // Keep Chrome text-to-speech alive for long synthesized spiritual texts
-      speechIntervalRef.current = setInterval(() => {
-        if (typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.speaking) {
-          window.speechSynthesis.pause();
-          window.speechSynthesis.resume();
-        }
-      }, 10000);
-    };
-
-    utterance.onend = () => {
-      clearSpeechHeartbeat();
-      setSpeakingMessageId(null);
-    };
-
-    utterance.onerror = () => {
-      clearSpeechHeartbeat();
-      setSpeakingMessageId(null);
-    };
-
-    window.speechSynthesis.speak(utterance);
-  };
-
   const toggleVerseSection = (msgIdx: number) => {
     setExpandedVerseMap(prev => ({
       ...prev,
@@ -248,11 +84,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
   };
 
   const handleClearThread = () => {
-    clearSpeechHeartbeat();
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    setSpeakingMessageId(null);
+    stopSpeaking();
     setMessages([]);
     setSessionQueryCount(0);
     setQuery('');
@@ -266,11 +98,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
     const currentQuery = inquiryText.trim();
     setQuery('');
     setError(null);
-
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      setSpeakingMessageId(null);
-    }
+    stopSpeaking();
 
     const userMessageId = `user-${Date.now()}`;
     const assistantMessageId = `assistant-${Date.now()}`;
@@ -539,8 +367,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
               value={language}
               onChange={e => {
                 setLanguage(e.target.value);
-                window.speechSynthesis.cancel();
-                setSpeakingMessageId(null);
+                stopSpeaking();
               }}
               className="bg-transparent text-stone-900 dark:text-slate-100 font-semibold focus:outline-none cursor-pointer text-xs"
             >

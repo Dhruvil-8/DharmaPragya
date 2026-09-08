@@ -534,13 +534,22 @@ func (s *Storage) GetVerseByCoordinate(sourceName string, chapterNumber, verseNu
 }
 
 func (s *Storage) GetVerse(sourceName string, chapterNumber, verseNumber int) (*models.Verse, error) {
-	return s.GetVerseByCoordinate(sourceName, chapterNumber, verseNumber)
+	v, err := s.GetVerseByCoordinate(sourceName, chapterNumber, verseNumber)
+	if err == nil && v != nil {
+		return v, nil
+	}
+	if s.vedasDB != nil {
+		if vv, vErr := s.GetVedaVerse(sourceName, chapterNumber, verseNumber); vErr == nil && vv != nil {
+			return vv, nil
+		}
+	}
+	return v, err
 }
 
 func sanitizeToken(t string) string {
 	var b strings.Builder
 	for _, r := range t {
-		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || unicode.IsMark(r) {
 			b.WriteRune(r)
 		}
 	}
@@ -698,7 +707,28 @@ func (s *Storage) SearchVersesFTS(sourceFilter string, sanskritKeywords []string
 	if len(tokens) == 0 {
 		return []*models.Verse{}, nil
 	}
-	return s.SearchVerses(strings.Join(tokens, " "), sourceFilter, limit)
+	results, err := s.SearchVerses(strings.Join(tokens, " "), sourceFilter, limit)
+	if s.vedasDB != nil && (err != nil || len(results) < limit) {
+		sfLower := strings.ToLower(sourceFilter)
+		if sourceFilter == "" || strings.EqualFold(sourceFilter, "all") || strings.Contains(sfLower, "veda") {
+			vedaID := ""
+			if strings.Contains(sfLower, "rig") {
+				vedaID = "rigveda"
+			} else if strings.Contains(sfLower, "yajur") {
+				vedaID = "yajurveda"
+			} else if strings.Contains(sfLower, "sama") {
+				vedaID = "samaveda"
+			} else if strings.Contains(sfLower, "atharva") {
+				vedaID = "atharvaveda"
+			}
+			needed := limit - len(results)
+			if needed > 0 {
+				vedaVerses, _ := s.SearchVedaVerses(strings.Join(tokens, " "), vedaID, needed)
+				results = append(results, vedaVerses...)
+			}
+		}
+	}
+	return results, err
 }
 
 
@@ -908,37 +938,49 @@ func (s *Storage) SearchVedas(query string, vedaID string, limit int) ([]models.
 		return []models.VedaMantra{}, nil
 	}
 
-	sqlQuery := `
-		SELECT mantra_id
-		FROM mantras_fts
-		WHERE mantras_fts MATCH ?
-	`
-	var args []interface{}
-	args = append(args, trimmed)
-
-	if vedaID != "" && !strings.EqualFold(vedaID, "all") {
-		sqlQuery += " AND veda_id = ?"
-		args = append(args, vedaID)
-	}
-
-	sqlQuery += " ORDER BY rank LIMIT ?"
-	args = append(args, limit)
-
-	rows, err := s.vedasDB.Query(sqlQuery, args...)
-	if err != nil {
-		// Fallback to phrase prefix or individual words
-		words := strings.Fields(trimmed)
-		var tokens []string
-		for _, w := range words {
-			if len(w) > 0 {
-				tokens = append(tokens, w)
-			}
-		}
-		if len(tokens) > 0 {
-			args[0] = strings.Join(tokens, " OR ")
-			rows, err = s.vedasDB.Query(sqlQuery, args...)
+	words := strings.Fields(trimmed)
+	var tokens []string
+	for _, w := range words {
+		cleaned := sanitizeToken(w)
+		if len(cleaned) > 0 {
+			tokens = append(tokens, fmt.Sprintf(`"%s"*`, cleaned))
 		}
 	}
+	if len(tokens) == 0 {
+		return []models.VedaMantra{}, nil
+	}
+
+	buildFTSQuery := func(operator string) (string, []interface{}) {
+		matchQuery := strings.Join(tokens, fmt.Sprintf(" %s ", operator))
+		sql := `
+			SELECT mantra_id
+			FROM mantras_fts
+			WHERE mantras_fts MATCH ?
+		`
+		var args []interface{}
+		args = append(args, matchQuery)
+		if vedaID != "" && !strings.EqualFold(vedaID, "all") {
+			sql += " AND veda_id = ?"
+			args = append(args, vedaID)
+		}
+		sql += " ORDER BY rank LIMIT ?"
+		args = append(args, limit)
+		return sql, args
+	}
+
+	var rows *sql.Rows
+	var err error
+
+	if len(tokens) <= 2 {
+		andSQL, andArgs := buildFTSQuery("AND")
+		rows, err = s.vedasDB.Query(andSQL, andArgs...)
+	}
+
+	if rows == nil || err != nil {
+		orSQL, orArgs := buildFTSQuery("OR")
+		rows, err = s.vedasDB.Query(orSQL, orArgs...)
+	}
+
 	if err != nil {
 		return []models.VedaMantra{}, nil
 	}
@@ -1042,5 +1084,121 @@ func (s *Storage) SearchVedas(query string, vedaID string, limit int) ([]models.
 
 	return orderedMantras, nil
 }
+
+func VedaMantraToVerse(m *models.VedaMantra) *models.Verse {
+	if m == nil {
+		return nil
+	}
+	v := &models.Verse{
+		ID:              m.KramaNumber,
+		SectionID:       m.Division1,
+		VerseNumber:     m.Division3,
+		SanskritText:    m.SanskritPlain,
+		Transliteration: m.TransliterationIAST,
+		SourceName:      m.VedaName,
+		ChapterName:     fmt.Sprintf("%s Division %d.%d", m.VedaName, m.Division1, m.Division2),
+		ChapterNumber:   (m.Division1 * 1000) + m.Division2,
+		Translations:    []models.Translation{},
+		Commentaries:    []models.Commentary{},
+	}
+	if v.VerseNumber == 0 {
+		v.VerseNumber = m.KramaNumber
+	}
+	if v.SourceName == "" {
+		v.SourceName = strings.Title(m.VedaID)
+	}
+
+	var wmBuilder strings.Builder
+	for _, wm := range m.WordMeanings {
+		if wm.PadarthaText != "" {
+			if wmBuilder.Len() > 0 {
+				wmBuilder.WriteString("\n")
+			}
+			if wm.Commentator != "" {
+				wmBuilder.WriteString(fmt.Sprintf("[%s]: ", wm.Commentator))
+			}
+			wmBuilder.WriteString(wm.PadarthaText)
+		}
+	}
+	v.WordMeanings = wmBuilder.String()
+
+	for _, b := range m.Bhashyas {
+		if b.Bhavartha != "" {
+			v.Translations = append(v.Translations, models.Translation{
+				Language: b.Language,
+				Author:   b.Author,
+				Text:     b.Bhavartha,
+			})
+		}
+		commText := b.Tika
+		if commText == "" {
+			commText = b.Anvaya
+		}
+		if commText == "" {
+			commText = b.MantraVishaya
+		}
+		if commText != "" {
+			v.Commentaries = append(v.Commentaries, models.Commentary{
+				Language: b.Language,
+				Author:   b.Author,
+				Text:     commText,
+			})
+		}
+	}
+	return v
+}
+
+func (s *Storage) GetVedaVerse(sourceName string, chapterNumber, verseNumber int) (*models.Verse, error) {
+	if s.vedasDB == nil {
+		return nil, fmt.Errorf("vedas db not connected")
+	}
+	snLower := strings.ToLower(sourceName)
+	var vedaID string
+	if strings.Contains(snLower, "rig") {
+		vedaID = "rigveda"
+	} else if strings.Contains(snLower, "yajur") {
+		vedaID = "yajurveda"
+	} else if strings.Contains(snLower, "sama") {
+		vedaID = "samaveda"
+	} else if strings.Contains(snLower, "atharva") {
+		vedaID = "atharvaveda"
+	} else {
+		return nil, fmt.Errorf("not a veda: %s", sourceName)
+	}
+
+	div1 := chapterNumber
+	div2 := 0
+	if chapterNumber > 1000 {
+		div1 = chapterNumber / 1000
+		div2 = chapterNumber % 1000
+	}
+
+	mantras, err := s.GetVedaMantras(vedaID, div1, div2)
+	if err != nil || len(mantras) == 0 {
+		return nil, fmt.Errorf("mantra not found: %w", err)
+	}
+
+	for _, m := range mantras {
+		if (div2 > 0 && m.Division2 == div2 && (m.Division3 == verseNumber || m.KramaNumber == verseNumber)) ||
+			(div2 == 0 && (m.Division3 == verseNumber || m.Division2 == verseNumber || m.KramaNumber == verseNumber)) {
+			return VedaMantraToVerse(&m), nil
+		}
+	}
+
+	return VedaMantraToVerse(&mantras[0]), nil
+}
+
+func (s *Storage) SearchVedaVerses(query string, vedaID string, limit int) ([]*models.Verse, error) {
+	mantras, err := s.SearchVedas(query, vedaID, limit)
+	if err != nil {
+		return nil, err
+	}
+	var results []*models.Verse
+	for i := range mantras {
+		results = append(results, VedaMantraToVerse(&mantras[i]))
+	}
+	return results, nil
+}
+
 
 

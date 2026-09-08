@@ -1,9 +1,16 @@
-# General Environment Variables
+# General Environment & Secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+*.env
+*.env.*
+**/.env
+**/.env.*
+*.pem
+*.key
+*.cert
+credentials*.json
+!.env.example
+!**/.env.example
 .DS_Store
 
 # Frontend (Next.js & Node)

@@ -4,21 +4,15 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { VerseData, SectionData, SourceData, VedaInfo, VedaSection, VedaMantra } from '../types';
 import VerseBlock, { SanskritFontSize } from './VerseBlock';
 import VedicVerseBlock from './VedicVerseBlock';
+import UniversalSearchModal from './reader/UniversalSearchModal';
+import ReaderTOCDrawer from './reader/ReaderTOCDrawer';
+import ReaderSettingsBar, { GlobalLayersState } from './reader/ReaderSettingsBar';
 import { 
   ChevronRight, 
   ChevronLeft,
-  BookOpen, 
-  X, 
-  Search, 
-  Command, 
-  Sparkles,
-  ChevronDown,
-  Layers,
   Compass,
   Menu,
-  Type,
-  AlignLeft,
-  FileText
+  ChevronDown,
 } from 'lucide-react';
 
 interface ReadModeProps {
@@ -75,18 +69,7 @@ export default function ReadMode({
   const [verseJumpInput, setVerseJumpInput] = useState<string>('');
 
   // Global Unified Layer Visibility State (Persisted in localStorage)
-  const [globalLayers, setGlobalLayers] = useState<{
-    showTransliteration: boolean;
-    showWordMeanings: boolean;
-    showTranslation: boolean;
-    showCommentaries: boolean;
-    showSvara: boolean;
-    showIAST: boolean;
-    showPadapatha: boolean;
-    showAnvaya: boolean;
-    showBhavartha: boolean;
-    showBhashyas: boolean;
-  }>({
+  const [globalLayers, setGlobalLayers] = useState<GlobalLayersState>({
     showTransliteration: true,
     showWordMeanings: true,
     showTranslation: true,
@@ -841,94 +824,19 @@ export default function ReadMode({
       {/* 1. UNIVERSAL TOP BAR (Sticky Search & Quick Navigation Bar) */}
       <div className="sticky top-[58px] z-40 space-y-2 transition-all">
         {/* Universal Search Bar */}
-        <div ref={searchContainerRef} className="relative w-full">
-          <div className="relative flex items-center bg-white/95 dark:bg-[#0d121d]/95 backdrop-blur-md rounded-2xl border border-cream-400 dark:border-amber-500/20 shadow-xs focus-within:border-saffron-500 dark:focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-saffron-400/20 dark:focus-within:ring-amber-500/20 transition-all">
-            <Search className="w-4 h-4 text-saffron-600 dark:text-amber-400 ml-4 shrink-0" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={e => {
-                setSearchQuery(e.target.value);
-                setIsSearchOpen(true);
-              }}
-              onFocus={() => setIsSearchOpen(true)}
-              placeholder="Search all Vedas, Gita, Puranas & Upanishads (e.g. 'अग्निमीळे', 'karmanye', '2.47')... [Ctrl+K]"
-              className="w-full py-2.5 px-3 text-xs sm:text-sm bg-transparent text-stone-900 dark:text-slate-100 placeholder-stone-400 dark:placeholder-slate-500 font-medium focus:outline-none"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery('');
-                  setSearchResults([]);
-                  setVedaSearchResults([]);
-                }}
-                className="p-1 text-stone-400 dark:text-slate-500 hover:text-stone-600 dark:hover:text-slate-300 mr-2 cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-            <div className="hidden sm:flex items-center gap-1 mr-3 px-2 py-0.5 rounded-md bg-cream-200 dark:bg-slate-800 border border-cream-300 dark:border-amber-500/20 text-[10px] font-mono text-stone-500 dark:text-slate-400 select-none">
-              <Command className="w-3 h-3" />
-              <span>K</span>
-            </div>
-          </div>
-
-          {/* Live Search Dropdown */}
-          {isSearchOpen && (searchQuery.trim().length >= 2 || searchResults.length > 0 || vedaSearchResults.length > 0) && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#0d121d] rounded-2xl border border-cream-400 dark:border-amber-500/20 shadow-xl overflow-hidden max-h-[65vh] sm:max-h-96 overflow-y-auto overscroll-contain z-50 animate-fade-in">
-              <div className="p-3 bg-cream-100 dark:bg-slate-900 border-b border-cream-300 dark:border-amber-500/20 flex items-center justify-between text-[11px] font-bold text-stone-600 dark:text-slate-300 uppercase tracking-wider">
-                <span>{isSearching ? 'Searching sacred scriptures...' : `${searchResults.length + vedaSearchResults.length} results found`}</span>
-                <span className="text-[10px] text-stone-400 dark:text-slate-500 font-normal">Click record to jump</span>
-              </div>
-
-              {/* Vedic Search Matches */}
-              {vedaSearchResults.map((m) => (
-                <button
-                  key={`veda-${m.id}`}
-                  type="button"
-                  onClick={() => handleSelectVedaSearchResult(m)}
-                  className="w-full p-3.5 text-left border-b border-cream-200 dark:border-amber-900/30 hover:bg-saffron-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer flex flex-col gap-1 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/50 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-700/40">
-                      {m.veda_name}
-                    </span>
-                    <span className="text-xs font-bold font-cinzel text-stone-600 dark:text-slate-400 group-hover:text-saffron-800 dark:group-hover:text-amber-300">
-                      {m.coordinate_str}
-                    </span>
-                  </div>
-                  <p className="font-sanskrit text-sm font-semibold text-stone-900 dark:text-amber-200 line-clamp-1 mt-0.5">
-                    {m.sanskrit_svara || m.sanskrit_plain}
-                  </p>
-                </button>
-              ))}
-
-              {/* Standard Scripture Matches */}
-              {searchResults.map((v) => (
-                <button
-                  key={`sec-${v.id}`}
-                  type="button"
-                  onClick={() => handleSelectSearchResult(v)}
-                  className="w-full p-3.5 text-left border-b border-cream-200 dark:border-amber-900/30 hover:bg-saffron-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer flex flex-col gap-1 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-300 bg-saffron-100 dark:bg-amber-950/50 px-2 py-0.5 rounded border border-saffron-300 dark:border-amber-700/40">
-                      {v.source_name}
-                    </span>
-                    <span className="text-xs font-bold font-cinzel text-stone-600 dark:text-slate-400 group-hover:text-saffron-800 dark:group-hover:text-amber-300">
-                      {v.chapter_name} • Verse {v.verse_number}
-                    </span>
-                  </div>
-                  <p className="font-sanskrit text-sm font-semibold text-stone-900 dark:text-amber-200 line-clamp-1 mt-0.5">
-                    {v.sanskrit_text}
-                  </p>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <UniversalSearchModal
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          isSearchOpen={isSearchOpen}
+          setIsSearchOpen={setIsSearchOpen}
+          isSearching={isSearching}
+          searchResults={searchResults}
+          vedaSearchResults={vedaSearchResults}
+          onSelectSearchResult={handleSelectSearchResult}
+          onSelectVedaSearchResult={handleSelectVedaSearchResult}
+          searchInputRef={searchInputRef}
+          searchContainerRef={searchContainerRef}
+        />
 
         {/* 1-Click Fast Scripture & Navigation Bar */}
         <div className="bg-white/95 dark:bg-[#0d121d]/95 backdrop-blur-md p-2.5 rounded-2xl border border-cream-400 dark:border-amber-500/20 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
@@ -1111,161 +1019,25 @@ export default function ReadMode({
           </div>
         </div>
       </div>
-
       {/* 2. TABLE OF CONTENTS SLIDE-OVER DRAWER */}
-      {isTocDrawerOpen && (
-        <div className="fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div 
-            onClick={() => setIsTocDrawerOpen(false)}
-            className="fixed inset-0 bg-stone-950/50 backdrop-blur-xs transition-opacity animate-fade-in"
-          />
-
-          {/* Drawer Sidebar */}
-          <div className="relative ml-auto w-full max-w-md bg-cream-50 dark:bg-[#0d121d] h-full shadow-2xl border-l border-cream-400 dark:border-amber-500/20 flex flex-col z-10 animate-slide-in-right">
-            {/* Drawer Header */}
-            <div className="p-4 bg-white dark:bg-slate-900 border-b border-cream-300 dark:border-amber-500/20 flex items-center justify-between">
-              <div>
-                <h3 className="font-cinzel font-bold text-base text-saffron-950 dark:text-amber-300">
-                  {currentVeda ? currentVeda.name_sanskrit : currentSource}
-                </h3>
-                <p className="text-[11px] text-stone-500 dark:text-slate-400">
-                  {currentVeda ? `${vedaSections.length} Divisions` : `${sectionList.length} Chapters / Adhyayas`}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsTocDrawerOpen(false)}
-                className="p-1.5 text-stone-400 hover:text-stone-700 dark:hover:text-slate-200 rounded-lg hover:bg-cream-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Quick Filter Search inside Drawer */}
-            <div className="p-3 border-b border-cream-300/60 dark:border-amber-500/20 bg-cream-100/50 dark:bg-slate-900/50">
-              <input
-                type="text"
-                value={tocFilterQuery}
-                onChange={e => setTocFilterQuery(e.target.value)}
-                placeholder="Filter chapters (e.g. '1', 'स्कन्ध', 'अध्याय')..."
-                className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-950 rounded-xl border border-cream-400 dark:border-amber-500/30 text-stone-900 dark:text-slate-100 placeholder-stone-400 dark:placeholder-slate-500 focus:outline-none"
-              />
-            </div>
-
-            {/* Chapter List inside Drawer */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {currentVeda ? (
-                vedaSectionSubdivisionMap && !tocFilterQuery.trim() ? (
-                  Object.keys(vedaSectionSubdivisionMap).map(groupName => {
-                    const groupSections = vedaSectionSubdivisionMap[groupName];
-                    return (
-                      <div key={groupName} className="border border-cream-300 dark:border-amber-900/30 rounded-2xl overflow-hidden bg-white/70 dark:bg-slate-900/50">
-                        <div className="p-3 bg-cream-100/70 dark:bg-slate-800/80 flex items-center justify-between font-bold text-xs text-saffron-950 dark:text-amber-300 font-cinzel">
-                          <span>{groupName}</span>
-                          <span className="text-[10px] text-stone-500 dark:text-slate-400">{groupSections.length} Sections</span>
-                        </div>
-                        <div className="p-2 space-y-1">
-                          {groupSections.map(sec => {
-                            const isCurrent = sec.section_number === currentVedaSection;
-                            return (
-                              <button
-                                key={sec.id}
-                                onClick={() => loadVedaChapter(currentVeda.id, sec.section_number)}
-                                className={`w-full p-2.5 text-left rounded-xl transition-all flex items-center justify-between text-xs cursor-pointer ${
-                                  isCurrent
-                                    ? 'bg-saffron-100 dark:bg-amber-950/60 border border-saffron-400 dark:border-amber-500 text-saffron-950 dark:text-amber-300 font-bold shadow-xs'
-                                    : 'hover:bg-cream-100 dark:hover:bg-slate-800 text-stone-700 dark:text-slate-300'
-                                }`}
-                              >
-                                <span className="line-clamp-1">{sec.section_name}</span>
-                                <span className="text-[10px] opacity-70 font-mono shrink-0 ml-2">{sec.total_mantras} m</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  filteredVedaSections.map(sec => {
-                    const isCurrent = sec.section_number === currentVedaSection;
-                    return (
-                      <button
-                        key={sec.id}
-                        onClick={() => loadVedaChapter(currentVeda.id, sec.section_number)}
-                        className={`w-full p-3 text-left rounded-xl border transition-all flex items-center justify-between text-xs cursor-pointer ${
-                          isCurrent
-                            ? 'bg-saffron-100 dark:bg-amber-950/60 border-saffron-400 dark:border-amber-500 text-saffron-950 dark:text-amber-300 font-bold shadow-xs'
-                            : 'bg-white dark:bg-slate-900/80 border-cream-300 dark:border-amber-900/30 text-stone-700 dark:text-slate-300 hover:bg-cream-200 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        <span>{sec.section_name}</span>
-                        <span className="text-[10px] opacity-70 font-mono">{sec.total_mantras} Mantras</span>
-                      </button>
-                    );
-                  })
-                )
-              ) : sectionSubdivisionMap && !tocFilterQuery.trim() ? (
-                /* Subdivided Accordion List */
-                Object.keys(sectionSubdivisionMap).map(groupName => {
-                  const groupSections = sectionSubdivisionMap[groupName];
-                  return (
-                    <div key={groupName} className="border border-cream-300 dark:border-amber-900/30 rounded-2xl overflow-hidden bg-white/70 dark:bg-slate-900/50">
-                      <div className="p-3 bg-cream-100/70 dark:bg-slate-800/80 flex items-center justify-between font-bold text-xs text-saffron-950 dark:text-amber-300 font-cinzel">
-                        <span>{groupName}</span>
-                        <span className="text-[10px] text-stone-500 dark:text-slate-400">{groupSections.length} Chaps</span>
-                      </div>
-                      <div className="p-2 space-y-1">
-                        {groupSections.map(sec => {
-                          const isCurrent = sec.chapter_number === currentSection;
-                          return (
-                            <button
-                              key={sec.id}
-                              onClick={() => {
-                                if (currentSource) loadChapter(currentSource, sec.chapter_number);
-                              }}
-                              className={`w-full p-2.5 text-left rounded-xl transition-all flex items-center justify-between text-xs cursor-pointer ${
-                                isCurrent
-                                  ? 'bg-saffron-100 dark:bg-amber-950/60 border border-saffron-400 dark:border-amber-500 text-saffron-950 dark:text-amber-300 font-bold shadow-xs'
-                                  : 'hover:bg-cream-100 dark:hover:bg-slate-800 text-stone-700 dark:text-slate-300'
-                              }`}
-                            >
-                              <span className="line-clamp-1">{sec.chapter_name.includes(',') ? sec.chapter_name.split(',')[1].trim() : sec.chapter_name}</span>
-                              <ChevronRight className="w-3.5 h-3.5 shrink-0 ml-2 text-stone-400 dark:text-slate-500" />
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                /* Flat Chapter List */
-                filteredSections.map(sec => {
-                  const isCurrent = sec.chapter_number === currentSection;
-                  return (
-                    <button
-                      key={sec.id}
-                      onClick={() => {
-                        if (currentSource) loadChapter(currentSource, sec.chapter_number);
-                      }}
-                      className={`w-full p-3 text-left rounded-xl border transition-all flex items-center justify-between text-xs cursor-pointer ${
-                        isCurrent
-                          ? 'bg-saffron-100 dark:bg-amber-950/60 border-saffron-400 dark:border-amber-500 text-saffron-950 dark:text-amber-300 font-bold shadow-xs'
-                          : 'bg-white dark:bg-slate-900/80 border-cream-300 dark:border-amber-900/30 text-stone-700 dark:text-slate-300 hover:bg-cream-200 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <span className="line-clamp-1">{sec.chapter_name === currentSource ? 'Complete Text' : sec.chapter_name}</span>
-                      <ChevronRight className="w-3.5 h-3.5 shrink-0 ml-2 text-stone-400 dark:text-slate-500" />
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <ReaderTOCDrawer
+        isOpen={isTocDrawerOpen}
+        onClose={() => setIsTocDrawerOpen(false)}
+        currentVeda={currentVeda}
+        currentSource={currentSource}
+        vedaSections={vedaSections}
+        sectionList={sectionList}
+        currentVedaSection={currentVedaSection}
+        currentSection={currentSection}
+        tocFilterQuery={tocFilterQuery}
+        setTocFilterQuery={setTocFilterQuery}
+        vedaSectionSubdivisionMap={vedaSectionSubdivisionMap}
+        sectionSubdivisionMap={sectionSubdivisionMap}
+        filteredVedaSections={filteredVedaSections}
+        filteredSections={filteredSections}
+        onSelectVedaChapter={(vId, secNum) => loadVedaChapter(vId, secNum)}
+        onSelectChapter={(sName, chNum) => loadChapter(sName, chNum)}
+      />
 
       {error && (
         <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/40 text-red-700 dark:text-red-300 px-5 py-4 rounded-2xl text-xs font-semibold">
@@ -1503,154 +1275,27 @@ export default function ReadMode({
           </div>
 
           {/* Unified Global View Settings & Layer Controls Bar */}
-          <div className="bg-white dark:bg-[#0d121d] p-3.5 rounded-2xl border border-cream-400 dark:border-amber-500/20 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-            {/* Left: Global Layer Toggles */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-400 flex items-center gap-1 mr-1">
-                <Layers className="w-3.5 h-3.5" />
-                <span>View Settings:</span>
-              </span>
-
-              {/* Transliteration (IAST) */}
-              <button
-                type="button"
-                onClick={() => handleToggleGlobalLayer('transliteration')}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1 ${
-                  globalLayers.showTransliteration
-                    ? 'bg-saffron-600 dark:bg-amber-500 text-white border-saffron-600 dark:border-amber-400 shadow-2xs'
-                    : 'bg-cream-100 dark:bg-slate-900 border-cream-300 dark:border-slate-800 text-stone-500 dark:text-slate-400 opacity-60'
-                }`}
-              >
-                <span>🔤 Transliteration</span>
-              </button>
-
-              {/* Padapatha / Anvaya / Word Meanings */}
-              <button
-                type="button"
-                onClick={() => handleToggleGlobalLayer('wordMeanings')}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1 ${
-                  globalLayers.showWordMeanings
-                    ? 'bg-saffron-600 dark:bg-amber-500 text-white border-saffron-600 dark:border-amber-400 shadow-2xs'
-                    : 'bg-cream-100 dark:bg-slate-900 border-cream-300 dark:border-slate-800 text-stone-500 dark:text-slate-400 opacity-60'
-                }`}
-              >
-                <span>📖 {currentVeda ? 'पदपाठः / पदार्थः' : 'Word-by-Word Anvaya'}</span>
-              </button>
-
-              {/* Translations (For Scriptures & Vedas) */}
-              <button
-                type="button"
-                onClick={() => handleToggleGlobalLayer('translation')}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1 ${
-                  globalLayers.showTranslation
-                    ? 'bg-saffron-600 dark:bg-amber-500 text-white border-saffron-600 dark:border-amber-400 shadow-2xs'
-                    : 'bg-cream-100 dark:bg-slate-900 border-cream-300 dark:border-slate-800 text-stone-500 dark:text-slate-400 opacity-60'
-                }`}
-              >
-                <span>🌐 Translation</span>
-              </button>
-
-              {/* Commentaries / Bhashyas */}
-              <button
-                type="button"
-                onClick={() => handleToggleGlobalLayer('commentaries')}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1 ${
-                  globalLayers.showCommentaries
-                    ? 'bg-saffron-600 dark:bg-amber-500 text-white border-saffron-600 dark:border-amber-400 shadow-2xs'
-                    : 'bg-cream-100 dark:bg-slate-900 border-cream-300 dark:border-slate-800 text-stone-500 dark:text-slate-400 opacity-60'
-                }`}
-              >
-                <span>💬 {currentVeda ? 'Vedic Bhashyas' : 'Commentaries'}</span>
-              </button>
-
-              {/* Svara Toggle for Vedas */}
-              {currentVeda && (
-                <button
-                  type="button"
-                  onClick={() => handleToggleGlobalLayer('svara')}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1 ${
-                    globalLayers.showSvara
-                      ? 'bg-saffron-600 dark:bg-amber-500 text-white border-saffron-600 dark:border-amber-400 shadow-2xs'
-                      : 'bg-cream-100 dark:bg-slate-900 border-cream-300 dark:border-slate-800 text-stone-500 dark:text-slate-400 opacity-60'
-                  }`}
-                >
-                  <span>🕉️ Svara Accents</span>
-                </button>
-              )}
-            </div>
-
-            {/* Right: Global Language & Sanskrit Font Sizing Controls */}
-            <div className="flex items-center gap-3 ml-auto">
-              {/* Dynamic Language Selector: Only show languages available for the current text */}
-              {availableTextLanguages.length > 1 ? (
-                <div className="flex items-center gap-1 bg-cream-100 dark:bg-slate-800 p-0.5 rounded-xl border border-cream-300 dark:border-amber-500/20">
-                  {availableTextLanguages.includes('english') && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPreferredLanguage('english');
-                        if (typeof window !== 'undefined') localStorage.setItem('preferredLanguage', 'english');
-                      }}
-                      className={`px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer ${
-                        effectiveLanguage === 'english'
-                          ? 'bg-saffron-600 dark:bg-amber-500 text-white shadow-2xs'
-                          : 'text-stone-600 dark:text-slate-400 hover:text-saffron-800 dark:hover:text-slate-200'
-                      }`}
-                      title="Switch translation to English (Ralph T.H. Griffith / English Commentaries)"
-                    >
-                      English
-                    </button>
-                  )}
-                  {availableTextLanguages.includes('hindi') && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPreferredLanguage('hindi');
-                        if (typeof window !== 'undefined') localStorage.setItem('preferredLanguage', 'hindi');
-                      }}
-                      className={`px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer ${
-                        effectiveLanguage === 'hindi'
-                          ? 'bg-saffron-600 dark:bg-amber-500 text-white shadow-2xs'
-                          : 'text-stone-600 dark:text-slate-400 hover:text-saffron-800 dark:hover:text-slate-200'
-                      }`}
-                      title="Switch translation to Hindi (हिंदी अनुवाद / भावार्थ)"
-                    >
-                      हिंदी
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center px-2.5 py-1 bg-cream-100 dark:bg-slate-800 rounded-xl border border-cream-300 dark:border-amber-500/20 text-[10px] font-bold text-stone-600 dark:text-slate-400">
-                  <span>{availableTextLanguages[0] === 'hindi' ? '🇮🇳 हिंदी (Hindi)' : '🌐 English'}</span>
-                </div>
-              )}
-
-              {/* Font Size Controls */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold text-stone-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                  <Type className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
-                  <span className="hidden sm:inline">Font:</span>
-                </span>
-                <div className="flex items-center gap-0.5 bg-cream-100 dark:bg-slate-800 p-0.5 rounded-xl border border-cream-300 dark:border-amber-500/20">
-                  {(['sm', 'md', 'lg', 'xl'] as SanskritFontSize[]).map(size => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => handleFontSizeChange(size)}
-                      className={`px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer ${
-                        fontSize === size
-                          ? 'bg-saffron-600 dark:bg-amber-500 text-white shadow-2xs'
-                          : 'text-stone-600 dark:text-slate-400 hover:text-saffron-800 dark:hover:text-slate-200'
-                      }`}
-                      title={`Set Sanskrit font size to ${size.toUpperCase()}`}
-                    >
-                      {size.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <ReaderSettingsBar
+            globalLayers={globalLayers}
+            onToggleGlobalLayer={handleToggleGlobalLayer}
+            isVeda={Boolean(currentVeda)}
+            availableTextLanguages={availableTextLanguages}
+            effectiveLanguage={effectiveLanguage}
+            onSelectLanguage={(lang) => {
+              setPreferredLanguage(lang);
+              if (typeof window !== 'undefined') localStorage.setItem('preferredLanguage', lang);
+            }}
+            fontSize={fontSize}
+            onChangeFontSize={handleFontSizeChange}
+            autoPlayChant={autoPlayChant}
+            onToggleAutoPlay={() => {
+              setAutoPlayChant(prev => {
+                const next = !prev;
+                if (typeof window !== 'undefined') localStorage.setItem('autoPlayChant', String(next));
+                return next;
+              });
+            }}
+          />
 
           {/* Quick Verse Jump Carousel Pill Bar */}
           {activeChapterInfo.total > 1 && (

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 const DEFAULT_BACKEND_URL = 'https://dhruvil8-dharmapragya.hf.space';
-const DEFAULT_SECRET = '5b8d2a4c7e91f34a8f2d6b7c1e9a4d3f6c8b1a2e7f9d4c5b3a8e6f1d2c7b9a4e';
+const DEFAULT_SECRET = process.env.NODE_ENV === 'development' ? 'dev-secret' : '';
 
 export async function GET(req: Request) {
   const backendUrl = process.env.BACKEND_URL || DEFAULT_BACKEND_URL;

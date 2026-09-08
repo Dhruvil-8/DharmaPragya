@@ -21,17 +21,34 @@ import (
 )
 
 type Handler struct {
-	db *storage.Storage
+	db          *storage.Storage
+	genaiClient *genai.Client
 }
 
 func NewHandler(db *storage.Storage) *Handler {
-	return &Handler{db: db}
+	apiKey := os.Getenv("GOOGLE_API_KEY")
+	var client *genai.Client
+	if apiKey != "" {
+		c, err := genai.NewClient(context.Background(), option.WithAPIKey(apiKey))
+		if err == nil {
+			client = c
+		} else {
+			log.Printf("Warning: failed to initialize persistent Gemini client: %v", err)
+		}
+	}
+	return &Handler{db: db, genaiClient: client}
 }
 
-func enableCors(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-App-Token")
+func (h *Handler) Close() {
+	if h.genaiClient != nil {
+		_ = h.genaiClient.Close()
+	}
+}
+
+func enableCors(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-App-Token")
 }
 
 func validateToken(r *http.Request) bool {
@@ -43,7 +60,7 @@ func validateToken(r *http.Request) bool {
 }
 
 func (h *Handler) ReadVerses(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
+	enableCors(w)
 	if r.Method == "OPTIONS" {
 		return
 	}
@@ -144,7 +161,7 @@ type RouterPayload struct {
 }
 
 func (h *Handler) SearchVerses(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
+	enableCors(w)
 	if r.Method == "OPTIONS" {
 		return
 	}
@@ -184,7 +201,7 @@ func (h *Handler) SearchVerses(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
+	enableCors(w)
 	if r.Method == "OPTIONS" {
 		return
 	}
@@ -247,18 +264,25 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Minute)
 	defer cancel()
-	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
-	if err != nil {
-		if isStreaming {
-			sendSSE("error", map[string]string{"error": err.Error()})
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	client := h.genaiClient
+	var localClient *genai.Client
+	if client == nil {
+		var err error
+		localClient, err = genai.NewClient(ctx, option.WithAPIKey(apiKey))
+		if err != nil {
+			if isStreaming {
+				sendSSE("error", map[string]string{"error": err.Error()})
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
 		}
-		return
+		defer localClient.Close()
+		client = localClient
 	}
-	defer client.Close()
 
 	modelName := os.Getenv("GEMINI_MODEL")
 	if modelName == "" {
@@ -312,7 +336,7 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 							Enum: []string{
 								"Bhagavad Gita", "Ashtavakra Gita", "Avadhuta Gita", "Devi Mahatmyam",
 								"Rigveda", "Mahabharata", "Valmiki Ramayana",
-								"Atharva Veda", "Yajur Veda", "Patanjali Yoga Sutras",
+								"Atharva Veda", "Yajur Veda", "Samaveda", "Patanjali Yoga Sutras",
 								"Shiva Purana", "Bhagavata Purana", "Garuda Purana",
 								"Brahma Purana", "Devi Bhagavata Purana", "Harivamsha Purana",
 								"Isha Upanishad", "Kena Upanishad", "Katha Upanishad", "Prashna Upanishad",
@@ -411,6 +435,13 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 	err = json.Unmarshal([]byte(routerText), &payload)
 	if err != nil {
 		log.Printf("Router JSON parse error: %v, text: %s", err, routerText)
+		payload.IsOnTopic = true
+		words := strings.Fields(req.Question)
+		for _, w := range words {
+			if len(w) > 3 {
+				payload.EnglishKeywords = append(payload.EnglishKeywords, w)
+			}
+		}
 	} else {
 		log.Printf("[AskAI Router reasoning]: %s", payload.Reasoning)
 	}
@@ -686,7 +717,7 @@ CRITICAL GUARDRAIL: If the user's question is completely unrelated to Sanatan Dh
 }
 
 func (h *Handler) ReadVedas(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
+	enableCors(w)
 	if r.Method == "OPTIONS" {
 		return
 	}
@@ -737,7 +768,7 @@ func (h *Handler) ReadVedas(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SearchVedas(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
+	enableCors(w)
 	if r.Method == "OPTIONS" {
 		return
 	}

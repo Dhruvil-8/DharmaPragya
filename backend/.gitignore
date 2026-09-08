@@ -1,1 +1,23 @@
+# Environment variables and secrets
 .env
+.env.*
+*.env
+*.env.*
+!.env.example
+
+# Binaries
+main
+main.exe
+*.exe
+*.test
+bin/
+vendor/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+data/db.sqlite
