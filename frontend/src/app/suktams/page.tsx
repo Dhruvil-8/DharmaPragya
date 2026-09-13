@@ -7,13 +7,9 @@ import { useRouter } from 'next/navigation';
 import { 
   Search, 
   BookOpen, 
-  Layers, 
   ChevronRight, 
   ArrowLeft,
-  Compass,
-  Database,
-  ExternalLink,
-  Flame
+  ExternalLink
 } from 'lucide-react';
 import { FAMOUS_SUKTAMS_AND_MANTRAS, SacredHymn } from '../../data/famousSuktams';
 import SacredHymnModal from '../../components/SacredHymnModal';
@@ -235,7 +231,7 @@ function SuktamsPageContent() {
                 {hymn.openingSnippet && (
                   <div className="p-3 rounded-2xl bg-cream-200/50 dark:bg-black/30 border border-cream-300/40 dark:border-amber-500/10">
                     <p className="text-xs font-sanskrit text-stone-800 dark:text-slate-200 line-clamp-2 leading-relaxed italic">
-                      "{hymn.openingSnippet}"
+                      &quot;{hymn.openingSnippet}&quot;
                     </p>
                   </div>
                 )}

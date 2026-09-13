@@ -4,22 +4,43 @@ export type { BookmarkItem };
 
 const BOOKMARKS_STORAGE_KEY = 'dharmapragya_bookmarks_v1';
 
+let cachedBookmarks: BookmarkItem[] | null = null;
+let cachedKeySet: Set<string> | null = null;
+
+function makeBookmarkKey(sourceName: string, chapterNumber: number, verseNumber: number): string {
+  return `${sourceName.trim().toLowerCase()}::${chapterNumber}::${verseNumber}`;
+}
+
+function refreshCache(items: BookmarkItem[]) {
+  cachedBookmarks = items;
+  cachedKeySet = new Set(
+    items.map(b => makeBookmarkKey(b.source_name, b.chapter_number, b.verse_number))
+  );
+}
+
 export function getBookmarks(): BookmarkItem[] {
   if (typeof window === 'undefined') return [];
+  if (cachedBookmarks !== null) {
+    return [...cachedBookmarks];
+  }
   try {
     const raw = localStorage.getItem(BOOKMARKS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const parsed: BookmarkItem[] = raw ? JSON.parse(raw) : [];
+    refreshCache(parsed);
+    return [...parsed];
   } catch (e) {
     console.error('Failed to parse bookmarks from localStorage', e);
+    refreshCache([]);
     return [];
   }
 }
 
 export function isVerseBookmarked(sourceName: string, chapterNumber: number, verseNumber: number): boolean {
-  const bookmarks = getBookmarks();
-  return bookmarks.some(
-    b => b.source_name === sourceName && b.chapter_number === chapterNumber && b.verse_number === verseNumber
-  );
+  if (typeof window === 'undefined') return false;
+  if (cachedKeySet === null) {
+    getBookmarks();
+  }
+  return cachedKeySet?.has(makeBookmarkKey(sourceName, chapterNumber, verseNumber)) ?? false;
 }
 
 export function toggleBookmark(verse: VerseData): boolean {
@@ -32,7 +53,10 @@ export function toggleBookmark(verse: VerseData): boolean {
   if (index >= 0) {
     // Remove
     bookmarks.splice(index, 1);
-    localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(bookmarks));
+    refreshCache(bookmarks);
+    try {
+      localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(bookmarks));
+    } catch {}
     window.dispatchEvent(new Event('dharmapragya_bookmarks_updated'));
     return false;
   } else {
@@ -50,7 +74,10 @@ export function toggleBookmark(verse: VerseData): boolean {
       saved_at: Date.now(),
     };
     bookmarks.unshift(newItem);
-    localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(bookmarks));
+    refreshCache(bookmarks);
+    try {
+      localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(bookmarks));
+    } catch {}
     window.dispatchEvent(new Event('dharmapragya_bookmarks_updated'));
     return true;
   }
@@ -62,13 +89,20 @@ export function removeBookmark(sourceName: string, chapterNumber: number, verseN
   const filtered = bookmarks.filter(
     b => !(b.source_name === sourceName && b.chapter_number === chapterNumber && b.verse_number === verseNumber)
   );
-  localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(filtered));
+  refreshCache(filtered);
+  try {
+    localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(filtered));
+  } catch {}
   window.dispatchEvent(new Event('dharmapragya_bookmarks_updated'));
 }
 
 export function clearBookmarks(): void {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(BOOKMARKS_STORAGE_KEY);
+  refreshCache([]);
+  try {
+    localStorage.removeItem(BOOKMARKS_STORAGE_KEY);
+  } catch {}
   window.dispatchEvent(new Event('dharmapragya_bookmarks_updated'));
 }
+
 

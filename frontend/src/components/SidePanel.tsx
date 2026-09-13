@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -17,7 +17,6 @@ import {
   ArrowLeft,
   Compass,
   Flame,
-  ScrollText
 } from 'lucide-react';
 import { getBookmarks } from '../lib/bookmarks';
 
@@ -37,56 +36,50 @@ interface SidePanelProps {
 
 type SidePanelView = 'main' | 'about' | 'related';
 
+const emptySubscribe = () => () => {};
+
+function subscribeTheme(callback: () => void) {
+  window.addEventListener('dharmapragya_theme_changed', callback);
+  return () => {
+    window.removeEventListener('dharmapragya_theme_changed', callback);
+  };
+}
+
+function getThemeSnapshot(): boolean {
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+}
+
+function subscribeBookmarks(callback: () => void) {
+  window.addEventListener('dharmapragya_bookmarks_updated', callback);
+  return () => {
+    window.removeEventListener('dharmapragya_bookmarks_updated', callback);
+  };
+}
+
+function getBookmarksCountSnapshot(): number {
+  return getBookmarks().length;
+}
+
 export default function SidePanel({
   isOpen,
   onClose,
   onOpenSaved,
-  onOpenUpanishadCanon,
   mode = 'ask',
   onModeChange
 }: SidePanelProps) {
-  const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-  const [bookmarkCount, setBookmarkCount] = useState(0);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const isDark = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => false);
+  const bookmarkCount = useSyncExternalStore(subscribeBookmarks, getBookmarksCountSnapshot, () => 0);
+
   const [currentView, setCurrentView] = useState<SidePanelView>('main');
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
-  useEffect(() => {
-    setMounted(true);
-    setBookmarkCount(getBookmarks().length);
-
-    const handleBookmarksUpdate = () => {
-      setBookmarkCount(getBookmarks().length);
-    };
-
-    window.addEventListener('dharmapragya_bookmarks_updated', handleBookmarksUpdate);
-
-    // Check initial theme
-    const isDarkTheme = document.documentElement.classList.contains('dark');
-    setIsDark(isDarkTheme);
-
-    const handleThemeChange = (e: Event) => {
-      const customEvent = e as CustomEvent<{ isDark: boolean }>;
-      if (customEvent.detail && typeof customEvent.detail.isDark === 'boolean') {
-        setIsDark(customEvent.detail.isDark);
-      } else {
-        setIsDark(document.documentElement.classList.contains('dark'));
-      }
-    };
-
-    window.addEventListener('dharmapragya_theme_changed', handleThemeChange);
-
-    return () => {
-      window.removeEventListener('dharmapragya_bookmarks_updated', handleBookmarksUpdate);
-      window.removeEventListener('dharmapragya_theme_changed', handleThemeChange);
-    };
-  }, []);
-
-  // Reset view to main when drawer is opened
-  useEffect(() => {
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     if (isOpen) {
       setCurrentView('main');
     }
-  }, [isOpen]);
+  }
 
   // Handle Escape key and body scroll locking
   useEffect(() => {
@@ -119,15 +112,14 @@ export default function SidePanel({
       try {
         localStorage.setItem('dharmapragya_theme', 'dark');
         localStorage.setItem('theme', 'dark');
-      } catch (e) {}
+      } catch {}
     } else {
       root.classList.remove('dark');
       try {
         localStorage.setItem('dharmapragya_theme', 'light');
         localStorage.setItem('theme', 'light');
-      } catch (e) {}
+      } catch {}
     }
-    setIsDark(nextDark);
     window.dispatchEvent(
       new CustomEvent('dharmapragya_theme_changed', {
         detail: { isDark: nextDark },

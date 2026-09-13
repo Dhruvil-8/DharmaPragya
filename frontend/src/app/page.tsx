@@ -15,10 +15,44 @@ const SacredHymnModal = dynamic(() => import('../components/SacredHymnModal'), {
 const API_BASE_URL = '';
 
 function HomePageContent() {
-  const [mode, setMode] = useState<'ask' | 'read'>('ask');
-  const [isSavedOpen, setIsSavedOpen] = useState(false);
-  const [isAboutOpen, setIsAboutOpen] = useState(false);
-  const [selectedHymnModal, setSelectedHymnModal] = useState<SacredHymn | null>(null);
+  const [mode, setMode] = useState<'ask' | 'read'>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlMode = params.get('mode');
+      const source = params.get('source');
+      if (urlMode === 'read' || source) return 'read';
+    }
+    return 'ask';
+  });
+
+  const [isSavedOpen, setIsSavedOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlMode = params.get('mode');
+      return urlMode === 'saved' || urlMode === 'bookmarks';
+    }
+    return false;
+  });
+
+  const [isAboutOpen, setIsAboutOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlMode = params.get('mode');
+      return urlMode === 'suktams' || urlMode === 'hymns';
+    }
+    return false;
+  });
+
+  const [selectedHymnModal, setSelectedHymnModal] = useState<SacredHymn | null>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const hymnId = params.get('hymn') || params.get('suktam');
+      if (hymnId) {
+        return FAMOUS_SUKTAMS_AND_MANTRAS.find(h => h.id === hymnId) || null;
+      }
+    }
+    return null;
+  });
 
   const [askInitialPrompt, setAskInitialPrompt] = useState<{
     query: string;
@@ -46,41 +80,30 @@ function HomePageContent() {
     chapterNumber: number;
     division2?: number;
     verseNumber?: number;
-  } | null>(null);
-
-  // Parse deep-link URL params on initial mount
-  useEffect(() => {
+  } | null>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const urlMode = params.get('mode');
       const source = params.get('source');
       const chapter = params.get('chapter');
       const div2 = params.get('div2');
       const verse = params.get('verse');
-      const hymnId = params.get('hymn') || params.get('suktam');
-
-      if (hymnId) {
-        const found = FAMOUS_SUKTAMS_AND_MANTRAS.find(h => h.id === hymnId);
-        if (found) {
-          setSelectedHymnModal(found);
-        }
+      if (source) {
+        return {
+          sourceName: source,
+          chapterNumber: chapter ? parseInt(chapter, 10) : 1,
+          division2: div2 ? parseInt(div2, 10) : undefined,
+          verseNumber: verse ? parseInt(verse, 10) : undefined,
+        };
       }
+    }
+    return null;
+  });
 
-      if (urlMode === 'read' || source) {
-        setMode('read');
-        if (source) {
-          setTargetCoordinate({
-            sourceName: source,
-            chapterNumber: chapter ? parseInt(chapter, 10) : 1,
-            division2: div2 ? parseInt(div2, 10) : undefined,
-            verseNumber: verse ? parseInt(verse, 10) : undefined,
-          });
-        }
-      } else if (urlMode === 'saved' || urlMode === 'bookmarks') {
-        setIsSavedOpen(true);
-      } else if (urlMode === 'suktams' || urlMode === 'hymns') {
-        setIsAboutOpen(true);
-      } else if (urlMode === 'canon' || urlMode === 'upanishads' || params.get('canon') || params.get('upanishad')) {
+  // Redirect to canonical upanishads if requested via URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('canon') || params.get('upanishad') || params.get('mode') === 'canon') {
         window.location.href = '/upanishads';
       }
     }
@@ -201,23 +224,25 @@ function HomePageContent() {
       <div className="w-full max-w-4xl z-10 flex flex-col flex-grow px-4 pt-18 pb-6 md:px-8">
         {/* Dynamic Mode Content Views */}
         <div className="w-full">
-          <div className={mode === 'ask' ? 'block animate-fade-in' : 'hidden'}>
-            <AskMode 
-              apiBaseUrl={API_BASE_URL} 
-              initialPrompt={askInitialPrompt}
-              onSelectVerse={handleSelectSavedVerse}
-            />
-          </div>
-
-          <div className={mode === 'read' ? 'block animate-fade-in' : 'hidden'}>
-            <ReadMode 
-              apiBaseUrl={API_BASE_URL}
-              isActive={mode === 'read'}
-              onOpenShareModal={handleOpenShareModalFromVerse}
-              onAskAboutVerse={handleAskAboutVerse}
-              targetCoordinate={targetCoordinate}
-            />
-          </div>
+          {mode === 'ask' ? (
+            <div className="animate-fade-in">
+              <AskMode 
+                apiBaseUrl={API_BASE_URL} 
+                initialPrompt={askInitialPrompt}
+                onSelectVerse={handleSelectSavedVerse}
+              />
+            </div>
+          ) : (
+            <div className="animate-fade-in">
+              <ReadMode 
+                apiBaseUrl={API_BASE_URL}
+                isActive={true}
+                onOpenShareModal={handleOpenShareModalFromVerse}
+                onAskAboutVerse={handleAskAboutVerse}
+                targetCoordinate={targetCoordinate}
+              />
+            </div>
+          )}
         </div>
 
         {/* Footer */}

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const BACKEND_URL = process.env.BACKEND_URL || 'https://dhruvil8-dharmapragya.hf.space';
 const FRONTEND_SECRET = process.env.FRONTEND_SECRET || '5b8d2a4c7e91f34a8f2d6b7c1e9a4d3f6c8b1a2e7f9d4c5b3a8e6f1d2c7b9a4e';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 86400;
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       headers: {
         'X-App-Token': FRONTEND_SECRET,
       },
-      cache: 'no-store',
+      next: { revalidate: 86400 },
     });
 
     if (!res.ok) {

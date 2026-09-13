@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
-  BookOpen, 
   Copy, 
   Check, 
   ExternalLink, 
@@ -67,31 +66,45 @@ export default function SacredHymnModal({
 }: SacredHymnModalProps) {
   const [copiedVerseIndex, setCopiedVerseIndex] = useState<number | null>(null);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
-  const [dbVerses, setDbVerses] = useState<HymnVerse[] | null>(null);
+  const [dbVerses, setDbVerses] = useState<HymnVerse[] | null>(() => {
+    if (isOpen && hymn && hymnVersesCache.has(hymn.id)) {
+      return hymnVersesCache.get(hymn.id)!;
+    }
+    return null;
+  });
   const [isLoadingDb, setIsLoadingDb] = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
   const versesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Direct Database Retrieval with in-memory caching
-  useEffect(() => {
+  const [prevHymnId, setPrevHymnId] = useState<string | null>(isOpen && hymn ? hymn.id : null);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+  const currentHymnId = isOpen && hymn ? hymn.id : null;
+  if (currentHymnId !== prevHymnId || isOpen !== prevIsOpen) {
+    setPrevHymnId(currentHymnId);
+    setPrevIsOpen(isOpen);
     if (!isOpen || !hymn) {
       setDbVerses(null);
       setIsLoadingDb(false);
       setIsSummaryOpen(false);
       setVisibleCount(20);
-      return;
-    }
-
-    // Check in-memory cache first for instant 0ms load
-    if (hymnVersesCache.has(hymn.id)) {
+    } else if (hymnVersesCache.has(hymn.id)) {
       setDbVerses(hymnVersesCache.get(hymn.id)!);
       setIsLoadingDb(false);
+    } else {
+      setDbVerses(null);
+      setIsLoadingDb(true);
+    }
+  }
+
+  // Direct Database Retrieval with in-memory caching
+  useEffect(() => {
+    if (!isOpen || !hymn || hymnVersesCache.has(hymn.id)) {
       return;
     }
 
     let isMounted = true;
     const fetchFromDb = async () => {
-      setIsLoadingDb(true);
       try {
         const vedaMap: Record<string, string> = {
           'Rigveda': 'rigveda',

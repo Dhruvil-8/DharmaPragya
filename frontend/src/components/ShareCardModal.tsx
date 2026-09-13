@@ -28,6 +28,18 @@ export default function ShareCardModal({
   const [copiedLink, setCopiedLink] = useState(false);
   const [activeTab, setActiveTab] = useState<'image' | 'link' | 'embed'>('image');
 
+  const [prevDetails, setPrevDetails] = useState(verseDetails);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+  if (isOpen !== prevIsOpen || verseDetails !== prevDetails) {
+    setPrevIsOpen(isOpen);
+    setPrevDetails(verseDetails);
+    if (isOpen && verseDetails) {
+      setIsGenerating(true);
+      setCardImage(null);
+    }
+  }
+
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dharmapragya.vercel.app';
   const directVerseUrl = verseDetails
     ? `${origin}/?mode=read&source=${encodeURIComponent(verseDetails.sourceName)}&chapter=${verseDetails.chapterNumber}&verse=${verseDetails.verseNumber}`
@@ -37,7 +49,6 @@ export default function ShareCardModal({
     if (!isOpen || !verseDetails) return;
 
     let isMounted = true;
-    setIsGenerating(true);
 
     generateVerseCard({
       sourceName: verseDetails.sourceName,

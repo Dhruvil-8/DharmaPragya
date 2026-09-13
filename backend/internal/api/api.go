@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -46,22 +47,58 @@ func (h *Handler) Close() {
 	}
 }
 
-func enableCors(w http.ResponseWriter) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+func enableCors(w http.ResponseWriter, r *http.Request) {
+	origin := r.Header.Get("Origin")
+	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	if allowedOrigins != "" && allowedOrigins != "*" {
+		if isOriginAllowed(origin, allowedOrigins) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+		}
+	} else if origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Vary", "Origin")
+	} else {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+	}
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-App-Token")
 }
 
+func isOriginAllowed(origin string, allowedOrigins string) bool {
+	if allowedOrigins == "" || allowedOrigins == "*" {
+		return true
+	}
+	for _, allowed := range strings.Split(allowedOrigins, ",") {
+		allowed = strings.TrimSpace(allowed)
+		if allowed == origin {
+			return true
+		}
+		if strings.HasPrefix(allowed, "*.") && strings.HasSuffix(origin, allowed[1:]) {
+			return true
+		}
+		if strings.HasPrefix(allowed, "https://*.") && strings.HasPrefix(origin, "https://") && strings.HasSuffix(origin, allowed[len("https://*"):]) {
+			return true
+		}
+	}
+	return false
+}
+
 func validateToken(r *http.Request) bool {
 	expected := os.Getenv("FRONTEND_SECRET")
-	if expected == "" {
-		expected = "dev-secret"
+	token := r.Header.Get("X-App-Token")
+	if expected != "" {
+		if len(token) != len(expected) {
+			return false
+		}
+		return subtle.ConstantTimeCompare([]byte(token), []byte(expected)) == 1
 	}
-	return r.Header.Get("X-App-Token") == expected
+	// Graceful backward-compatible fallback when FRONTEND_SECRET is not configured on HF Space
+	return token == "dev-secret" || token == ""
 }
 
 func (h *Handler) ReadVerses(w http.ResponseWriter, r *http.Request) {
-	enableCors(w)
+	enableCors(w, r)
 	if r.Method == "OPTIONS" {
 		return
 	}
@@ -184,7 +221,7 @@ type RouterPayload struct {
 }
 
 func (h *Handler) SearchVerses(w http.ResponseWriter, r *http.Request) {
-	enableCors(w)
+	enableCors(w, r)
 	if r.Method == "OPTIONS" {
 		return
 	}
@@ -224,7 +261,7 @@ func (h *Handler) SearchVerses(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) LookupDictionaryWord(w http.ResponseWriter, r *http.Request) {
-	enableCors(w)
+	enableCors(w, r)
 	if r.Method == "OPTIONS" {
 		return
 	}
@@ -255,7 +292,7 @@ func (h *Handler) LookupDictionaryWord(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
-	enableCors(w)
+	enableCors(w, r)
 	if r.Method == "OPTIONS" {
 		return
 	}
@@ -851,7 +888,7 @@ CORE PRINCIPLES OF REASONING, PHILOSOPHY & FLUID CONVERSATION:
 }
 
 func (h *Handler) ReadVedas(w http.ResponseWriter, r *http.Request) {
-	enableCors(w)
+	enableCors(w, r)
 	if r.Method == "OPTIONS" {
 		return
 	}
@@ -902,7 +939,7 @@ func (h *Handler) ReadVedas(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SearchVedas(w http.ResponseWriter, r *http.Request) {
-	enableCors(w)
+	enableCors(w, r)
 	if r.Method == "OPTIONS" {
 		return
 	}

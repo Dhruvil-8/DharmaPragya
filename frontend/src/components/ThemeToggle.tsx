@@ -1,57 +1,46 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useSyncExternalStore } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
 interface ThemeToggleProps {
   className?: string;
 }
 
+const emptySubscribe = () => () => {};
+
+function subscribeTheme(callback: () => void) {
+  window.addEventListener('dharmapragya_theme_changed', callback);
+  return () => {
+    window.removeEventListener('dharmapragya_theme_changed', callback);
+  };
+}
+
+function getThemeSnapshot(): boolean {
+  return document.documentElement.classList.contains('dark');
+}
+
 export default function ThemeToggle({ className = '' }: ThemeToggleProps) {
-  const [isDark, setIsDark] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    // Determine current theme state
-    const currentIsDark = document.documentElement.classList.contains('dark');
-    setIsDark(currentIsDark);
-
-    // Listen for theme changes across components
-    const handleThemeChange = (e: Event) => {
-      const customEvent = e as CustomEvent<{ isDark: boolean }>;
-      if (customEvent.detail && typeof customEvent.detail.isDark === 'boolean') {
-        setIsDark(customEvent.detail.isDark);
-      } else {
-        setIsDark(document.documentElement.classList.contains('dark'));
-      }
-    };
-
-    window.addEventListener('dharmapragya_theme_changed', handleThemeChange);
-    return () => {
-      window.removeEventListener('dharmapragya_theme_changed', handleThemeChange);
-    };
-  }, []);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const isDark = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => false);
 
   const toggleTheme = () => {
     const root = document.documentElement;
-    const nextDark = !isDark;
+    const nextDark = !root.classList.contains('dark');
 
     if (nextDark) {
       root.classList.add('dark');
       try {
         localStorage.setItem('dharmapragya_theme', 'dark');
         localStorage.setItem('theme', 'dark');
-      } catch (e) {}
+      } catch {}
     } else {
       root.classList.remove('dark');
       try {
         localStorage.setItem('dharmapragya_theme', 'light');
         localStorage.setItem('theme', 'light');
-      } catch (e) {}
+      } catch {}
     }
-
-    setIsDark(nextDark);
 
     // Dispatch event to sync all other ThemeToggle instances & SidePanel
     window.dispatchEvent(

@@ -26,10 +26,7 @@ interface VedicVerseBlockProps {
   mantra: VedaMantra;
   index?: number;
   totalMantras?: number;
-  onNext?: () => void;
-  onPrev?: () => void;
   preferredLanguage?: string;
-  isActive?: boolean;
   fontSize?: SanskritFontSize;
   globalLayers?: {
     showSvara?: boolean;
@@ -40,7 +37,6 @@ interface VedicVerseBlockProps {
     showBhavartha?: boolean;
     showBhashyas?: boolean;
   };
-  onToggleGlobalLayer?: (layer: 'svara' | 'iast' | 'padapatha' | 'anvaya' | 'translation' | 'bhavartha' | 'bhashyas') => void;
   onOpenShareModal?: (details: {
     sourceName: string;
     chapterNumber: number;
@@ -55,14 +51,9 @@ interface VedicVerseBlockProps {
 function VedicVerseBlock({
   mantra,
   index = 0,
-  totalMantras = 1,
-  onNext,
-  onPrev,
   preferredLanguage = 'hindi',
-  isActive = true,
   fontSize = 'md',
   globalLayers,
-  onToggleGlobalLayer,
   onOpenShareModal,
   onAskAboutMantra,
 }: VedicVerseBlockProps) {
@@ -74,32 +65,23 @@ function VedicVerseBlock({
   const showTranslation = globalLayers?.showTranslation !== undefined ? globalLayers.showTranslation : true;
   const showBhashyas = globalLayers?.showBhashyas !== undefined ? globalLayers.showBhashyas : true;
   
-  const [selectedLanguage, setSelectedLanguage] = useState<string>(preferredLanguage || 'english');
+  const [userSelectedLanguage, setUserSelectedLanguage] = useState<string | null>(null);
+  const selectedLanguage = userSelectedLanguage || preferredLanguage?.toLowerCase() || 'hindi';
   const [selectedBhashyaAuthor, setSelectedBhashyaAuthor] = useState<string>('Maharshi Dayananda Saraswati');
-  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarked, setBookmarked] = useState<boolean>(() =>
+    isVerseBookmarked(mantra.veda_name, mantra.division_1, mantra.division_3)
+  );
   const [copied, setCopied] = useState(false);
   const [dictWord, setDictWord] = useState<string | null>(null);
 
-  // Sync preferredLanguage prop
+  // Update Bookmark state & sync across windows/drawers without cascading render
   useEffect(() => {
-    if (preferredLanguage) {
-      setSelectedLanguage(preferredLanguage.toLowerCase());
-    }
-  }, [preferredLanguage]);
-
-  // Update Bookmark state & sync across windows/drawers
-  useEffect(() => {
-    setIsBookmarkedState();
     const handleUpdate = () => {
-      setIsBookmarkedState();
+      setBookmarked(isVerseBookmarked(mantra.veda_name, mantra.division_1, mantra.division_3));
     };
     window.addEventListener('dharmapragya_bookmarks_updated', handleUpdate);
     return () => window.removeEventListener('dharmapragya_bookmarks_updated', handleUpdate);
-  }, [mantra]);
-
-  const setIsBookmarkedState = () => {
-    setBookmarked(isVerseBookmarked(mantra.veda_name, mantra.division_1, mantra.division_3));
-  };
+  }, [mantra.veda_name, mantra.division_1, mantra.division_3]);
 
   // Find English translation across bhashyas
   const englishTranslation = useMemo(() => {
@@ -220,11 +202,9 @@ function VedicVerseBlock({
     });
   }, [bhashyasByAuthor]);
 
-  useEffect(() => {
-    if (authorsList.length > 0 && !authorsList.includes(selectedBhashyaAuthor)) {
-      setSelectedBhashyaAuthor(authorsList[0]);
-    }
-  }, [authorsList, selectedBhashyaAuthor]);
+  const effectiveBhashyaAuthor = authorsList.includes(selectedBhashyaAuthor)
+    ? selectedBhashyaAuthor
+    : (authorsList[0] || 'Maharshi Dayananda Saraswati');
 
   const fontSizeClassMap: Record<SanskritFontSize, string> = {
     sm: 'text-base sm:text-lg md:text-xl leading-relaxed',
@@ -238,6 +218,16 @@ function VedicVerseBlock({
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDictClick = (e: React.MouseEvent<HTMLElement>) => {
+    const target = (e.target as HTMLElement).closest('[data-dict-word]');
+    if (target) {
+      const word = target.getAttribute('data-dict-word');
+      if (word) {
+        setDictWord(word);
+      }
+    }
   };
 
   const toggleBookmarkCurrent = () => {
@@ -362,7 +352,7 @@ function VedicVerseBlock({
       </div>
 
       {/* 2. Sacred Mantra Text Display */}
-      <div className="py-2 text-center select-text space-y-2">
+      <div className="py-2 text-center select-text space-y-2" onClick={handleDictClick}>
         {formatSanskritVerseLines(showSvara ? (mantra.sanskrit_svara || mantra.sanskrit_plain) : mantra.sanskrit_plain).map((line, idx) => (
           <p 
             key={idx} 
@@ -374,7 +364,7 @@ function VedicVerseBlock({
               return (
                 <span
                   key={tIdx}
-                  onClick={() => setDictWord(token)}
+                  data-dict-word={token}
                   className="inline-block px-1 py-0.5 rounded cursor-pointer transition-all hover:bg-amber-400/25 hover:text-saffron-800 dark:hover:text-amber-300 hover:underline decoration-amber-500/50 decoration-dotted underline-offset-4 active:scale-95"
                   title="Click for Apte & Monier-Williams definition"
                 >
@@ -400,7 +390,7 @@ function VedicVerseBlock({
       
       {/* A. Padapatha (पदपाठः) */}
       {showPadapatha && (mantra.padapatha_svara || mantra.padapatha_plain) && (
-        <div className="p-3.5 bg-cream-100/80 dark:bg-slate-900/60 rounded-2xl border border-cream-300 dark:border-amber-500/20 space-y-1.5 animate-fade-in">
+        <div className="p-3.5 bg-cream-100/80 dark:bg-slate-900/60 rounded-2xl border border-cream-300 dark:border-amber-500/20 space-y-1.5 animate-fade-in" onClick={handleDictClick}>
           <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-saffron-800 dark:text-amber-400">
             <BookOpen className="w-3 h-3" />
             <span>पदपाठः (Sandhi-Split Words)</span>
@@ -414,7 +404,7 @@ function VedicVerseBlock({
                 return (
                   <span
                     key={tIdx}
-                    onClick={() => setDictWord(token)}
+                    data-dict-word={token}
                     className="inline-block px-1 py-0.5 rounded cursor-pointer transition-all hover:bg-amber-400/25 hover:text-saffron-800 dark:hover:text-amber-300 hover:underline decoration-amber-500/50 decoration-dotted underline-offset-4 active:scale-95"
                     title="Click for Apte & Monier-Williams definition"
                   >
@@ -470,7 +460,7 @@ function VedicVerseBlock({
                 <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-900/80 p-0.5 rounded-lg border border-amber-200/60 dark:border-amber-500/30 text-[10px]">
                   <button
                     type="button"
-                    onClick={() => setSelectedLanguage('english')}
+                    onClick={() => setUserSelectedLanguage('english')}
                     className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
                       selectedLanguage === 'english'
                         ? 'bg-saffron-600 dark:bg-amber-500 text-white'
@@ -481,7 +471,7 @@ function VedicVerseBlock({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSelectedLanguage('hindi')}
+                    onClick={() => setUserSelectedLanguage('hindi')}
                     className={`px-2 py-0.5 rounded font-bold cursor-pointer transition-colors ${
                       selectedLanguage === 'hindi'
                         ? 'bg-saffron-600 dark:bg-amber-500 text-white'
@@ -516,7 +506,7 @@ function VedicVerseBlock({
                 type="button"
                 onClick={() => setSelectedBhashyaAuthor(author)}
                 className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  selectedBhashyaAuthor === author
+                  effectiveBhashyaAuthor === author
                     ? 'bg-gradient-to-r from-saffron-600 to-terracotta-600 dark:from-amber-500 dark:to-saffron-600 text-white shadow-2xs'
                     : 'bg-white dark:bg-slate-800 text-stone-700 dark:text-slate-300 hover:text-saffron-800 dark:hover:text-amber-300'
                 }`}
@@ -527,47 +517,47 @@ function VedicVerseBlock({
           </div>
 
           {/* Render selected Bhashya content */}
-          {bhashyasByAuthor[selectedBhashyaAuthor] && (
+          {bhashyasByAuthor[effectiveBhashyaAuthor] && (
             <div className="space-y-2.5 text-xs font-serif leading-relaxed text-stone-800 dark:text-slate-200">
               {/* Mantra Theme / Vishaya */}
-              {(bhashyasByAuthor[selectedBhashyaAuthor].vishaya_hi || bhashyasByAuthor[selectedBhashyaAuthor].vishaya_sk) && (
+              {(bhashyasByAuthor[effectiveBhashyaAuthor].vishaya_hi || bhashyasByAuthor[effectiveBhashyaAuthor].vishaya_sk) && (
                 <div className="p-2.5 bg-white dark:bg-slate-800/80 rounded-xl border border-cream-300 dark:border-amber-500/20">
                   <span className="text-[10px] font-bold uppercase text-saffron-800 dark:text-amber-400 block mb-0.5">
                     विषयः (Theme):
                   </span>
-                  <p>{bhashyasByAuthor[selectedBhashyaAuthor].vishaya_hi || bhashyasByAuthor[selectedBhashyaAuthor].vishaya_sk}</p>
+                  <p>{bhashyasByAuthor[effectiveBhashyaAuthor].vishaya_hi || bhashyasByAuthor[effectiveBhashyaAuthor].vishaya_sk}</p>
                 </div>
               )}
 
               {/* Bhavartha (Hindi Purport) */}
-              {bhashyasByAuthor[selectedBhashyaAuthor].hindi && (
+              {bhashyasByAuthor[effectiveBhashyaAuthor].hindi && (
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold uppercase text-saffron-800 dark:text-amber-400">
                     भावार्थः (Hindi Purport):
                   </span>
                   <p className="leading-relaxed whitespace-pre-line text-stone-800 dark:text-slate-200">
-                    {bhashyasByAuthor[selectedBhashyaAuthor].hindi}
+                    {bhashyasByAuthor[effectiveBhashyaAuthor].hindi}
                   </p>
                 </div>
               )}
 
               {/* Sanskrit Purport */}
-              {bhashyasByAuthor[selectedBhashyaAuthor].sanskrit && (
+              {bhashyasByAuthor[effectiveBhashyaAuthor].sanskrit && (
                 <div className="space-y-1 pt-1 border-t border-cream-200 dark:border-amber-900/30">
                   <span className="text-[10px] font-bold uppercase text-saffron-800 dark:text-amber-400 font-sanskrit">
                     भावार्थः (संस्कृतम्):
                   </span>
                   <p className="font-sanskrit text-stone-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">
-                    {bhashyasByAuthor[selectedBhashyaAuthor].sanskrit}
+                    {bhashyasByAuthor[effectiveBhashyaAuthor].sanskrit}
                   </p>
                 </div>
               )}
 
               {/* Tika / Notes */}
-              {bhashyasByAuthor[selectedBhashyaAuthor].tika && (
+              {bhashyasByAuthor[effectiveBhashyaAuthor].tika && (
                 <div className="p-2 bg-cream-200/60 dark:bg-slate-800/60 rounded-xl text-[11px] text-stone-600 dark:text-slate-400 italic">
                   <span className="font-bold">टीका: </span>
-                  {bhashyasByAuthor[selectedBhashyaAuthor].tika}
+                  {bhashyasByAuthor[effectiveBhashyaAuthor].tika}
                 </div>
               )}
             </div>

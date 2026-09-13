@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import Header from '../../../../../components/Header';
-import { ArrowLeft, Compass, BookOpen, ExternalLink, Sparkles } from 'lucide-react';
+import { Compass, ExternalLink } from 'lucide-react';
 import VerseBlock from '../../../../../components/VerseBlock';
 import { VerseData } from '../../../../../types';
 
@@ -24,29 +25,18 @@ function normalizeSourceName(raw: string): string {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { source, chapter, verse } = await params;
   const sourceName = normalizeSourceName(source);
-  const title = `${sourceName} Chapter ${chapter}, Verse ${verse} - Sanskrit Shloka, Translation & Commentary | DharmaPragya`;
-  const description = `Read ${sourceName} Ch. ${chapter} Verse ${verse} in original Sanskrit with IAST transliteration, Hindi & English translations, Sanskrit word breakdown, and philosophical commentaries.`;
+  const chapterNum = parseInt(chapter, 10);
+  const verseNum = parseInt(verse, 10);
+
+  const title = `${sourceName} Chapter ${chapterNum}, Verse ${verseNum} | Sanskrit Shloka & Translation`;
+  const description = `Read sacred Sanskrit shloka ${sourceName} Chapter ${chapterNum}, Verse ${verseNum} with authentic English and Hindi translations, word meanings, and commentary at DharmaPragya.`;
 
   return {
     title,
     description,
-    keywords: [
-      sourceName,
-      `${sourceName} Chapter ${chapter}`,
-      `${sourceName} Verse ${verse}`,
-      `${sourceName} ${chapter}.${verse}`,
-      'Sanskrit Shloka',
-      'Vedic Commentary',
-      'Sanatan Dharma',
-      'Hindu Scriptures',
-    ],
-    alternates: {
-      canonical: `https://dharma-pragya.vercel.app/read/${encodeURIComponent(sourceName)}/${chapter}/${verse}`,
-    },
     openGraph: {
       title,
       description,
-      url: `https://dharma-pragya.vercel.app/read/${encodeURIComponent(sourceName)}/${chapter}/${verse}`,
       siteName: 'DharmaPragya',
       type: 'article',
     },
@@ -63,15 +53,18 @@ async function getVerseData(sourceName: string, chapter: number, verseNum: numbe
   const secret = process.env.FRONTEND_SECRET || '';
 
   try {
-    const res = await fetch(`${backendUrl}/api/read?source=${encodeURIComponent(sourceName)}&chapter=${chapter}`, {
+    const res = await fetch(`${backendUrl}/api/read?source=${encodeURIComponent(sourceName)}&chapter=${chapter}&verse=${verseNum}`, {
       headers: { 'X-App-Token': secret },
       next: { revalidate: 86400 }, // Cache for 24h
     });
     if (!res.ok) return null;
     const data = await res.json();
+    if (data && !Array.isArray(data) && data.verse_number === verseNum) {
+      return data;
+    }
     if (Array.isArray(data)) {
       const found = data.find((v: VerseData) => v.verse_number === verseNum);
-      return found || data[0] || null;
+      return found || null;
     }
   } catch (e) {
     console.error('Server-side verse fetch failed:', e);
@@ -86,6 +79,9 @@ export default async function ProgrammaticVersePage({ params }: PageProps) {
   const verseNum = parseInt(verse, 10);
 
   const verseData = await getVerseData(sourceName, chapterNum, verseNum);
+  if (!verseData) {
+    notFound();
+  }
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -163,7 +159,6 @@ export default async function ProgrammaticVersePage({ params }: PageProps) {
           <VerseBlock
             verse={verseData}
             index={0}
-            totalVerses={1}
             isAskMode={false}
             readingMode="study"
           />

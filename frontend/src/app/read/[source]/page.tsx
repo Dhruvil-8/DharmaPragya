@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Header from '../../../components/Header';
-import { ArrowLeft, BookOpen, ChevronRight, ExternalLink, Sparkles } from 'lucide-react';
+import { BookOpen, ChevronRight, ExternalLink, Sparkles } from 'lucide-react';
 import { SectionData } from '../../../types';
 
 interface PageProps {

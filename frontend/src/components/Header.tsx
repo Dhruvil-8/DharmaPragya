@@ -7,8 +7,10 @@ import {
   BookOpen 
 } from 'lucide-react';
 import Image from 'next/image';
-import SidePanel from './SidePanel';
+import dynamic from 'next/dynamic';
 import ThemeToggle from './ThemeToggle';
+
+const SidePanel = dynamic(() => import('./SidePanel'), { ssr: false });
 
 interface HeaderProps {
   onOpenSaved?: () => void;
@@ -116,14 +118,16 @@ export default function Header({
         </div>
       </div>
 
-      {/* Embedded SidePanel fallback if opened directly from header state */}
-      <SidePanel 
-        isOpen={internalAboutOpen} 
-        onClose={() => setInternalAboutOpen(false)}
-        onOpenSaved={onOpenSaved}
-        mode={mode}
-        onModeChange={onModeChange}
-      />
+      {/* Embedded SidePanel fallback if opened directly without onOpenAbout */}
+      {!onOpenAbout && internalAboutOpen && (
+        <SidePanel 
+          isOpen={internalAboutOpen} 
+          onClose={() => setInternalAboutOpen(false)}
+          onOpenSaved={onOpenSaved}
+          mode={mode}
+          onModeChange={onModeChange}
+        />
+      )}
     </>
   );
 }

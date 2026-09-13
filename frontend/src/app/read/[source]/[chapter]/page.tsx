@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Header from '../../../../components/Header';
-import { ArrowLeft, BookOpen, Compass, ExternalLink } from 'lucide-react';
-import VerseBlock from '../../../../components/VerseBlock';
+import { BookOpen, Compass, ExternalLink } from 'lucide-react';
+import ChapterVerseList from '../../../../components/ChapterVerseList';
 import { VerseData } from '../../../../types';
 
 interface PageProps {
@@ -160,19 +160,7 @@ export default async function ChapterReadingPage({ params }: PageProps) {
 
         {/* Verse List */}
         {verses.length > 0 ? (
-          <div className="space-y-6">
-            {verses.map((verse, idx) => (
-              <div key={verse.id} id={`verse-${verse.verse_number}`}>
-                <VerseBlock
-                  verse={verse}
-                  index={idx}
-                  totalVerses={verses.length}
-                  isAskMode={false}
-                  readingMode="study"
-                />
-              </div>
-            ))}
-          </div>
+          <ChapterVerseList verses={verses} />
         ) : (
           <div className="bg-white p-10 rounded-3xl border border-cream-400 text-center space-y-4">
             <h2 className="text-xl font-bold font-cinzel text-saffron-800">

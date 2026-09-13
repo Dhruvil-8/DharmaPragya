@@ -21,13 +21,9 @@ export type SanskritFontSize = 'sm' | 'md' | 'lg' | 'xl';
 
 interface VerseBlockProps {
   verse: VerseData;
-  index: number;
-  totalVerses?: number;
+  index?: number;
   isAskMode?: boolean;
-  onNext?: () => void;
-  onPrev?: () => void;
   preferredLanguage?: string;
-  autoPlayChant?: boolean;
   isActive?: boolean;
   readingMode?: string;
   fontSize?: SanskritFontSize;
@@ -37,7 +33,6 @@ interface VerseBlockProps {
     showTranslation?: boolean;
     showCommentaries?: boolean;
   };
-  onToggleGlobalLayer?: (layer: 'transliteration' | 'wordMeanings' | 'translation' | 'commentaries') => void;
   onOpenShareModal?: (details: {
     sourceName: string;
     chapterNumber: number;
@@ -51,24 +46,21 @@ interface VerseBlockProps {
 
 function VerseBlock({
   verse,
-  index,
-  totalVerses,
   isAskMode = false,
-  onNext,
-  onPrev,
   preferredLanguage = 'english',
-  autoPlayChant = false,
   isActive = true,
   fontSize = 'md',
   globalLayers,
-  onToggleGlobalLayer,
   onOpenShareModal,
   onAskAboutVerse,
 }: VerseBlockProps) {
-  const [selectedLanguage, setSelectedLanguage] = useState<Language>('english');
+  const [userSelectedLang, setUserSelectedLang] = useState<Language | null>(null);
+  const selectedLanguage: Language = userSelectedLang || (preferredLanguage as Language) || 'english';
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState<boolean>(() =>
+    isVerseBookmarked(verse.source_name, verse.chapter_number, verse.verse_number)
+  );
   const [dictWord, setDictWord] = useState<string | null>(null);
 
   // Unified Layer Visibility: Derived from globalLayers (defaults to true)
@@ -80,24 +72,14 @@ function VerseBlock({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioPath = `/api/audio/${verse.chapter_number}/${verse.verse_number}.mp3`;
 
-  // Bookmark synchronization
+  // Bookmark synchronization without cascading render
   useEffect(() => {
-    setIsBookmarked(isVerseBookmarked(verse.source_name, verse.chapter_number, verse.verse_number));
     const handleUpdate = () => {
       setIsBookmarked(isVerseBookmarked(verse.source_name, verse.chapter_number, verse.verse_number));
     };
     window.addEventListener('dharmapragya_bookmarks_updated', handleUpdate);
     return () => window.removeEventListener('dharmapragya_bookmarks_updated', handleUpdate);
   }, [verse.source_name, verse.chapter_number, verse.verse_number]);
-
-  // Sync preferredLanguage prop
-  useEffect(() => {
-    if (preferredLanguage) {
-      Promise.resolve().then(() => {
-        setSelectedLanguage(preferredLanguage as Language);
-      });
-    }
-  }, [preferredLanguage]);
 
   // Clean up audio on unmount or when inactive
   useEffect(() => {
@@ -340,7 +322,16 @@ function VerseBlock({
       </div>
 
       {/* Devanagari Sanskrit Text Centerpiece */}
-      <div className="p-6 md:p-8 bg-cream-200/50 dark:bg-slate-900/60 rounded-2xl border border-cream-400/60 dark:border-amber-500/20 shadow-inner text-center space-y-4">
+      <div 
+        onClick={(e) => {
+          const target = (e.target as HTMLElement).closest('[data-dict-word]');
+          if (target) {
+            const word = target.getAttribute('data-dict-word');
+            if (word) setDictWord(word);
+          }
+        }}
+        className="p-6 md:p-8 bg-cream-200/50 dark:bg-slate-900/60 rounded-2xl border border-cream-400/60 dark:border-amber-500/20 shadow-inner text-center space-y-4"
+      >
         <div className="space-y-2 py-2">
           {formatSanskritVerseLines(verse.sanskrit_text).map((line, idx) => (
             <p 
@@ -353,7 +344,7 @@ function VerseBlock({
                 return (
                   <span
                     key={tIdx}
-                    onClick={() => setDictWord(token)}
+                    data-dict-word={token}
                     className="inline-block px-1 py-0.5 rounded cursor-pointer transition-all hover:bg-amber-400/25 hover:text-saffron-800 dark:hover:text-amber-300 hover:underline decoration-amber-500/50 decoration-dotted underline-offset-4 active:scale-95"
                     title="Click for Apte & Monier-Williams definition"
                   >
@@ -392,7 +383,16 @@ function VerseBlock({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 max-h-72 overflow-y-auto pr-1">
+          <div 
+            onClick={(e) => {
+              const target = (e.target as HTMLElement).closest('[data-dict-word]');
+              if (target) {
+                const word = target.getAttribute('data-dict-word');
+                if (word) setDictWord(word);
+              }
+            }}
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 max-h-72 overflow-y-auto pr-1"
+          >
             {parsedMeanings.map((item, idx) => (
               <div 
                 key={idx} 
@@ -400,7 +400,7 @@ function VerseBlock({
               >
                 <div className="flex items-start justify-between gap-1">
                   <span 
-                    onClick={() => setDictWord(item.word)}
+                    data-dict-word={item.word}
                     className="font-serif font-bold text-xs sm:text-sm text-saffron-900 dark:text-amber-300 cursor-pointer hover:underline decoration-amber-500/50 decoration-dotted transition-colors"
                     title="Click for Apte & Monier-Williams definition"
                   >
@@ -432,7 +432,7 @@ function VerseBlock({
               <button 
                 key={lang} 
                 type="button"
-                onClick={() => setSelectedLanguage(lang)} 
+                onClick={() => setUserSelectedLang(lang)} 
                 className={`px-4 py-1 text-xs font-bold rounded-full cursor-pointer transition-all duration-300 ${
                   activeLanguage === lang 
                     ? 'bg-gradient-to-r from-saffron-500 to-terracotta-500 dark:from-amber-500 dark:to-saffron-600 text-white shadow-xs' 

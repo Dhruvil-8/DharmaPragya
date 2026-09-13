@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { VerseData, SectionData, SourceData, VedaInfo, VedaSection, VedaMantra } from '../types';
 import VerseBlock, { SanskritFontSize } from './VerseBlock';
 import VedicVerseBlock from './VedicVerseBlock';
@@ -39,6 +39,19 @@ interface ReadModeProps {
   } | null;
 }
 
+const DEFAULT_GLOBAL_LAYERS: GlobalLayersState = {
+  showTransliteration: true,
+  showWordMeanings: true,
+  showTranslation: true,
+  showCommentaries: true,
+  showSvara: true,
+  showIAST: false,
+  showPadapatha: true,
+  showAnvaya: true,
+  showBhavartha: true,
+  showBhashyas: true,
+};
+
 export default function ReadMode({
   apiBaseUrl,
   isActive = true,
@@ -64,49 +77,57 @@ export default function ReadMode({
   const [vedaMantras, setVedaMantras] = useState<VedaMantra[]>([]);
   const [currentMantraIndex, setCurrentMantraIndex] = useState<number>(0);
 
-  // Reader Global View Settings (Persisted in localStorage)
-  const [fontSize, setFontSize] = useState<SanskritFontSize>('md');
-  const [autoPlayChant, setAutoPlayChant] = useState<boolean>(true);
-  const [preferredLanguage, setPreferredLanguage] = useState<string>('english');
+  // Navigation refs for global keyboard shortcuts
+  const goToNextChapterRef = useRef<() => void>(() => {});
+  const goToPrevChapterRef = useRef<() => void>(() => {});
+
+  // Reader Global View Settings (Persisted in localStorage with lazy init)
+  const [fontSize, setFontSize] = useState<SanskritFontSize>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedFontSize = localStorage.getItem('dharmapragya_font_size') as SanskritFontSize;
+        if (savedFontSize && ['sm', 'md', 'lg', 'xl'].includes(savedFontSize)) return savedFontSize;
+      } catch {}
+    }
+    return 'md';
+  });
+
+  const [autoPlayChant, setAutoPlayChant] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedAutoPlay = localStorage.getItem('autoPlayChant');
+        if (savedAutoPlay !== null) return savedAutoPlay === 'true';
+      } catch {}
+    }
+    return true;
+  });
+
+  const [preferredLanguage, setPreferredLanguage] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedLang = localStorage.getItem('preferredLanguage');
+        if (savedLang) return savedLang;
+      } catch {}
+    }
+    return 'english';
+  });
+
   const [isTocDrawerOpen, setIsTocDrawerOpen] = useState<boolean>(false);
   const [tocFilterQuery, setTocFilterQuery] = useState<string>('');
   const [verseJumpInput, setVerseJumpInput] = useState<string>('');
 
-  // Global Unified Layer Visibility State (Persisted in localStorage)
-  const [globalLayers, setGlobalLayers] = useState<GlobalLayersState>({
-    showTransliteration: true,
-    showWordMeanings: true,
-    showTranslation: true,
-    showCommentaries: true,
-    showSvara: true,
-    showIAST: false,
-    showPadapatha: true,
-    showAnvaya: true,
-    showBhavartha: true,
-    showBhashyas: true,
-  });
-
-  // Load saved preferences on initial mount
-  useEffect(() => {
+  // Global Unified Layer Visibility State (Persisted in localStorage with lazy init)
+  const [globalLayers, setGlobalLayers] = useState<GlobalLayersState>(() => {
     if (typeof window !== 'undefined') {
       try {
         const savedLayers = localStorage.getItem('dharmapragya_global_layers');
-        if (savedLayers) {
-          setGlobalLayers(prev => ({ ...prev, ...JSON.parse(savedLayers) }));
-        }
-        const savedFontSize = localStorage.getItem('dharmapragya_font_size') as SanskritFontSize;
-        if (savedFontSize && ['sm', 'md', 'lg', 'xl'].includes(savedFontSize)) {
-          setFontSize(savedFontSize);
-        }
-        const savedLang = localStorage.getItem('preferredLanguage');
-        if (savedLang) setPreferredLanguage(savedLang);
-        const savedAutoPlay = localStorage.getItem('autoPlayChant');
-        if (savedAutoPlay !== null) setAutoPlayChant(savedAutoPlay === 'true');
-      } catch (e) {}
+        if (savedLayers) return { ...DEFAULT_GLOBAL_LAYERS, ...JSON.parse(savedLayers) };
+      } catch {}
     }
-  }, []);
+    return DEFAULT_GLOBAL_LAYERS;
+  });
 
-  const handleToggleGlobalLayer = (layerKey: string) => {
+  const handleToggleGlobalLayer = useCallback((layerKey: string) => {
     setGlobalLayers(prev => {
       const updated = { ...prev };
       if (layerKey === 'transliteration' || layerKey === 'iast') {
@@ -134,14 +155,14 @@ export default function ReadMode({
       }
       return updated;
     });
-  };
+  }, []);
 
-  const handleFontSizeChange = (newSize: SanskritFontSize) => {
+  const handleFontSizeChange = useCallback((newSize: SanskritFontSize) => {
     setFontSize(newSize);
     if (typeof window !== 'undefined') {
       localStorage.setItem('dharmapragya_font_size', newSize);
     }
-  };
+  }, []);
 
   // Progressive Lazy Rendering State for 60fps Continuous Mode
   const [visibleCount, setVisibleCount] = useState<number>(25);
@@ -161,6 +182,16 @@ export default function ReadMode({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
+  if (searchQuery !== prevSearchQuery) {
+    setPrevSearchQuery(searchQuery);
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      setVedaSearchResults([]);
+      setIsSearching(false);
+    }
+  }
 
   // Progressive Lazy Loading Observer (Batches 25 verses at a time when scrolling near bottom)
   useEffect(() => {
@@ -182,9 +213,6 @@ export default function ReadMode({
   // Debounced search effect with AbortController to cancel stale in-flight queries
   useEffect(() => {
     if (!searchQuery.trim() || searchQuery.trim().length < 2) {
-      setSearchResults([]);
-      setVedaSearchResults([]);
-      setIsSearching(false);
       return;
     }
     const controller = new AbortController();
@@ -247,9 +275,9 @@ export default function ReadMode({
         return;
       }
       if (e.key === ']' || (e.altKey && e.key === 'ArrowRight')) {
-        goToNextChapter();
+        goToNextChapterRef.current?.();
       } else if (e.key === '[' || (e.altKey && e.key === 'ArrowLeft')) {
-        goToPrevChapter();
+        goToPrevChapterRef.current?.();
       }
     };
 
@@ -323,45 +351,6 @@ export default function ReadMode({
     };
     setTimeout(tryScroll, 80);
   };
-
-  // Deep-linking navigation
-  useEffect(() => {
-    if (!targetCoordinate) return;
-
-    const reqSource = targetCoordinate.sourceName.trim().toLowerCase();
-
-    // 1. Precise Veda Match
-    const matchedVeda = vedas.find(v => 
-      v.id.toLowerCase() === reqSource ||
-      v.name_english.toLowerCase() === reqSource ||
-      v.name_sanskrit.toLowerCase() === reqSource ||
-      v.name_english.toLowerCase().startsWith(reqSource) ||
-      reqSource.startsWith(v.id.toLowerCase())
-    );
-
-    if (matchedVeda) {
-      setCurrentCategory('VEDAS');
-      loadVedaSource(matchedVeda, targetCoordinate.chapterNumber, targetCoordinate.division2, targetCoordinate.verseNumber);
-      return;
-    }
-
-    // 2. Exact Scripture Match first (to prevent partial matches like 'Ashtavakra Gita' -> 'Bhagavad Gita')
-    let matchedSource = sources.find(s => s.name.toLowerCase() === reqSource);
-
-    // 3. Fallback Scripture Match (prefix or includes)
-    if (!matchedSource) {
-      matchedSource = sources.find(
-        s => s.name.toLowerCase().startsWith(reqSource) || reqSource.startsWith(s.name.toLowerCase())
-      );
-    }
-
-    if (matchedSource) {
-      const isGitaText = matchedSource.name === 'Bhagavad Gita' || matchedSource.name.toLowerCase().includes('gita');
-      setCurrentCategory(isGitaText ? 'Gita' : matchedSource.type);
-      setCurrentSource(matchedSource.name);
-      loadSourceAndSection(matchedSource.name, targetCoordinate.chapterNumber, targetCoordinate.verseNumber);
-    }
-  }, [targetCoordinate, sources, vedas]);
 
   // ---------------- Veda Handlers ----------------
   const loadVedaSource = async (veda: VedaInfo, targetDivision?: number, targetDivision2?: number, targetMantraNum?: number) => {
@@ -449,10 +438,19 @@ export default function ReadMode({
   };
 
   // ---------------- Standard Scripture Handlers ----------------
-  const loadSourceAndSection = async (sourceName: string, chapterNum: number, targetVerseNum?: number) => {
+  const loadSourceAndSection = async (
+    sourceName: string,
+    chapterNum: number,
+    targetVerseNum?: number,
+    categoryOverride?: string | null
+  ) => {
     setIsLoading(true);
     setError(null);
     setCurrentVeda(null);
+    setCurrentSource(sourceName);
+    if (categoryOverride !== undefined) {
+      setCurrentCategory(categoryOverride);
+    }
     try {
       let secData = sectionsCacheRef.current.get(sourceName);
       if (!secData) {
@@ -502,6 +500,51 @@ export default function ReadMode({
     }
   };
 
+  const navHandlersRef = useRef({ loadVedaSource, loadSourceAndSection });
+  useEffect(() => {
+    navHandlersRef.current = { loadVedaSource, loadSourceAndSection };
+  });
+
+  // Deep-linking navigation
+  useEffect(() => {
+    if (!targetCoordinate) return;
+
+    const reqSource = targetCoordinate.sourceName.trim().toLowerCase();
+
+    const timer = setTimeout(() => {
+      // 1. Precise Veda Match
+      const matchedVeda = vedas.find(v => 
+        v.id.toLowerCase() === reqSource ||
+        v.name_english.toLowerCase() === reqSource ||
+        v.name_sanskrit.toLowerCase() === reqSource ||
+        v.name_english.toLowerCase().startsWith(reqSource) ||
+        reqSource.startsWith(v.id.toLowerCase())
+      );
+
+      if (matchedVeda) {
+        navHandlersRef.current.loadVedaSource(matchedVeda, targetCoordinate.chapterNumber, targetCoordinate.division2, targetCoordinate.verseNumber);
+        return;
+      }
+
+      // 2. Exact Scripture Match first (to prevent partial matches like 'Ashtavakra Gita' -> 'Bhagavad Gita')
+      let matchedSource = sources.find(s => s.name.toLowerCase() === reqSource);
+
+      // 3. Fallback Scripture Match (prefix or includes)
+      if (!matchedSource) {
+        matchedSource = sources.find(
+          s => s.name.toLowerCase().startsWith(reqSource) || reqSource.startsWith(s.name.toLowerCase())
+        );
+      }
+
+      if (matchedSource) {
+        const isGitaText = matchedSource.name === 'Bhagavad Gita' || matchedSource.name.toLowerCase().includes('gita');
+        navHandlersRef.current.loadSourceAndSection(matchedSource.name, targetCoordinate.chapterNumber, targetCoordinate.verseNumber, isGitaText ? 'Gita' : matchedSource.type);
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [targetCoordinate, sources, vedas]);
+
   const loadSource = async (sourceName: string, initialChapter?: number) => {
     setIsLoading(true);
     setError(null);
@@ -538,6 +581,7 @@ export default function ReadMode({
     setError(null);
     setCurrentSection(chapterNumber);
     setCurrentVerseIndex(0);
+    setVisibleCount(30);
     try {
       const chKey = `${sourceName}::${chapterNumber}`;
       let data = chapterCacheRef.current.get(chKey);
@@ -620,29 +664,10 @@ export default function ReadMode({
     }
   };
 
-  const nextVerse = () => {
-    if (currentVeda) {
-      if (currentMantraIndex < vedaMantras.length - 1) {
-        goToVerseIndex(currentMantraIndex + 1);
-      }
-    } else {
-      if (currentVerseIndex < chapterData.length - 1) {
-        goToVerseIndex(currentVerseIndex + 1);
-      }
-    }
-  };
-
-  const prevVerse = () => {
-    if (currentVeda) {
-      if (currentMantraIndex > 0) {
-        goToVerseIndex(currentMantraIndex - 1);
-      }
-    } else {
-      if (currentVerseIndex > 0) {
-        goToVerseIndex(currentVerseIndex - 1);
-      }
-    }
-  };
+  useEffect(() => {
+    goToNextChapterRef.current = goToNextChapter;
+    goToPrevChapterRef.current = goToPrevChapter;
+  });
 
   const goToVerseIndex = (idx: number) => {
     setVisibleCount(prev => Math.max(prev, idx + 30));
@@ -845,6 +870,28 @@ export default function ReadMode({
     setChapterData([]);
     setVedaMantras([]);
   };
+
+  const handleAskAboutMantra = useCallback((m: VedaMantra) => {
+    if (onAskAboutVerse) {
+      onAskAboutVerse({
+        id: m.krama_number,
+        section_id: m.division_1,
+        verse_number: m.division_3,
+        sanskrit_text: m.sanskrit_svara || m.sanskrit_plain,
+        transliteration: m.transliteration_iast || '',
+        word_meanings: m.word_meanings?.[0]?.padartha_text || '',
+        source_name: m.veda_name,
+        chapter_name: m.coordinate_str,
+        chapter_number: m.division_1,
+        translations: m.bhashyas?.filter(b => b.bhavartha).map(b => ({
+          language: b.language || 'hindi',
+          text: b.bhavartha || '',
+          author: b.author || '',
+        })) || [],
+        commentaries: [],
+      });
+    }
+  }, [onAskAboutVerse]);
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-24 px-2 sm:px-4">
@@ -1432,20 +1479,57 @@ export default function ReadMode({
           {activeChapterInfo.total > 1 && (
             <div className="bg-white dark:bg-[#0d121d] p-3 rounded-2xl border border-cream-400 dark:border-amber-500/20 shadow-2xs">
               <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
-                {Array.from({ length: activeChapterInfo.total }, (_, idx) => (
-                  <button 
-                    key={idx} 
-                    onClick={() => goToVerseIndex(idx)} 
-                    title={`Go to Verse ${idx + 1}`}
-                    className={`min-w-[32px] h-7 px-2 rounded-lg text-xs font-bold flex items-center justify-center border cursor-pointer transition-all duration-200 shrink-0 ${
-                      idx === (currentVeda ? currentMantraIndex : currentVerseIndex)
-                        ? 'bg-gradient-to-br from-saffron-500 to-terracotta-600 dark:from-amber-500 dark:to-saffron-600 text-white border-saffron-600 dark:border-amber-400 shadow-sm scale-105' 
-                        : 'bg-cream-50 dark:bg-slate-900 border-cream-300 dark:border-amber-500/20 text-stone-700 dark:text-slate-300 hover:bg-saffron-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
+                {(() => {
+                  const total = activeChapterInfo.total;
+                  const activeIdx = currentVeda ? currentMantraIndex : currentVerseIndex;
+                  let pillIndices: (number | 'ellipsis-left' | 'ellipsis-right')[] = [];
+
+                  if (total <= 100) {
+                    pillIndices = Array.from({ length: total }, (_, i) => i);
+                  } else {
+                    const start = Math.max(0, Math.min(activeIdx - 25, total - 50));
+                    const end = Math.min(total, start + 50);
+
+                    if (start > 0) {
+                      pillIndices.push(0);
+                      if (start > 1) pillIndices.push('ellipsis-left');
+                    }
+                    for (let i = start; i < end; i++) {
+                      if (i === 0 && start > 0) continue;
+                      if (i === total - 1 && end < total) continue;
+                      pillIndices.push(i);
+                    }
+                    if (end < total) {
+                      if (end < total - 1) pillIndices.push('ellipsis-right');
+                      pillIndices.push(total - 1);
+                    }
+                  }
+
+                  return pillIndices.map((item, pIdx) => {
+                    if (item === 'ellipsis-left' || item === 'ellipsis-right') {
+                      return (
+                        <span key={`ell-${pIdx}`} className="px-1 text-xs text-stone-400 select-none">
+                          •••
+                        </span>
+                      );
+                    }
+                    const idx = item;
+                    return (
+                      <button 
+                        key={idx} 
+                        onClick={() => goToVerseIndex(idx)} 
+                        title={`Go to Verse ${idx + 1}`}
+                        className={`min-w-[32px] h-7 px-2 rounded-lg text-xs font-bold flex items-center justify-center border cursor-pointer transition-all duration-200 shrink-0 ${
+                          idx === activeIdx
+                            ? 'bg-gradient-to-br from-saffron-500 to-terracotta-600 dark:from-amber-500 dark:to-saffron-600 text-white border-saffron-600 dark:border-amber-400 shadow-sm scale-105' 
+                            : 'bg-cream-50 dark:bg-slate-900 border-cream-300 dark:border-amber-500/20 text-stone-700 dark:text-slate-300 hover:bg-saffron-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {idx + 1}
+                      </button>
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}
@@ -1459,36 +1543,11 @@ export default function ReadMode({
                   <VedicVerseBlock
                     mantra={mantra}
                     index={idx}
-                    totalMantras={vedaMantras.length}
-                    onNext={nextVerse}
-                    onPrev={prevVerse}
                     preferredLanguage={effectiveLanguage}
-                    isActive={isActive}
                     fontSize={fontSize}
                     globalLayers={globalLayers}
-                    onToggleGlobalLayer={handleToggleGlobalLayer}
                     onOpenShareModal={onOpenShareModal}
-                    onAskAboutMantra={(m) => {
-                      if (onAskAboutVerse) {
-                        onAskAboutVerse({
-                          id: m.krama_number,
-                          section_id: m.division_1,
-                          verse_number: m.division_3,
-                          sanskrit_text: m.sanskrit_svara || m.sanskrit_plain,
-                          transliteration: m.transliteration_iast || '',
-                          word_meanings: m.word_meanings?.[0]?.padartha_text || '',
-                          source_name: m.veda_name,
-                          chapter_name: m.coordinate_str,
-                          chapter_number: m.division_1,
-                          translations: m.bhashyas?.filter(b => b.bhavartha).map(b => ({
-                            language: b.language || 'hindi',
-                            text: b.bhavartha || '',
-                            author: b.author || '',
-                          })) || [],
-                          commentaries: [],
-                        });
-                      }
-                    }}
+                    onAskAboutMantra={handleAskAboutMantra}
                   />
                 </div>
               ))}
@@ -1514,16 +1573,11 @@ export default function ReadMode({
                   <VerseBlock 
                     verse={verse} 
                     index={idx} 
-                    totalVerses={chapterData.length} 
                     isAskMode={false} 
-                    onNext={nextVerse} 
-                    onPrev={prevVerse} 
                     preferredLanguage={effectiveLanguage}
-                    autoPlayChant={autoPlayChant}
                     isActive={isActive}
                     fontSize={fontSize}
                     globalLayers={globalLayers}
-                    onToggleGlobalLayer={handleToggleGlobalLayer}
                     onOpenShareModal={onOpenShareModal}
                     onAskAboutVerse={onAskAboutVerse}
                   />

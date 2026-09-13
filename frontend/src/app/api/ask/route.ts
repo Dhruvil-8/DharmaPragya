@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 const DEFAULT_BACKEND_URL = 'https://dhruvil8-dharmapragya.hf.space';
 const DEFAULT_SECRET = process.env.NODE_ENV === 'development' ? 'dev-secret' : '';

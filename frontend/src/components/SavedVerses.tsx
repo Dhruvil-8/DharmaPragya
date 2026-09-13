@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bookmark, Trash2, BookOpen, X, ArrowRight, BookMarked } from 'lucide-react';
+import { Bookmark, Trash2, X, ArrowRight, BookMarked } from 'lucide-react';
 import { BookmarkItem, getBookmarks, removeBookmark, clearBookmarks } from '../lib/bookmarks';
 
 interface SavedVersesProps {
@@ -15,13 +15,25 @@ export default function SavedVerses({
   onClose,
   onSelectVerse,
 }: SavedVersesProps) {
-  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>(() => getBookmarks());
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
-  useEffect(() => {
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     if (isOpen) {
       setBookmarks(getBookmarks());
     }
-  }, [isOpen]);
+  }
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setBookmarks(getBookmarks());
+    };
+    window.addEventListener('dharmapragya_bookmarks_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('dharmapragya_bookmarks_updated', handleUpdate);
+    };
+  }, []);
 
   const handleRemove = (item: BookmarkItem, e: React.MouseEvent) => {
     e.stopPropagation();

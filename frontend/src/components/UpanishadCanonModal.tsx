@@ -5,21 +5,15 @@ import {
   X, 
   Search, 
   BookOpen, 
-  Sparkles, 
-  ChevronRight, 
-  Volume2, 
-  Filter,
   CheckCircle2,
   ScrollText,
-  Flame,
   Info
 } from 'lucide-react';
 import { 
   CANONICAL_108_UPANISHADS, 
   VEDIC_SHANTI_MANTRAS, 
   VedicTradition, 
-  UpanishadCategory,
-  CanonicalUpanishad 
+  UpanishadCategory
 } from '../data/canonicalUpanishads';
 
 interface UpanishadCanonModalProps {
@@ -190,18 +184,18 @@ export default function UpanishadCanonModal({
         <div className="p-4 sm:p-5 border-b border-cream-300/80 dark:border-amber-900/30 bg-white/60 dark:bg-[#0D121D]/80 backdrop-blur-xs space-y-3 shrink-0">
           {/* Vedic Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-            {[
+            {([
               { id: 'ALL', label: 'All 108 Canon', count: 108 },
               { id: 'Rigveda', label: 'Rigveda (ऋग्वेद)', count: 10 },
               { id: 'Shukla Yajurveda', label: 'Shukla Yajur (शुक्ल)', count: 19 },
               { id: 'Krishna Yajurveda', label: 'Krishna Yajur (कृष्ण)', count: 32 },
               { id: 'Samaveda', label: 'Samaveda (सामवेद)', count: 16 },
               { id: 'Atharvaveda', label: 'Atharvaveda (अथर्ववेद)', count: 31 }
-            ].map((tab) => (
+            ] as const satisfies readonly { id: VedicTradition | 'ALL'; label: string; count: number }[]).map((tab) => (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setSelectedVeda(tab.id as any)}
+                onClick={() => setSelectedVeda(tab.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
                   selectedVeda === tab.id
                     ? 'bg-saffron-600 text-white shadow-xs'
@@ -244,7 +238,7 @@ export default function UpanishadCanonModal({
 
             {/* Classification Filter Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-0.5">
-              {[
+              {([
                 { id: 'ALL', label: 'All Types' },
                 { id: 'Mukhya', label: 'Mukhya (Major)' },
                 { id: 'Yoga', label: 'Yoga' },
@@ -253,11 +247,11 @@ export default function UpanishadCanonModal({
                 { id: 'Vaishnava', label: 'Vaishnava' },
                 { id: 'Shakta', label: 'Shakta' },
                 { id: 'Samanya', label: 'Vedanta' }
-              ].map((cat) => (
+              ] as const satisfies readonly { id: UpanishadCategory | 'ALL'; label: string }[]).map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => setSelectedCategory(cat.id as any)}
+                  onClick={() => setSelectedCategory(cat.id)}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer ${
                     selectedCategory === cat.id
                       ? 'bg-stone-800 text-white dark:bg-amber-400 dark:text-stone-950'

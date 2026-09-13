@@ -2,7 +2,24 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ConversationalMessage, ChatHistoryMessage, VerseData } from '../types';
 import { useSpeechHandler } from '../hooks/useSpeechHandler';
-import { Compass, AlertCircle, ArrowRight, FileText, Mic, MicOff, Volume2, VolumeX, RefreshCw, User, Bot, CheckCircle2, ChevronDown, ChevronUp, Lock, Scroll, ExternalLink, BookOpen, Sparkles } from 'lucide-react';
+import { 
+  Compass, 
+  AlertCircle, 
+  ArrowRight, 
+  Mic, 
+  MicOff, 
+  Volume2, 
+  VolumeX, 
+  RefreshCw, 
+  User, 
+  Bot, 
+  ChevronDown, 
+  ChevronUp, 
+  Lock, 
+  Scroll, 
+  ExternalLink, 
+  Sparkles 
+} from 'lucide-react';
 
 interface AskModeProps {
   apiBaseUrl: string;
@@ -39,6 +56,36 @@ const SUGGESTED_INQUIRIES = [
   },
 ];
 
+const MARKDOWN_COMPONENTS = {
+  h1: ({ ...props }: React.ComponentPropsWithoutRef<'h1'>) => <h1 className="text-xl font-bold mt-4 mb-2 text-saffron-950 dark:text-amber-300 font-cinzel" {...props} />,
+  h2: ({ ...props }: React.ComponentPropsWithoutRef<'h2'>) => <h2 className="text-lg font-bold mt-3 mb-1.5 text-saffron-900 dark:text-amber-400 font-cinzel" {...props} />,
+  h3: ({ ...props }: React.ComponentPropsWithoutRef<'h3'>) => <h3 className="text-base font-semibold mt-2.5 mb-1 text-saffron-900 dark:text-amber-400 font-cinzel" {...props} />,
+  p: ({ ...props }: React.ComponentPropsWithoutRef<'p'>) => <p className="mb-3 text-stone-900 dark:text-slate-200 leading-relaxed font-normal" {...props} />,
+  ul: ({ ...props }: React.ComponentPropsWithoutRef<'ul'>) => <ul className="list-disc pl-5 mb-3 text-stone-900 dark:text-slate-300 space-y-1 font-sans text-xs sm:text-sm" {...props} />,
+  ol: ({ ...props }: React.ComponentPropsWithoutRef<'ol'>) => <ol className="list-decimal pl-5 mb-3 text-stone-900 dark:text-slate-300 space-y-1 font-sans text-xs sm:text-sm" {...props} />,
+  li: ({ ...props }: React.ComponentPropsWithoutRef<'li'>) => <li className="mb-0.5" {...props} />,
+  strong: ({ ...props }: React.ComponentPropsWithoutRef<'strong'>) => <strong className="font-bold text-stone-950 dark:text-amber-200 font-sans text-xs sm:text-sm" {...props} />,
+  em: ({ ...props }: React.ComponentPropsWithoutRef<'em'>) => <em className="italic text-stone-900 dark:text-slate-200 font-medium" {...props} />,
+  blockquote: ({ ...props }: React.ComponentPropsWithoutRef<'blockquote'>) => (
+    <blockquote className="border-l-4 border-saffron-500 dark:border-amber-500 pl-4 py-1.5 italic my-3 text-stone-900 dark:text-slate-200 font-medium bg-cream-200/60 dark:bg-slate-900/60 rounded-r-lg" {...props} />
+  ),
+};
+
+function parseContentWithFollowUps(content: string) {
+  const dividerMatch = content.split(/---\s*\n\s*\*\*Explore Further:\*\*/i);
+  if (dividerMatch.length < 2) {
+    return { mainText: content, followUps: [] };
+  }
+  const mainText = dividerMatch[0].trim();
+  const followUps = dividerMatch[1]
+    ? dividerMatch[1]
+      .split('\n')
+      .map(line => line.replace(/^[\s*•\-–—\d.)]+/, '').trim())
+      .filter(q => q.length > 5 && q.endsWith('?'))
+    : [];
+  return { mainText, followUps };
+}
+
 export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: AskModeProps) {
   const [query, setQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState('All');
@@ -49,10 +96,19 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
   const [error, setError] = useState<string | null>(null);
   const [expandedVerseMap, setExpandedVerseMap] = useState<Record<string, boolean>>({});
 
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const isUserAtBottomRef = useRef(true);
   const scrollThrottleRef = useRef<number | null>(null);
   const lastInitialPromptTimestamp = useRef<number>(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const rafIdRef = useRef<number | null>(null);
+
+  const [prevPromptTimestamp, setPrevPromptTimestamp] = useState<number | undefined>(initialPrompt?.timestamp);
+  if (initialPrompt?.timestamp && initialPrompt.timestamp !== prevPromptTimestamp) {
+    setPrevPromptTimestamp(initialPrompt.timestamp);
+    if (initialPrompt.sourceFilter) {
+      setSourceFilter(initialPrompt.sourceFilter);
+    }
+  }
 
   const isLimitReached = sessionQueryCount >= MAX_QUERIES_PER_SESSION;
   const remainingQueries = Math.max(0, MAX_QUERIES_PER_SESSION - sessionQueryCount);
@@ -115,6 +171,15 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
     setExpandedVerseMap({});
   };
 
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
+
   const executeInquiry = useCallback(async (inquiryText: string, currentSource: string) => {
     if (!inquiryText.trim() || isAiLoading || isLimitReached) return;
 
@@ -122,6 +187,14 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
     setQuery('');
     setError(null);
     stopSpeaking();
+
+    abortControllerRef.current?.abort();
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     const userMessageId = `user-${Date.now()}`;
     const assistantMessageId = `assistant-${Date.now()}`;
@@ -169,6 +242,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
           history: historyPayload,
           stream: true,
         }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -185,6 +259,24 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
       let buffer = '';
       let accumulatedAnswer = '';
       let accumulatedCitations: VerseData[] = [];
+
+      let pendingUpdate = false;
+      const scheduleFlush = () => {
+        if (!pendingUpdate) {
+          pendingUpdate = true;
+          rafIdRef.current = requestAnimationFrame(() => {
+            pendingUpdate = false;
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.id === assistantMessageId
+                  ? { ...msg, content: accumulatedAnswer, statusMessage: undefined }
+                  : msg
+              )
+            );
+            smoothScrollToBottom();
+          });
+        }
+      };
 
       while (true) {
         const { value, done } = await reader.read();
@@ -234,21 +326,16 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
                 smoothScrollToBottom();
               } else if (eventType === 'chunk') {
                 accumulatedAnswer += parsed.text || '';
-                setMessages(prev =>
-                  prev.map(msg =>
-                    msg.id === assistantMessageId
-                      ? { ...msg, content: accumulatedAnswer, statusMessage: undefined }
-                      : msg
-                  )
-                );
-                smoothScrollToBottom();
+                scheduleFlush();
               } else if (eventType === 'error') {
                 throw new Error(parsed.error || 'AI Synthesis error');
               } else if (eventType === 'done') {
+                if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+                pendingUpdate = false;
                 setMessages(prev =>
                   prev.map(msg =>
                     msg.id === assistantMessageId
-                      ? { ...msg, isStreaming: false, statusMessage: undefined }
+                      ? { ...msg, content: accumulatedAnswer, isStreaming: false, statusMessage: undefined }
                       : msg
                   )
                 );
@@ -261,14 +348,18 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
         }
       }
 
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       setMessages(prev =>
         prev.map(msg =>
           msg.id === assistantMessageId
-            ? { ...msg, isStreaming: false, statusMessage: undefined }
+            ? { ...msg, content: accumulatedAnswer, isStreaming: false, statusMessage: undefined }
             : msg
         )
       );
     } catch (err: unknown) {
+      if ((err as Error)?.name === 'AbortError') {
+        return;
+      }
       console.error('Ask streaming error:', err);
       const errMsg = err instanceof Error ? err.message : 'An error occurred while streaming response.';
       setError(errMsg);
@@ -288,16 +379,13 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
     } finally {
       setIsAiLoading(false);
     }
-  }, [apiBaseUrl, isAiLoading, isLimitReached, language, messages]);
+  }, [apiBaseUrl, isAiLoading, isLimitReached, language, messages, stopSpeaking]);
 
   // Handle Initial Prompt Triggers (e.g. from "Ask AI about this Verse")
   useEffect(() => {
     if (initialPrompt && initialPrompt.query && initialPrompt.timestamp !== lastInitialPromptTimestamp.current) {
       lastInitialPromptTimestamp.current = initialPrompt.timestamp;
       const targetSource = initialPrompt.sourceFilter || sourceFilter;
-      if (initialPrompt.sourceFilter) {
-        setSourceFilter(initialPrompt.sourceFilter);
-      }
       executeInquiry(initialPrompt.query, targetSource);
     }
   }, [initialPrompt, executeInquiry, sourceFilter]);
@@ -306,33 +394,6 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
     e.preventDefault();
     if (!query.trim() || isAiLoading || isLimitReached) return;
     executeInquiry(query, sourceFilter);
-  };
-
-  const scrollToVerse = (id: string, msgIdx: number) => {
-    setExpandedVerseMap(prev => ({ ...prev, [msgIdx]: true }));
-    setTimeout(() => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        element.classList.add('ring-2', 'ring-saffron-500', 'dark:ring-amber-400', 'ring-offset-2');
-        setTimeout(() => {
-          element.classList.remove('ring-2', 'ring-saffron-500', 'dark:ring-amber-400', 'ring-offset-2');
-        }, 2000);
-      }
-    }, 100);
-  };
-
-  const parseContentWithFollowUps = (content: string) => {
-    const dividerMatch = content.split(/---\s*\n\s*\*\*Explore Further:\*\*/i);
-    if (dividerMatch.length < 2) {
-      return { mainText: content, followUps: [] };
-    }
-    const mainText = dividerMatch[0].trim();
-    const followUps = dividerMatch[1]
-      .split('\n')
-      .map(line => line.replace(/^[-*•]\s*/, '').replace(/^\*|\*$/g, '').trim())
-      .filter(line => line.length > 5);
-    return { mainText, followUps };
   };
 
   return (
@@ -461,6 +522,9 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
             }
 
             const isVersesExpanded = expandedVerseMap[msgIdx] || false;
+            const { mainText, followUps } = msg.content
+              ? parseContentWithFollowUps(msg.content)
+              : { mainText: '', followUps: [] };
 
             // Assistant Synthesis Card
             return (
@@ -511,55 +575,37 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
                   )}
 
                   {/* Rendered Synthesis Text */}
-                  {msg.content ? (() => {
-                    const { mainText, followUps } = parseContentWithFollowUps(msg.content);
-                    return (
-                      <div className="space-y-4">
-                        <div className="text-sm md:text-base leading-relaxed text-stone-900 dark:text-slate-200 font-serif space-y-3">
-                          <ReactMarkdown
-                            components={{
-                              h1: ({ ...props }) => <h1 className="text-xl font-bold mt-4 mb-2 text-saffron-950 dark:text-amber-300 font-cinzel" {...props} />,
-                              h2: ({ ...props }) => <h2 className="text-lg font-bold mt-3 mb-1.5 text-saffron-900 dark:text-amber-400 font-cinzel" {...props} />,
-                              h3: ({ ...props }) => <h3 className="text-base font-semibold mt-2.5 mb-1 text-saffron-900 dark:text-amber-400 font-cinzel" {...props} />,
-                              p: ({ ...props }) => <p className="mb-3 text-stone-900 dark:text-slate-200 leading-relaxed font-normal" {...props} />,
-                              ul: ({ ...props }) => <ul className="list-disc pl-5 mb-3 text-stone-900 dark:text-slate-300 space-y-1 font-sans text-xs sm:text-sm" {...props} />,
-                              ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-3 text-stone-900 dark:text-slate-300 space-y-1 font-sans text-xs sm:text-sm" {...props} />,
-                              li: ({ ...props }) => <li className="mb-0.5" {...props} />,
-                              strong: ({ ...props }) => <strong className="font-bold text-stone-950 dark:text-amber-200 font-sans text-xs sm:text-sm" {...props} />,
-                              em: ({ ...props }) => <em className="italic text-stone-900 dark:text-slate-200 font-medium" {...props} />,
-                              blockquote: ({ ...props }) => (
-                                <blockquote className="border-l-4 border-saffron-500 dark:border-amber-500 pl-4 py-1.5 italic my-3 text-stone-900 dark:text-slate-200 font-medium bg-cream-200/60 dark:bg-slate-900/60 rounded-r-lg" {...props} />
-                              ),
-                            }}
-                          >
-                            {mainText}
-                          </ReactMarkdown>
-                        </div>
-
-                        {/* Interactive Dynamic Follow-Up Inquiry Chips */}
-                        {followUps.length > 0 && !msg.isStreaming && (
-                          <div className="pt-3 border-t border-cream-200/80 dark:border-amber-500/15 space-y-2 animate-fade-in">
-                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-400 block font-cinzel">
-                              Explore Further (Suggested Inquiries):
-                            </span>
-                            <div className="flex flex-wrap gap-2">
-                              {followUps.map((followUpQuery, fIdx) => (
-                                <button
-                                  key={fIdx}
-                                  type="button"
-                                  onClick={() => executeInquiry(followUpQuery, sourceFilter)}
-                                  className="text-xs text-left px-3 py-1.5 rounded-xl bg-cream-100 hover:bg-saffron-100 dark:bg-slate-900/80 dark:hover:bg-amber-950/40 text-saffron-950 dark:text-amber-200 border border-saffron-300/60 dark:border-amber-500/25 hover:border-saffron-500 dark:hover:border-amber-400 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5 group"
-                                >
-                                  <Sparkles className="w-3 h-3 text-saffron-600 dark:text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
-                                  <span>{followUpQuery}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                  {msg.content && (
+                    <div className="space-y-4">
+                      <div className="text-sm md:text-base leading-relaxed text-stone-900 dark:text-slate-200 font-serif space-y-3">
+                        <ReactMarkdown components={MARKDOWN_COMPONENTS}>
+                          {mainText}
+                        </ReactMarkdown>
                       </div>
-                    );
-                  })() : null}
+
+                      {/* Interactive Dynamic Follow-Up Inquiry Chips */}
+                      {followUps.length > 0 && !msg.isStreaming && (
+                        <div className="pt-3 border-t border-cream-200/80 dark:border-amber-500/15 space-y-2 animate-fade-in">
+                          <span className="text-[11px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-400 block font-cinzel">
+                            Explore Further (Suggested Inquiries):
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {followUps.map((followUpQuery, fIdx) => (
+                              <button
+                                key={fIdx}
+                                type="button"
+                                onClick={() => executeInquiry(followUpQuery, sourceFilter)}
+                                className="text-xs text-left px-3 py-1.5 rounded-xl bg-cream-100 hover:bg-saffron-100 dark:bg-slate-900/80 dark:hover:bg-amber-950/40 text-saffron-950 dark:text-amber-200 border border-saffron-300/60 dark:border-amber-500/25 hover:border-saffron-500 dark:hover:border-amber-400 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5 group"
+                              >
+                                <Sparkles className="w-3 h-3 text-saffron-600 dark:text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
+                                <span>{followUpQuery}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Collapsible Scripture Citation References */}
                   {msg.citations && msg.citations.length > 0 && (
@@ -635,7 +681,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
                                 {primaryTrans ? (
                                   <div className="pt-2 border-t border-cream-200/60 dark:border-amber-500/10">
                                     <p className="text-xs md:text-sm font-sans leading-relaxed text-stone-800 dark:text-slate-200">
-                                      "{primaryTrans.text}"
+                                      &quot;{primaryTrans.text}&quot;
                                     </p>
                                     {primaryTrans.author && (
                                       <p className="text-[10px] font-semibold tracking-wide uppercase text-stone-500 dark:text-amber-400/80 mt-1 font-cinzel">
@@ -646,7 +692,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
                                 ) : (
                                   <div className="pt-2 border-t border-cream-200/60 dark:border-amber-500/10">
                                     <p className="text-xs italic text-stone-500 dark:text-slate-400">
-                                      Click 'Study in Read Mode' to view contextual analysis and Sanskrit details.
+                                      Click &apos;Study in Read Mode&apos; to view contextual analysis and Sanskrit details.
                                     </p>
                                   </div>
                                 )}
@@ -661,7 +707,7 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
               </div>
             );
           })}
-          <div ref={messagesEndRef} />
+          <div className="h-2" />
         </div>
       ) : (
         /* 3. Welcome View (When empty) */

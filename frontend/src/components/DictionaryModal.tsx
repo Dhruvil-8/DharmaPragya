@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { BookOpen, X, Sparkles, ExternalLink, Loader2 } from 'lucide-react';
+import { BookOpen, X, Loader2 } from 'lucide-react';
 import { DictionaryEntry } from '../types';
 
 interface DictionaryModalProps {
@@ -24,16 +24,26 @@ export default function DictionaryModal({
   // Clean word: strip non-Devanagari punctuation, dandas, hyphens
   const cleanWord = word.replace(/[^\u0900-\u097F]/g, '').trim();
 
-  useEffect(() => {
+  const [prevWord, setPrevWord] = useState(word);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+  if (isOpen !== prevIsOpen || word !== prevWord) {
+    setPrevIsOpen(isOpen);
+    setPrevWord(word);
     if (!isOpen || !cleanWord) {
       setEntries([]);
       setError(null);
-      return;
+      setLoading(false);
+    } else {
+      setLoading(true);
+      setError(null);
     }
+  }
+
+  useEffect(() => {
+    if (!isOpen || !cleanWord) return;
 
     let isMounted = true;
-    setLoading(true);
-    setError(null);
 
     const fetchDefinition = async () => {
       try {
@@ -46,9 +56,9 @@ export default function DictionaryModal({
           setEntries(data);
           setLoading(false);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (isMounted) {
-          setError(err.message || 'Failed to fetch dictionary definition');
+          setError(err instanceof Error ? err.message : 'Failed to fetch dictionary definition');
           setLoading(false);
         }
       }

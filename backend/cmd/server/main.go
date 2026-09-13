@@ -127,7 +127,7 @@ func main() {
 	http.HandleFunc("/api/audio/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Range")
+		w.Header().Set("Access-Control-Allow-Headers", "Range, Accept, Content-Type")
 		if r.Method == "OPTIONS" {
 			return
 		}

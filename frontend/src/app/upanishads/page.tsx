@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { 
   Search, 
-  BookOpen, 
   ChevronRight, 
   ArrowLeft,
   ScrollText,
@@ -29,7 +28,7 @@ function UpanishadsPageContent() {
   const [isShantiExpanded, setIsShantiExpanded] = useState(false);
 
   // Veda tabs configuration
-  const vedaTabs = [
+  const vedaTabs: { id: VedicTradition | 'ALL'; label: string; count: number }[] = [
     { id: 'ALL', label: 'All 108 Canon', count: 108 },
     { id: 'Rigveda', label: 'Rigveda (ऋग्वेद)', count: 10 },
     { id: 'Shukla Yajurveda', label: 'Shukla Yajur (शुक्ल)', count: 19 },
@@ -39,7 +38,7 @@ function UpanishadsPageContent() {
   ];
 
   // Subject classification pills
-  const categories = [
+  const categories: { id: UpanishadCategory | 'ALL'; label: string }[] = [
     { id: 'ALL', label: 'All Types' },
     { id: 'Mukhya', label: 'Mukhya (Major)' },
     { id: 'Yoga', label: 'Yoga' },
@@ -235,7 +234,7 @@ function UpanishadsPageContent() {
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setSelectedVeda(tab.id as any)}
+                  onClick={() => setSelectedVeda(tab.id)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
                     selectedVeda === tab.id
                       ? 'bg-saffron-600 text-white shadow-xs dark:bg-amber-500 dark:text-stone-950'
@@ -261,7 +260,7 @@ function UpanishadsPageContent() {
               <button
                 key={cat.id}
                 type="button"
-                onClick={() => setSelectedCategory(cat.id as any)}
+                onClick={() => setSelectedCategory(cat.id)}
                 className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer whitespace-nowrap ${
                   selectedCategory === cat.id
                     ? 'bg-stone-800 text-white dark:bg-amber-400 dark:text-stone-950 border-stone-900 dark:border-amber-300'
@@ -406,7 +405,7 @@ function UpanishadsPageContent() {
               No Upanishads matched your search
             </h3>
             <p className="text-xs text-stone-500 dark:text-slate-400 max-w-sm mx-auto">
-              Try searching with another keyword, clearing the search box, or selecting "All 108 Canon".
+              Try searching with another keyword, clearing the search box, or selecting &quot;All 108 Canon&quot;.
             </p>
             <button
               type="button"

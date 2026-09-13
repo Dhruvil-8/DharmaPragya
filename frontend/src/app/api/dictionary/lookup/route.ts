@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 86400;
 
 const DEFAULT_BACKEND_URL = 'https://dhruvil8-dharmapragya.hf.space';
 const DEFAULT_SECRET = process.env.NODE_ENV === 'development' ? 'dev-secret' : '';
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
       headers: {
         'X-App-Token': secret
       },
-      cache: 'no-store'
+      next: { revalidate: 86400 }
     });
     
     const data = await res.json();
