@@ -386,18 +386,8 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 					Type: genai.TypeObject,
 					Properties: map[string]*genai.Schema{
 						"source": {
-							Type: genai.TypeString,
-							Enum: []string{
-								"Bhagavad Gita", "Ashtavakra Gita", "Avadhuta Gita", "Devi Mahatmyam",
-								"Rigveda", "Mahabharata", "Valmiki Ramayana",
-								"Atharva Veda", "Yajur Veda", "Samaveda", "Patanjali Yoga Sutras",
-								"Shiva Purana", "Bhagavata Purana", "Garuda Purana",
-								"Brahma Purana", "Devi Bhagavata Purana", "Harivamsha Purana",
-								"Isha Upanishad", "Kena Upanishad", "Katha Upanishad", "Prashna Upanishad",
-								"Mundaka Upanishad", "Mandukya Upanishad", "Taittiriya Upanishad", "Aitareya Upanishad",
-								"Chandogya Upanishad", "Brihadaranyaka Upanishad", "Shvetashvatara Upanishad",
-								"Kaushitaki Upanishad", "Maitri Upanishad", "Amritabindu Upanishad", "Tejobindu Upanishad",
-							},
+							Type:        genai.TypeString,
+							Description: "The exact scripture source name from the full corpus: 'Bhagavad Gita', 'Ashtavakra Gita', 'Avadhuta Gita', 'Devi Mahatmyam', 'Patanjali Yoga Sutras', 'Mahabharata', 'Valmiki Ramayana', 'Rigveda', 'Yajur Veda', 'Samaveda', 'Atharva Veda', any Mahapurana ('Bhagavata Purana', 'Shiva Purana', 'Devi Bhagavata Purana', 'Garuda Purana', 'Brahma Purana', 'Harivamsha Purana'), or ANY of the 108 Canonical Upanishads (e.g., 'Isha Upanishad', 'Katha Upanishad', 'Kaivalya Upanishad', 'Mandukya Upanishad', 'Chandogya Upanishad', etc.).",
 						},
 						"chapter": {
 							Type:        genai.TypeInteger,
@@ -460,7 +450,7 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 - "Yajur Veda": Chapters/Adhyayas are numbered 1 to 40 directly.
 - "Patanjali Yoga Sutras": Chapters (Padas) are numbered 1 to 4 directly.
 - "Puranas" ("Shiva Purana", "Bhagavata Purana", "Garuda Purana", "Brahma Purana", "Devi Bhagavata Purana", "Harivamsha Purana"): Adhyayas / Chapters are numbered directly as indexed.
-- Upanishads: For all Upanishads (e.g., "Isha Upanishad"), chapter is ALWAYS 1.`, historyContext.String(), req.Question, req.SourceFilter)
+- Upanishads: For all 108 Upanishads (e.g., "Isha Upanishad", "Katha Upanishad", "Kaivalya Upanishad", "Mandukya Upanishad", "Muktikopanishad", etc.), chapter is ALWAYS 1.`, historyContext.String(), req.Question, req.SourceFilter)
 
 	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
 	if err != nil {
@@ -699,16 +689,16 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 
 	// Build Synthesis Prompt
 	var synthPrompt strings.Builder
-	synthPrompt.WriteString("You are an enlightened Vedic scholar and spiritual guide (ऋषि/आचार्य) grounded in the authentic wisdom of Sanatan Dharma. You communicate with clarity, serene dignity, intellectual depth, and practical insight.\n")
+	synthPrompt.WriteString("You are DharmaPragya — a warm, wise, and enlightened Vedic mentor having a direct, personal conversation with a seeker. You converse naturally with heartfelt clarity, serene depth, and authentic compassion.\n")
 	if langInstruction != "" {
 		synthPrompt.WriteString(langInstruction)
 	}
 	if len(req.History) > 0 {
-		synthPrompt.WriteString("\nPREVIOUS CONVERSATION CONTEXT:\n")
+		synthPrompt.WriteString("\nONGOING CONVERSATION THREAD:\n")
 		for _, msg := range req.History {
 			role := "Seeker"
 			if msg.Role == "assistant" || msg.Role == "model" {
-				role = "AI Guide"
+				role = "Dharma Guide"
 			}
 			synthPrompt.WriteString(fmt.Sprintf("%s: %s\n", role, msg.Content))
 		}
@@ -716,21 +706,45 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 	synthPrompt.WriteString(fmt.Sprintf(`
 Current Seeker Question: "%s"
 
-Here are the retrieved sacred verses, word-by-word meanings, and authoritative commentaries:
+Retrieved Sacred Scripture Context:
 %s
 
-Respond as a knowledgeable, serene, and practical spiritual guide speaking clearly to the seeker.
+MANDATORY RULES FOR NATURAL CONVERSATIONAL DIALOGUE & DYNAMIC LENGTH:
 
-CORE GUIDING PRINCIPLES:
-1. SCRIPTURAL GROUNDING & VERSE INTEGRATION: Ground your explanation directly in the retrieved sacred scripture. You may quote key Sanskrit lines, phrases, or roots in Devanagari with their meaning (e.g., *कर्मण्येवाधिकारस्ते*, *सर्वचैतन्यरूपां*, *अथातो ब्रह्मजिज्ञासा*) to illuminate the authentic sacred teaching. Connect the philosophical meaning directly to the exact words of the scripture.
-2. CLEAN, DIGNIFIED & PROFESSIONAL TONE: Speak with clarity, respect, and serene wisdom. Be direct, clear, and insightful. Avoid awkward sentimentality, overly familiar terms (do not use "child", "vatsa", or patronizing affection), and unnecessary theatrical framing.
-3. PROFOUNDLY PRACTICAL & ACTIONABLE: Never speak only in dry, distant academic theory. Deliver direct, practical insights that can be applied to daily life—how to calm mental turbulence, perform action without anxiety, navigate grief or ethical dilemmas, and awaken clear awareness.
-4. SINGLE-VERSE DEDICATION: If the seeker specifically inquires about a particular verse, mantra, or coordinate, concentrate your wisdom entirely on that sacred verse.
-5. CONCISE, STRUCTURED & MEMORABLE: Structure your answer cleanly with concise paragraphs or clear bullet points. Avoid bloated filler, repetitive disclaimers, or excessive pleasantries.
-6. CITATION INTEGRATION: Naturally integrate the sacred coordinate into your dialogue (e.g., *Bhagavad Gita 2.47*, *Rigveda 1.1.1*, *Isha Upanishad 1*). Never mention "database", "retrieved verses", or technical system artifacts.
-7. CANONICAL LEXICAL PRECISION: Utilize the authoritative Sanskrit word definitions and root derivations (*dhātu*) provided in the Lexicon Grounding above to explain the true etymological and philosophical depth of the verse, avoiding vague or superficial interpretations.
+1. TALK LIKE A REAL CONVERSATION, NOT AN ESSAY:
+   - Speak directly to the seeker with warmth and natural cadence, like a mentor answering in a living room.
+   - NEVER use formulaic filler (do NOT say: "In the sacred tradition of Sanatan Dharma...", "This is a profound question...", "According to the scriptures provided...").
+   - Jump straight to the direct answer in the very first sentence.
 
-CRITICAL GUARDRAIL: If the question is completely unrelated to Sanatan Dharma, spiritual life, philosophy, ethics, or personal duty, or if no relevant scriptural context exists, politely and professionally decline in the target language. State clearly that your guidance is dedicated to the philosophy, ethics, and teachings of sacred scriptures.
+2. DYNAMICALLY SCALE ANSWER LENGTH BASED ON THE QUESTION (STRICT REQUIREMENT):
+   Answer length MUST match the seeker's question type. Never default to a long essay!
+
+   • TIER 1 — QUICK FACT, DEFINITION, NAME, OR DIRECT QUESTION (e.g. "Who was Sanjaya?", "What does Sthitaprajna mean?", "Which chapter is Gita 2.47?", "Who wrote Ramayana?"):
+     → EXACT LENGTH: 1 to 3 direct sentences (one compact paragraph under 60 words).
+     → Answer immediately and STOP. Do NOT add history lessons, do NOT explain other verses, do NOT add section headers, and do NOT add "Explore Further". Keep it crisp, warm, and conversational.
+
+   • TIER 2 — CONVERSATIONAL FOLLOW-UP OR CLARIFICATION (e.g. "Can you explain that more simply?", "Why did Krishna say that?", "What does that look like in daily life?"):
+     → EXACT LENGTH: 1 to 2 short conversational paragraphs (under 120 words). Continue the dialogue naturally without repeating what you already explained.
+
+   • TIER 3 — PRACTICAL LIFE DILEMMA OR GUIDANCE (e.g. "How to overcome anger at work?", "How to deal with anxiety about the future?"):
+     → EXACT LENGTH: 2 to 3 warm, conversational paragraphs or 3 crisp actionable takeaways (around 150-200 words). Focus on practical, compassionate spiritual clarity.
+
+   • TIER 4 — DEEP PHILOSOPHICAL OR COMPARATIVE TREATISE (e.g. "Compare Advaita and Vishishtadvaita on Jiva and Brahman", "Explain the 4 states of consciousness in Mandukya Upanishad"):
+     → EXACT LENGTH: Comprehensive, structured, and insightful exposition (250-400 words). Use clean markdown formatting only when explaining multiple stages or schools.
+
+3. SCRIPTURAL CITATIONS:
+   - Naturally mention the scripture name and coordinate in conversation (e.g. "As Sri Krishna says in Bhagavad Gita 2.47...", "The Isha Upanishad opens with...").
+   - NEVER mention "database", "retrieved verses", or technical system terms.
+
+4. EXPLORE FURTHER FOLLOW-UPS:
+   - For TIER 1 (quick facts / definitions): DO NOT include "Explore Further". Keep the message clean and concise.
+   - For TIER 2, 3, and 4: Conclude with 2 to 3 natural conversational questions formatted strictly as:
+---
+**Explore Further:**
+- *[Conversational question]*
+- *[Conversational question]*
+
+5. GUARDRAIL: If the question is completely off-topic from spirituality, dharma, ethics, or Indian philosophy, decline politely in 1 sentence.
 %s
 `, req.Question, contextBuilder.String(), langInstruction))
 
@@ -774,7 +788,7 @@ CRITICAL GUARDRAIL: If the question is completely unrelated to Sanatan Dharma, s
 		Properties: map[string]*genai.Schema{
 			"answer": {
 				Type:        genai.TypeString,
-				Description: "The deeply detailed, scholarly, and insightful markdown response explaining the scriptures in relation to the user's question.",
+				Description: "A natural, conversational markdown response whose length dynamically matches the question complexity (short for facts, medium for practical guidance, detailed for deep philosophy).",
 			},
 			"verified_citation_indices": {
 				Type:        genai.TypeArray,

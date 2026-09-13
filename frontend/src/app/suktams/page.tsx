@@ -3,6 +3,7 @@
 import React, { useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { 
   Search, 
   BookOpen, 
@@ -16,8 +17,10 @@ import {
 } from 'lucide-react';
 import { FAMOUS_SUKTAMS_AND_MANTRAS, SacredHymn } from '../../data/famousSuktams';
 import SacredHymnModal from '../../components/SacredHymnModal';
+import ThemeToggle from '../../components/ThemeToggle';
 
 function SuktamsPageContent() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedHymnModal, setSelectedHymnModal] = useState<SacredHymn | null>(null);
@@ -58,7 +61,7 @@ function SuktamsPageContent() {
     if (coord.chapterNumber) params.set('chapter', String(coord.chapterNumber));
     if (coord.division2) params.set('div2', String(coord.division2));
     if (coord.verseNumber) params.set('verse', String(coord.verseNumber));
-    window.location.href = `/?${params.toString()}`;
+    router.push(`/?${params.toString()}`);
   };
 
   // Structured Data Schema for Google SEO
@@ -107,23 +110,26 @@ function SuktamsPageContent() {
             <span>Return to Home</span>
           </Link>
 
-          <Link
-            href="/"
-            className="flex items-center shrink-0 group focus:outline-none transition-transform active:scale-95"
-            title="DharmaPragya Home"
-            aria-label="DharmaPragya Home"
-          >
-            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-saffron-400/50 dark:border-amber-500/40 shadow-2xs group-hover:border-saffron-600 dark:group-hover:border-amber-400 transition-colors">
-              <Image
-                src="/logo.png"
-                alt="DharmaPragya Emblem"
-                fill
-                className="object-cover"
-                sizes="32px"
-                priority
-              />
-            </div>
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link
+              href="/"
+              className="flex items-center shrink-0 group focus:outline-none transition-transform active:scale-95"
+              title="DharmaPragya Home"
+              aria-label="DharmaPragya Home"
+            >
+              <div className="relative w-8 h-8 rounded-full overflow-hidden border border-saffron-400/50 dark:border-amber-500/40 shadow-2xs group-hover:border-saffron-600 dark:group-hover:border-amber-400 transition-colors">
+                <Image
+                  src="/logo.png"
+                  alt="DharmaPragya Emblem"
+                  fill
+                  className="object-cover"
+                  sizes="32px"
+                  priority
+                />
+              </div>
+            </Link>
+          </div>
         </div>
       </header>
 

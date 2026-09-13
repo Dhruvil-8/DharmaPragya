@@ -12,15 +12,12 @@ const SavedVerses = dynamic(() => import('../components/SavedVerses'), { ssr: fa
 const ShareCardModal = dynamic(() => import('../components/ShareCardModal'), { ssr: false });
 const SidePanel = dynamic(() => import('../components/SidePanel'), { ssr: false });
 const SacredHymnModal = dynamic(() => import('../components/SacredHymnModal'), { ssr: false });
-const UpanishadCanonModal = dynamic(() => import('../components/UpanishadCanonModal'), { ssr: false });
-
 const API_BASE_URL = '';
 
 function HomePageContent() {
   const [mode, setMode] = useState<'ask' | 'read'>('ask');
   const [isSavedOpen, setIsSavedOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
-  const [isCanonModalOpen, setIsCanonModalOpen] = useState(false);
   const [selectedHymnModal, setSelectedHymnModal] = useState<SacredHymn | null>(null);
 
   const [askInitialPrompt, setAskInitialPrompt] = useState<{
@@ -84,7 +81,7 @@ function HomePageContent() {
       } else if (urlMode === 'suktams' || urlMode === 'hymns') {
         setIsAboutOpen(true);
       } else if (urlMode === 'canon' || urlMode === 'upanishads' || params.get('canon') || params.get('upanishad')) {
-        setIsCanonModalOpen(true);
+        window.location.href = '/upanishads';
       }
     }
   }, []);
@@ -259,7 +256,6 @@ function HomePageContent() {
         isOpen={isAboutOpen}
         onClose={() => setIsAboutOpen(false)}
         onOpenSaved={() => setIsSavedOpen(true)}
-        onOpenUpanishadCanon={() => setIsCanonModalOpen(true)}
         mode={mode}
         onModeChange={handleModeChange}
         onSelectCoordinate={handleSelectCoordinate}
@@ -271,19 +267,6 @@ function HomePageContent() {
         hymn={selectedHymnModal}
         onClose={() => setSelectedHymnModal(null)}
         onOpenInScripture={handleSelectCoordinate}
-      />
-
-      {/* 108 Muktika Upanishads Canon Modal */}
-      <UpanishadCanonModal
-        isOpen={isCanonModalOpen}
-        onClose={() => setIsCanonModalOpen(false)}
-        onSelectUpanishad={(srcName) => {
-          setMode('read');
-          setTargetCoordinate({
-            sourceName: srcName,
-            chapterNumber: 1,
-          });
-        }}
       />
     </main>
   );

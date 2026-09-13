@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ConversationalMessage, ChatHistoryMessage, VerseData } from '../types';
 import { useSpeechHandler } from '../hooks/useSpeechHandler';
-import { Compass, AlertCircle, ArrowRight, FileText, Mic, MicOff, Volume2, VolumeX, RefreshCw, User, Bot, CheckCircle2, ChevronDown, ChevronUp, Lock, Scroll, ExternalLink, BookOpen } from 'lucide-react';
+import { Compass, AlertCircle, ArrowRight, FileText, Mic, MicOff, Volume2, VolumeX, RefreshCw, User, Bot, CheckCircle2, ChevronDown, ChevronUp, Lock, Scroll, ExternalLink, BookOpen, Sparkles } from 'lucide-react';
 
 interface AskModeProps {
   apiBaseUrl: string;
@@ -18,24 +18,24 @@ const MAX_QUERIES_PER_SESSION = 10;
 
 const SUGGESTED_INQUIRIES = [
   {
-    label: "Duty & Peace",
-    query: "How does the Bhagavad Gita guide us to perform duty without anxiety and attachment?",
+    label: "Definition (Quick)",
+    query: "What does 'Sthitaprajna' mean in the Bhagavad Gita?",
     source: "Bhagavad Gita",
   },
   {
-    label: "Witness Consciousness",
+    label: "Practical Wisdom",
+    query: "How can I perform my work and duty without anxiety over outcomes?",
+    source: "Bhagavad Gita",
+  },
+  {
+    label: "Witness Self",
     query: "What does the Ashtavakra Gita teach about the nature of the witness self (Sakshi)?",
     source: "Ashtavakra Gita",
   },
   {
-    label: "Origin of Existence",
+    label: "Cosmic Origin",
     query: "How does the Rigveda explain the creation of the cosmos in the Nasadiya Sukta?",
     source: "Rigveda",
-  },
-  {
-    label: "Self & Soul",
-    query: "What is the core teaching of the Katha Upanishad regarding the chariot of the body and self?",
-    source: "Upanishad",
   },
 ];
 
@@ -322,6 +322,19 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
     }, 100);
   };
 
+  const parseContentWithFollowUps = (content: string) => {
+    const dividerMatch = content.split(/---\s*\n\s*\*\*Explore Further:\*\*/i);
+    if (dividerMatch.length < 2) {
+      return { mainText: content, followUps: [] };
+    }
+    const mainText = dividerMatch[0].trim();
+    const followUps = dividerMatch[1]
+      .split('\n')
+      .map(line => line.replace(/^[-*•]\s*/, '').replace(/^\*|\*$/g, '').trim())
+      .filter(line => line.length > 5);
+    return { mainText, followUps };
+  };
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-32">
       {/* 1. Header Bar with Thread & Session Controls */}
@@ -459,13 +472,16 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
                 <div className="flex-1 bg-white dark:bg-[#0d121d] p-5 md:p-7 rounded-3xl shadow-sm border border-cream-300 dark:border-amber-500/20 hover:border-cream-400 dark:hover:border-amber-500/30 relative overflow-hidden space-y-4 transition-colors duration-300">
                   <div className="flex items-center justify-between border-b border-cream-300/40 dark:border-amber-500/20 pb-3">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-cinzel font-bold text-base md:text-lg text-saffron-950 dark:text-amber-300">
-                        Scriptural Synthesis
+                      <h3 className="font-cinzel font-bold text-sm md:text-base text-saffron-950 dark:text-amber-300 flex items-center gap-2">
+                        <span>Dharma Guide</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-saffron-100/80 dark:bg-amber-950/60 text-saffron-800 dark:text-amber-300 border border-saffron-300/60 dark:border-amber-500/30 font-sans font-medium">
+                          Vedic Dialogue
+                        </span>
                       </h3>
                       {msg.isStreaming && (
                         <span className="flex items-center gap-1 text-[10px] font-bold text-saffron-700 dark:text-amber-300 bg-saffron-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full animate-pulse border border-saffron-200 dark:border-amber-700/40">
                           <span className="w-1.5 h-1.5 rounded-full bg-saffron-600 dark:bg-amber-400 animate-ping" />
-                          Synthesizing...
+                          Conversing...
                         </span>
                       )}
                     </div>
@@ -495,114 +511,150 @@ export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: As
                   )}
 
                   {/* Rendered Synthesis Text */}
-                  {msg.content ? (
-                    <div className="text-sm md:text-base leading-relaxed text-stone-900 dark:text-slate-200 font-serif space-y-3">
-                      <ReactMarkdown
-                        components={{
-                          h1: ({ ...props }) => <h1 className="text-xl font-bold mt-4 mb-2 text-saffron-950 dark:text-amber-300 font-cinzel" {...props} />,
-                          h2: ({ ...props }) => <h2 className="text-lg font-bold mt-3 mb-1.5 text-saffron-900 dark:text-amber-400 font-cinzel" {...props} />,
-                          h3: ({ ...props }) => <h3 className="text-base font-semibold mt-2.5 mb-1 text-saffron-900 dark:text-amber-400 font-cinzel" {...props} />,
-                          p: ({ ...props }) => <p className="mb-3 text-stone-900 dark:text-slate-200 leading-relaxed font-normal" {...props} />,
-                          ul: ({ ...props }) => <ul className="list-disc pl-5 mb-3 text-stone-900 dark:text-slate-300 space-y-1 font-sans text-xs sm:text-sm" {...props} />,
-                          ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-3 text-stone-900 dark:text-slate-300 space-y-1 font-sans text-xs sm:text-sm" {...props} />,
-                          li: ({ ...props }) => <li className="mb-0.5" {...props} />,
-                          strong: ({ ...props }) => <strong className="font-bold text-stone-950 dark:text-amber-200 font-sans text-xs sm:text-sm" {...props} />,
-                          em: ({ ...props }) => <em className="italic text-stone-900 dark:text-slate-200 font-medium" {...props} />,
-                          blockquote: ({ ...props }) => (
-                            <blockquote className="border-l-4 border-saffron-500 dark:border-amber-500 pl-4 py-1.5 italic my-3 text-stone-900 dark:text-slate-200 font-medium bg-cream-200/60 dark:bg-slate-900/60 rounded-r-lg" {...props} />
-                          ),
-                        }}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
-                    </div>
-                  ) : null}
-
-                  {/* Elevated Scripture Citation Cards */}
-                  {msg.citations && msg.citations.length > 0 && (
-                    <div className="pt-4 mt-2 border-t border-cream-300/60 dark:border-amber-500/20 space-y-3">
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-950 dark:text-amber-300 font-cinzel tracking-wider uppercase">
-                          <Scroll className="w-4 h-4 text-saffron-600 dark:text-amber-400 shrink-0" />
-                          <span>Authoritative Scripture Citations ({msg.citations.length})</span>
+                  {msg.content ? (() => {
+                    const { mainText, followUps } = parseContentWithFollowUps(msg.content);
+                    return (
+                      <div className="space-y-4">
+                        <div className="text-sm md:text-base leading-relaxed text-stone-900 dark:text-slate-200 font-serif space-y-3">
+                          <ReactMarkdown
+                            components={{
+                              h1: ({ ...props }) => <h1 className="text-xl font-bold mt-4 mb-2 text-saffron-950 dark:text-amber-300 font-cinzel" {...props} />,
+                              h2: ({ ...props }) => <h2 className="text-lg font-bold mt-3 mb-1.5 text-saffron-900 dark:text-amber-400 font-cinzel" {...props} />,
+                              h3: ({ ...props }) => <h3 className="text-base font-semibold mt-2.5 mb-1 text-saffron-900 dark:text-amber-400 font-cinzel" {...props} />,
+                              p: ({ ...props }) => <p className="mb-3 text-stone-900 dark:text-slate-200 leading-relaxed font-normal" {...props} />,
+                              ul: ({ ...props }) => <ul className="list-disc pl-5 mb-3 text-stone-900 dark:text-slate-300 space-y-1 font-sans text-xs sm:text-sm" {...props} />,
+                              ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-3 text-stone-900 dark:text-slate-300 space-y-1 font-sans text-xs sm:text-sm" {...props} />,
+                              li: ({ ...props }) => <li className="mb-0.5" {...props} />,
+                              strong: ({ ...props }) => <strong className="font-bold text-stone-950 dark:text-amber-200 font-sans text-xs sm:text-sm" {...props} />,
+                              em: ({ ...props }) => <em className="italic text-stone-900 dark:text-slate-200 font-medium" {...props} />,
+                              blockquote: ({ ...props }) => (
+                                <blockquote className="border-l-4 border-saffron-500 dark:border-amber-500 pl-4 py-1.5 italic my-3 text-stone-900 dark:text-slate-200 font-medium bg-cream-200/60 dark:bg-slate-900/60 rounded-r-lg" {...props} />
+                              ),
+                            }}
+                          >
+                            {mainText}
+                          </ReactMarkdown>
                         </div>
-                        <span className="text-[11px] text-stone-500 dark:text-slate-400 font-sans hidden sm:inline">
-                          Click any verse to study in Read Mode
-                        </span>
+
+                        {/* Interactive Dynamic Follow-Up Inquiry Chips */}
+                        {followUps.length > 0 && !msg.isStreaming && (
+                          <div className="pt-3 border-t border-cream-200/80 dark:border-amber-500/15 space-y-2 animate-fade-in">
+                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-saffron-800 dark:text-amber-400 block font-cinzel">
+                              Explore Further (Suggested Inquiries):
+                            </span>
+                            <div className="flex flex-wrap gap-2">
+                              {followUps.map((followUpQuery, fIdx) => (
+                                <button
+                                  key={fIdx}
+                                  type="button"
+                                  onClick={() => executeInquiry(followUpQuery, sourceFilter)}
+                                  className="text-xs text-left px-3 py-1.5 rounded-xl bg-cream-100 hover:bg-saffron-100 dark:bg-slate-900/80 dark:hover:bg-amber-950/40 text-saffron-950 dark:text-amber-200 border border-saffron-300/60 dark:border-amber-500/25 hover:border-saffron-500 dark:hover:border-amber-400 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5 group"
+                                >
+                                  <Sparkles className="w-3 h-3 text-saffron-600 dark:text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
+                                  <span>{followUpQuery}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
+                    );
+                  })() : null}
 
-                      <div className="grid grid-cols-1 gap-3">
-                        {msg.citations.map((verse, citIdx) => {
-                          const primaryTrans = verse.translations && verse.translations.length > 0
-                            ? verse.translations[0]
-                            : null;
+                  {/* Collapsible Scripture Citation References */}
+                  {msg.citations && msg.citations.length > 0 && (
+                    <div className="pt-3 mt-1 border-t border-cream-300/60 dark:border-amber-500/20 space-y-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleVerseSection(msgIdx)}
+                        className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-cream-100/80 hover:bg-cream-200/80 dark:bg-slate-900/80 dark:hover:bg-slate-800/80 border border-cream-300 dark:border-amber-500/20 transition-all cursor-pointer group shadow-2xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Scroll className="w-4 h-4 text-saffron-600 dark:text-amber-400 shrink-0" />
+                          <span className="text-xs font-bold text-saffron-950 dark:text-amber-300 font-cinzel tracking-wider uppercase">
+                            Scripture References ({msg.citations.length} {msg.citations.length === 1 ? 'verse' : 'verses'})
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-slate-400 group-hover:text-saffron-800 dark:group-hover:text-amber-300 transition-colors">
+                          <span className="text-[11px] font-medium">{isVersesExpanded ? 'Hide' : 'View Verses'}</span>
+                          {isVersesExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </div>
+                      </button>
 
-                          return (
-                            <div
-                              key={`${verse.source_name}-${verse.id}-${citIdx}`}
-                              className="group relative p-4 rounded-2xl bg-cream-50/90 dark:bg-[#0c101a] border border-cream-300 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-400/40 shadow-xs hover:shadow-md transition-all duration-200"
-                            >
-                              {/* Header: Source, Coordinate & Direct Read Mode Jump */}
-                              <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-cream-200/80 dark:border-amber-500/15">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-md bg-saffron-100 dark:bg-amber-950/60 text-saffron-900 dark:text-amber-300 border border-saffron-300/60 dark:border-amber-500/30 font-cinzel">
-                                    {verse.source_name}
-                                  </span>
-                                  <span className="text-xs font-semibold text-stone-700 dark:text-slate-300 font-sans">
-                                    Chapter {verse.chapter_number}, Verse {verse.verse_number}
-                                  </span>
+                      {isVersesExpanded && (
+                        <div className="grid grid-cols-1 gap-3 animate-fade-in pt-1">
+                          {msg.citations.map((verse, citIdx) => {
+                            const primaryTrans = verse.translations && verse.translations.length > 0
+                              ? verse.translations[0]
+                              : null;
+
+                            return (
+                              <div
+                                key={`${verse.source_name}-${verse.id}-${citIdx}`}
+                                className="group relative p-4 rounded-2xl bg-cream-50/90 dark:bg-[#0c101a] border border-cream-300 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-400/40 shadow-xs hover:shadow-md transition-all duration-200"
+                              >
+                                {/* Header: Source, Coordinate & Direct Read Mode Jump */}
+                                <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-cream-200/80 dark:border-amber-500/15">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-md bg-saffron-100 dark:bg-amber-950/60 text-saffron-900 dark:text-amber-300 border border-saffron-300/60 dark:border-amber-500/30 font-cinzel">
+                                      {verse.source_name}
+                                    </span>
+                                    <span className="text-xs font-semibold text-stone-700 dark:text-slate-300 font-sans">
+                                      Chapter {verse.chapter_number}, Verse {verse.verse_number}
+                                    </span>
+                                  </div>
+
+                                  {onSelectVerse && (
+                                    <button
+                                      type="button"
+                                      onClick={() => onSelectVerse(verse.source_name, verse.chapter_number, verse.verse_number)}
+                                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg text-saffron-800 dark:text-amber-300 hover:text-saffron-950 dark:hover:text-amber-100 bg-cream-200/70 dark:bg-slate-800 hover:bg-saffron-200/80 dark:hover:bg-amber-500/20 border border-cream-300 dark:border-amber-500/25 cursor-pointer transition-all shrink-0"
+                                      title="Open in Read Mode for full chapter, commentaries, and word meanings"
+                                    >
+                                      <span>Study in Read Mode</span>
+                                      <ExternalLink className="w-3 h-3 text-saffron-600 dark:text-amber-400" />
+                                    </button>
+                                  )}
                                 </div>
 
-                                {onSelectVerse && (
-                                  <button
-                                    type="button"
-                                    onClick={() => onSelectVerse(verse.source_name, verse.chapter_number, verse.verse_number)}
-                                    className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg text-saffron-800 dark:text-amber-300 hover:text-saffron-950 dark:hover:text-amber-100 bg-cream-200/70 dark:bg-slate-800 hover:bg-saffron-200/80 dark:hover:bg-amber-500/20 border border-cream-300 dark:border-amber-500/25 cursor-pointer transition-all shrink-0"
-                                    title="Open in Read Mode for full chapter, commentaries, and word meanings"
-                                  >
-                                    <span>Study in Read Mode</span>
-                                    <ExternalLink className="w-3 h-3 text-saffron-600 dark:text-amber-400" />
-                                  </button>
+                                {/* Sacred Sanskrit Verse */}
+                                {verse.sanskrit_text && (
+                                  <div className="pt-3 pb-2">
+                                    <p className="text-sm md:text-base font-serif leading-relaxed text-saffron-950 dark:text-amber-200 font-semibold whitespace-pre-line">
+                                      {verse.sanskrit_text}
+                                    </p>
+                                    {verse.transliteration && (
+                                      <p className="text-xs font-serif italic text-stone-600 dark:text-slate-400 mt-1">
+                                        {verse.transliteration}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Primary Translation */}
+                                {primaryTrans ? (
+                                  <div className="pt-2 border-t border-cream-200/60 dark:border-amber-500/10">
+                                    <p className="text-xs md:text-sm font-sans leading-relaxed text-stone-800 dark:text-slate-200">
+                                      "{primaryTrans.text}"
+                                    </p>
+                                    {primaryTrans.author && (
+                                      <p className="text-[10px] font-semibold tracking-wide uppercase text-stone-500 dark:text-amber-400/80 mt-1 font-cinzel">
+                                        — {primaryTrans.author}
+                                      </p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="pt-2 border-t border-cream-200/60 dark:border-amber-500/10">
+                                    <p className="text-xs italic text-stone-500 dark:text-slate-400">
+                                      Click 'Study in Read Mode' to view contextual analysis and Sanskrit details.
+                                    </p>
+                                  </div>
                                 )}
                               </div>
-
-                              {/* Sacred Sanskrit Verse */}
-                              {verse.sanskrit_text && (
-                                <div className="pt-3 pb-2">
-                                  <p className="text-sm md:text-base font-serif leading-relaxed text-saffron-950 dark:text-amber-200 font-semibold whitespace-pre-line">
-                                    {verse.sanskrit_text}
-                                  </p>
-                                  {verse.transliteration && (
-                                    <p className="text-xs font-serif italic text-stone-600 dark:text-slate-400 mt-1">
-                                      {verse.transliteration}
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Primary Translation */}
-                              {primaryTrans ? (
-                                <div className="pt-2 border-t border-cream-200/60 dark:border-amber-500/10">
-                                  <p className="text-xs md:text-sm font-sans leading-relaxed text-stone-800 dark:text-slate-200">
-                                    "{primaryTrans.text}"
-                                  </p>
-                                  {primaryTrans.author && (
-                                    <p className="text-[10px] font-semibold tracking-wide uppercase text-stone-500 dark:text-amber-400/80 mt-1 font-cinzel">
-                                      — {primaryTrans.author}
-                                    </p>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="pt-2 border-t border-cream-200/60 dark:border-amber-500/10">
-                                  <p className="text-xs italic text-stone-500 dark:text-slate-400">
-                                    Click 'Study in Read Mode' to view contextual analysis and Sanskrit details.
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

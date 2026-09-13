@@ -16,7 +16,7 @@ import {
   ScrollText,
   BookOpen,
 } from 'lucide-react';
-import UpanishadCanonModal from './UpanishadCanonModal';
+import Link from 'next/link';
 import { getUpanishadByDbName, VedicTradition } from '../data/canonicalUpanishads';
 
 interface ReadModeProps {
@@ -71,7 +71,6 @@ export default function ReadMode({
   const [isTocDrawerOpen, setIsTocDrawerOpen] = useState<boolean>(false);
   const [tocFilterQuery, setTocFilterQuery] = useState<string>('');
   const [verseJumpInput, setVerseJumpInput] = useState<string>('');
-  const [isCanonModalOpen, setIsCanonModalOpen] = useState<boolean>(false);
 
   // Global Unified Layer Visibility State (Persisted in localStorage)
   const [globalLayers, setGlobalLayers] = useState<GlobalLayersState>({
@@ -1065,16 +1064,15 @@ export default function ReadMode({
 
                 {/* Upanishad 108 Canon Shortcut Badge */}
                 {currentUpanishadCanon && (
-                  <button
-                    type="button"
-                    onClick={() => setIsCanonModalOpen(true)}
+                  <Link
+                    href="/upanishads"
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-saffron-100 to-amber-100 dark:from-amber-950/60 dark:to-slate-900 text-saffron-950 dark:text-amber-300 font-bold rounded-xl border border-saffron-300 dark:border-amber-500/30 text-xs transition-all cursor-pointer shadow-2xs hover:scale-105"
-                    title="View 108 Upanishads Canon Directory"
+                    title="Explore 108 Upanishads Canon"
                   >
                     <ScrollText className="w-3.5 h-3.5 text-saffron-700 dark:text-amber-400" />
                     <span className="hidden sm:inline">{currentUpanishadCanon.veda} • #{currentUpanishadCanon.muktikaNumber}</span>
                     <span className="sm:hidden">108 Canon</span>
-                  </button>
+                  </Link>
                 )}
 
                 {/* Table of Contents Drawer Toggle Button */}
@@ -1280,14 +1278,13 @@ export default function ReadMode({
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsCanonModalOpen(true)}
+                <Link
+                  href="/upanishads"
                   className="px-4 py-2.5 bg-saffron-600 hover:bg-saffron-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white dark:text-slate-950 font-bold text-xs rounded-xl shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0 hover:scale-105"
                 >
                   <BookOpen className="w-4 h-4" />
                   <span>Browse 108 Canon</span>
-                </button>
+                </Link>
               </div>
             )}
 
@@ -1422,6 +1419,14 @@ export default function ReadMode({
               });
             }}
           />
+
+          {/* Sanskrit Lexicon Tip Banner */}
+          <div className="px-3.5 py-1.5 rounded-xl bg-cream-200/50 dark:bg-amber-950/20 border border-cream-300/60 dark:border-amber-500/10 flex items-center justify-between gap-2 text-[11px] text-stone-600 dark:text-amber-200/80">
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="font-extrabold text-saffron-700 dark:text-amber-400">Lexicon:</span>
+              <span className="truncate">Double-click or tap any Sanskrit word to inspect root derivations (dhātu) & Monier-Williams definitions.</span>
+            </div>
+          </div>
 
           {/* Quick Verse Jump Carousel Pill Bar */}
           {activeChapterInfo.total > 1 && (
@@ -1562,12 +1567,6 @@ export default function ReadMode({
           </div>
         </div>
       )}
-      {/* 4. 108 MUKTIKA UPANISHADS CANON DIRECTORY MODAL */}
-      <UpanishadCanonModal
-        isOpen={isCanonModalOpen}
-        onClose={() => setIsCanonModalOpen(false)}
-        onSelectUpanishad={(srcName) => loadSource(srcName)}
-      />
     </div>
   );
 }

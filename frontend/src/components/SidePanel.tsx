@@ -64,7 +64,21 @@ export default function SidePanel({
     const isDarkTheme = document.documentElement.classList.contains('dark');
     setIsDark(isDarkTheme);
 
-    return () => window.removeEventListener('dharmapragya_bookmarks_updated', handleBookmarksUpdate);
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ isDark: boolean }>;
+      if (customEvent.detail && typeof customEvent.detail.isDark === 'boolean') {
+        setIsDark(customEvent.detail.isDark);
+      } else {
+        setIsDark(document.documentElement.classList.contains('dark'));
+      }
+    };
+
+    window.addEventListener('dharmapragya_theme_changed', handleThemeChange);
+
+    return () => {
+      window.removeEventListener('dharmapragya_bookmarks_updated', handleBookmarksUpdate);
+      window.removeEventListener('dharmapragya_theme_changed', handleThemeChange);
+    };
   }, []);
 
   // Reset view to main when drawer is opened
@@ -99,15 +113,26 @@ export default function SidePanel({
 
   const toggleTheme = () => {
     const root = document.documentElement;
-    if (isDark) {
-      root.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-      setIsDark(false);
-    } else {
+    const nextDark = !isDark;
+    if (nextDark) {
       root.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-      setIsDark(true);
+      try {
+        localStorage.setItem('dharmapragya_theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      } catch (e) {}
+    } else {
+      root.classList.remove('dark');
+      try {
+        localStorage.setItem('dharmapragya_theme', 'light');
+        localStorage.setItem('theme', 'light');
+      } catch (e) {}
     }
+    setIsDark(nextDark);
+    window.dispatchEvent(
+      new CustomEvent('dharmapragya_theme_changed', {
+        detail: { isDark: nextDark },
+      })
+    );
   };
 
   const handleModeSelect = (newMode: 'ask' | 'read') => {
@@ -286,32 +311,6 @@ export default function SidePanel({
                   <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
                 </Link>
 
-                {/* 4. Dedicated 108 Upanishads Canon Link */}
-                {onOpenUpanishadCanon && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onOpenUpanishadCanon();
-                    }}
-                    className="w-full flex items-center justify-between p-3.5 bg-gradient-to-r from-amber-50/80 via-cream-100 to-saffron-50/60 dark:from-slate-900 dark:via-[#131b2e] dark:to-slate-900 hover:from-amber-100 hover:to-saffron-100 dark:hover:from-slate-800 dark:hover:to-[#17223b] border border-amber-300/70 dark:border-amber-500/30 rounded-2xl shadow-xs transition-all cursor-pointer text-left group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-600 to-saffron-600 dark:from-amber-500 dark:to-saffron-700 flex items-center justify-center text-white shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                        <ScrollText className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <span className="text-xs sm:text-sm font-bold text-saffron-950 dark:text-amber-200 block font-cinzel">
-                          108 Upanishads Canon
-                        </span>
-                        <span className="text-[11px] text-stone-600 dark:text-slate-400 block mt-0.5">
-                          Canonical Vedic Index & Muktika Directory
-                        </span>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
-                  </button>
-                )}
               </div>
 
               {/* Preferences & Features Section */}

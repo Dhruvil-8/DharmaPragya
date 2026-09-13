@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import SidePanel from './SidePanel';
+import ThemeToggle from './ThemeToggle';
 
 interface HeaderProps {
   onOpenSaved?: () => void;
@@ -91,25 +92,28 @@ export default function Header({
           </div>
         )}
 
-        {/* Right: Clean Circular Brand Logo Emblem (No text to prevent mobile header overlap) */}
-        <button
-          type="button"
-          onClick={handleBrandClick}
-          className="flex items-center shrink-0 cursor-pointer group focus:outline-none transition-transform active:scale-95 z-10 ml-auto"
-          title="DharmaPragya Home"
-          aria-label="DharmaPragya Home"
-        >
-          <div className="relative w-8 h-8 rounded-full overflow-hidden border border-saffron-400/50 dark:border-amber-500/40 shadow-2xs group-hover:border-saffron-600 dark:group-hover:border-amber-400 transition-colors">
-            <Image
-              src="/logo.png"
-              alt="DharmaPragya Emblem"
-              fill
-              className="object-cover"
-              sizes="32px"
-              priority
-            />
-          </div>
-        </button>
+        {/* Right: Theme Toggle & Clean Circular Brand Logo Emblem */}
+        <div className="flex items-center gap-2 shrink-0 z-10 ml-auto">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={handleBrandClick}
+            className="flex items-center shrink-0 cursor-pointer group focus:outline-none transition-transform active:scale-95"
+            title="DharmaPragya Home"
+            aria-label="DharmaPragya Home"
+          >
+            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-saffron-400/50 dark:border-amber-500/40 shadow-2xs group-hover:border-saffron-600 dark:group-hover:border-amber-400 transition-colors">
+              <Image
+                src="/logo.png"
+                alt="DharmaPragya Emblem"
+                fill
+                className="object-cover"
+                sizes="32px"
+                priority
+              />
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Embedded SidePanel fallback if opened directly from header state */}
