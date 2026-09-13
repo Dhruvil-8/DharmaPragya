@@ -3,11 +3,10 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 const DEFAULT_BACKEND_URL = 'https://dhruvil8-dharmapragya.hf.space';
-const DEFAULT_SECRET = process.env.NODE_ENV === 'development' ? 'dev-secret' : '';
 
 export async function GET(req: Request, { params }: { params: Promise<{ chapter: string, verse: string }> }) {
   const backendUrl = process.env.BACKEND_URL || DEFAULT_BACKEND_URL;
-  const secret = process.env.FRONTEND_SECRET || DEFAULT_SECRET;
+  const secret = process.env.FRONTEND_SECRET || '';
   const { chapter, verse } = await params;
 
   // Clean the verse to remove any trailing .mp3 to avoid duplicate extensions

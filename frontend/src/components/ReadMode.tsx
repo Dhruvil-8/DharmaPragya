@@ -391,10 +391,14 @@ export default function ReadMode({
     setCurrentMantraIndex(0);
     setVisibleCount(30);
     try {
-      const vKey = `${vedaID}::${division1}`;
+      const vKey = `${vedaID}::${division1}${targetDivision2 ? `::${targetDivision2}` : ''}`;
       let data = vedaMantrasCacheRef.current.get(vKey);
       if (!data) {
-        const res = await fetch(`${apiBaseUrl}/api/veda/read?veda=${vedaID}&div1=${division1}`);
+        const queryParams = new URLSearchParams();
+        queryParams.set('veda', vedaID);
+        queryParams.set('div1', String(division1));
+        if (targetDivision2) queryParams.set('div2', String(targetDivision2));
+        const res = await fetch(`${apiBaseUrl}/api/veda/read?${queryParams.toString()}`);
         data = await res.json();
         if (Array.isArray(data)) {
           vedaMantrasCacheRef.current.set(vKey, data);
@@ -409,11 +413,11 @@ export default function ReadMode({
         if (targetDivision2 && targetMantraNum) {
           mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_2 === targetDivision2 && (m.division_3 === targetMantraNum || m.krama_number === targetMantraNum));
         }
-        if (mIdx < 0 && targetDivision2) {
-          mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_2 === targetDivision2);
-        }
         if (mIdx < 0 && targetMantraNum) {
           mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_3 === targetMantraNum || m.krama_number === targetMantraNum);
+        }
+        if (mIdx < 0 && targetDivision2) {
+          mIdx = mantrasArray.findIndex((m: VedaMantra) => m.division_2 === targetDivision2);
         }
 
         if (mIdx >= 0) {

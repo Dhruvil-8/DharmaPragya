@@ -3,11 +3,10 @@ import { NextResponse } from 'next/server';
 export const revalidate = 86400;
 
 const DEFAULT_BACKEND_URL = 'https://dhruvil8-dharmapragya.hf.space';
-const DEFAULT_SECRET = process.env.NODE_ENV === 'development' ? 'dev-secret' : '';
 
 export async function GET(req: Request) {
   const backendUrl = process.env.BACKEND_URL || DEFAULT_BACKEND_URL;
-  const secret = process.env.FRONTEND_SECRET || DEFAULT_SECRET;
+  const secret = process.env.FRONTEND_SECRET || '';
 
   const { searchParams } = new URL(req.url);
   const queryString = searchParams.toString();

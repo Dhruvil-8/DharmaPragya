@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Header from '../components/Header';
@@ -16,41 +16,43 @@ const SacredHymnModal = dynamic(() => import('../components/SacredHymnModal'), {
 const API_BASE_URL = '';
 
 function HomePageContent() {
-  const [mode, setMode] = useState<'ask' | 'read'>(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const urlMode = params.get('mode');
-      const source = params.get('source');
-      if (urlMode === 'read' || source) return 'read';
+  const searchParams = useSearchParams();
+
+  const urlMode = searchParams.get('mode');
+  const source = searchParams.get('source');
+  const chapter = searchParams.get('chapter');
+  const div2 = searchParams.get('div2');
+  const verse = searchParams.get('verse');
+  const hymnId = searchParams.get('hymn') || searchParams.get('suktam');
+
+  const initialCoordinate = useMemo(() => {
+    if (source) {
+      return {
+        sourceName: source,
+        chapterNumber: chapter ? parseInt(chapter, 10) : 1,
+        division2: div2 ? parseInt(div2, 10) : undefined,
+        verseNumber: verse ? parseInt(verse, 10) : undefined,
+      };
     }
+    return null;
+  }, [source, chapter, div2, verse]);
+
+  const [mode, setMode] = useState<'ask' | 'read'>(() => {
+    if (urlMode === 'read' || source) return 'read';
     return 'ask';
   });
 
   const [isSavedOpen, setIsSavedOpen] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const urlMode = params.get('mode');
-      return urlMode === 'saved' || urlMode === 'bookmarks';
-    }
-    return false;
+    return urlMode === 'saved' || urlMode === 'bookmarks';
   });
 
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const urlMode = params.get('mode');
-      return urlMode === 'suktams' || urlMode === 'hymns';
-    }
-    return false;
+    return urlMode === 'suktams' || urlMode === 'hymns';
   });
 
   const [selectedHymnModal, setSelectedHymnModal] = useState<SacredHymn | null>(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const hymnId = params.get('hymn') || params.get('suktam');
-      if (hymnId) {
-        return FAMOUS_SUKTAMS_AND_MANTRAS.find(h => h.id === hymnId) || null;
-      }
+    if (hymnId) {
+      return FAMOUS_SUKTAMS_AND_MANTRAS.find(h => h.id === hymnId) || null;
     }
     return null;
   });
@@ -81,38 +83,13 @@ function HomePageContent() {
     chapterNumber: number;
     division2?: number;
     verseNumber?: number;
-  } | null>(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const source = params.get('source');
-      const chapter = params.get('chapter');
-      const div2 = params.get('div2');
-      const verse = params.get('verse');
-      if (source) {
-        return {
-          sourceName: source,
-          chapterNumber: chapter ? parseInt(chapter, 10) : 1,
-          division2: div2 ? parseInt(div2, 10) : undefined,
-          verseNumber: verse ? parseInt(verse, 10) : undefined,
-        };
-      }
-    }
-    return null;
-  });
-
-  const searchParams = useSearchParams();
+  } | null>(initialCoordinate);
 
   const searchParamsStr = searchParams.toString();
   const [prevSearchStr, setPrevSearchStr] = useState(searchParamsStr);
 
   if (searchParamsStr !== prevSearchStr) {
     setPrevSearchStr(searchParamsStr);
-    const urlMode = searchParams.get('mode');
-    const source = searchParams.get('source');
-    const chapter = searchParams.get('chapter');
-    const div2 = searchParams.get('div2');
-    const verse = searchParams.get('verse');
-    const hymnId = searchParams.get('hymn') || searchParams.get('suktam');
 
     if (urlMode === 'read' || source) {
       setMode('read');

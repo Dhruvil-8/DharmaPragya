@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://dhruvil8-dharmapragya.hf.space';
-const FRONTEND_SECRET = process.env.FRONTEND_SECRET || '5b8d2a4c7e91f34a8f2d6b7c1e9a4d3f6c8b1a2e7f9d4c5b3a8e6f1d2c7b9a4e';
+const FRONTEND_SECRET = process.env.FRONTEND_SECRET || '';
 
 export const dynamic = 'force-dynamic';
 

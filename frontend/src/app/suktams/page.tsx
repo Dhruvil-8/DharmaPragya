@@ -261,11 +261,24 @@ function SuktamsPageContent() {
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                   </button>
-                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-saffron-600 dark:bg-amber-500 text-white dark:text-stone-950 text-xs font-bold shadow-2xs group-hover:bg-saffron-700 dark:group-hover:bg-amber-400 transition-all">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenInScripture({
+                        sourceName: hymn.sourceName,
+                        chapterNumber: hymn.chapterNumber || hymn.division1 || 1,
+                        division2: hymn.division2,
+                        verseNumber: hymn.startVerse || hymn.verseNumber || 1,
+                      });
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-saffron-600 hover:bg-saffron-700 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-stone-950 text-xs font-bold shadow-2xs group-hover:scale-105 transition-all cursor-pointer"
+                    title={`Read ${hymn.name} in Scripture Library`}
+                  >
                     <BookOpen className="w-3.5 h-3.5" />
                     <span>Read Mode</span>
                     <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                  </span>
+                  </button>
                 </div>
               </div>
             </article>
