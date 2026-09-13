@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import ThemeToggle from './ThemeToggle';
 
 const SidePanel = dynamic(() => import('./SidePanel'), { ssr: false });
 
@@ -94,9 +93,8 @@ export default function Header({
           </div>
         )}
 
-        {/* Right: Theme Toggle & Clean Circular Brand Logo Emblem */}
-        <div className="flex items-center gap-2 shrink-0 z-10 ml-auto">
-          <ThemeToggle />
+        {/* Right: Clean Circular Brand Logo Emblem */}
+        <div className="flex items-center shrink-0 z-10 ml-auto">
           <button
             type="button"
             onClick={handleBrandClick}

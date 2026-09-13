@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { FAMOUS_SUKTAMS_AND_MANTRAS, SacredHymn } from '../../data/famousSuktams';
 import SacredHymnModal from '../../components/SacredHymnModal';
-import ThemeToggle from '../../components/ThemeToggle';
 
 function SuktamsPageContent() {
   const router = useRouter();
@@ -107,7 +106,6 @@ function SuktamsPageContent() {
           </Link>
 
           <div className="flex items-center gap-2">
-            <ThemeToggle />
             <Link
               href="/"
               className="flex items-center shrink-0 group focus:outline-none transition-transform active:scale-95"

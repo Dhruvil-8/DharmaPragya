@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Header from '../components/Header';
 import AskMode from '../components/AskMode';
@@ -98,6 +99,41 @@ function HomePageContent() {
     }
     return null;
   });
+
+  const searchParams = useSearchParams();
+
+  const searchParamsStr = searchParams.toString();
+  const [prevSearchStr, setPrevSearchStr] = useState(searchParamsStr);
+
+  if (searchParamsStr !== prevSearchStr) {
+    setPrevSearchStr(searchParamsStr);
+    const urlMode = searchParams.get('mode');
+    const source = searchParams.get('source');
+    const chapter = searchParams.get('chapter');
+    const div2 = searchParams.get('div2');
+    const verse = searchParams.get('verse');
+    const hymnId = searchParams.get('hymn') || searchParams.get('suktam');
+
+    if (urlMode === 'read' || source) {
+      setMode('read');
+    } else if (urlMode === 'ask') {
+      setMode('ask');
+    }
+
+    if (source) {
+      setTargetCoordinate({
+        sourceName: source,
+        chapterNumber: chapter ? parseInt(chapter, 10) : 1,
+        division2: div2 ? parseInt(div2, 10) : undefined,
+        verseNumber: verse ? parseInt(verse, 10) : undefined,
+      });
+    }
+
+    if (hymnId) {
+      const found = FAMOUS_SUKTAMS_AND_MANTRAS.find(h => h.id === hymnId);
+      if (found) setSelectedHymnModal(found);
+    }
+  }
 
   // Redirect to canonical upanishads if requested via URL
   useEffect(() => {

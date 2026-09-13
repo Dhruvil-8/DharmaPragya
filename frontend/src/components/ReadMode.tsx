@@ -508,39 +508,59 @@ export default function ReadMode({
   // Deep-linking navigation
   useEffect(() => {
     if (!targetCoordinate) return;
+    if (vedas.length === 0 && sources.length === 0) return;
 
     const reqSource = targetCoordinate.sourceName.trim().toLowerCase();
+    const normReq = reqSource.replace(/[\s_-]+/g, '');
 
     const timer = setTimeout(() => {
-      // 1. Precise Veda Match
-      const matchedVeda = vedas.find(v => 
-        v.id.toLowerCase() === reqSource ||
-        v.name_english.toLowerCase() === reqSource ||
-        v.name_sanskrit.toLowerCase() === reqSource ||
-        v.name_english.toLowerCase().startsWith(reqSource) ||
-        reqSource.startsWith(v.id.toLowerCase())
-      );
+      // 1. Precise Veda Match (supports 'Rigveda', 'Yajur Veda' -> 'yajurveda', 'Atharva Veda' -> 'atharvaveda')
+      const matchedVeda = vedas.find(v => {
+        const vIdNorm = v.id.toLowerCase().replace(/[\s_-]+/g, '');
+        const vEngNorm = v.name_english.toLowerCase().replace(/[\s_-]+/g, '');
+        return (
+          vIdNorm === normReq ||
+          vEngNorm === normReq ||
+          vEngNorm.startsWith(normReq) ||
+          normReq.startsWith(vIdNorm) ||
+          v.name_sanskrit.toLowerCase() === reqSource
+        );
+      });
 
       if (matchedVeda) {
-        navHandlersRef.current.loadVedaSource(matchedVeda, targetCoordinate.chapterNumber, targetCoordinate.division2, targetCoordinate.verseNumber);
+        navHandlersRef.current.loadVedaSource(
+          matchedVeda,
+          targetCoordinate.chapterNumber,
+          targetCoordinate.division2,
+          targetCoordinate.verseNumber
+        );
         return;
       }
 
       // 2. Exact Scripture Match first (to prevent partial matches like 'Ashtavakra Gita' -> 'Bhagavad Gita')
-      let matchedSource = sources.find(s => s.name.toLowerCase() === reqSource);
+      let matchedSource = sources.find(s => {
+        const sNorm = s.name.toLowerCase().replace(/[\s_-]+/g, '');
+        return sNorm === normReq || s.name.toLowerCase() === reqSource;
+      });
 
       // 3. Fallback Scripture Match (prefix or includes)
       if (!matchedSource) {
-        matchedSource = sources.find(
-          s => s.name.toLowerCase().startsWith(reqSource) || reqSource.startsWith(s.name.toLowerCase())
-        );
+        matchedSource = sources.find(s => {
+          const sNorm = s.name.toLowerCase().replace(/[\s_-]+/g, '');
+          return sNorm.startsWith(normReq) || normReq.startsWith(sNorm);
+        });
       }
 
       if (matchedSource) {
         const isGitaText = matchedSource.name === 'Bhagavad Gita' || matchedSource.name.toLowerCase().includes('gita');
-        navHandlersRef.current.loadSourceAndSection(matchedSource.name, targetCoordinate.chapterNumber, targetCoordinate.verseNumber, isGitaText ? 'Gita' : matchedSource.type);
+        navHandlersRef.current.loadSourceAndSection(
+          matchedSource.name,
+          targetCoordinate.chapterNumber,
+          targetCoordinate.verseNumber,
+          isGitaText ? 'Gita' : matchedSource.type
+        );
       }
-    }, 0);
+    }, 40);
 
     return () => clearTimeout(timer);
   }, [targetCoordinate, sources, vedas]);
@@ -896,7 +916,7 @@ export default function ReadMode({
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-24 px-2 sm:px-4">
       {/* 1. UNIVERSAL TOP BAR (Sticky Search & Quick Navigation Bar) */}
-      <div className="sticky top-[58px] z-40 space-y-2 transition-all">
+      <div className="sticky top-[52px] sm:top-[58px] z-30 space-y-2 transition-all">
         {/* Universal Search Bar */}
         <UniversalSearchModal
           searchQuery={searchQuery}
@@ -913,22 +933,22 @@ export default function ReadMode({
         />
 
         {/* 1-Click Fast Scripture & Navigation Bar */}
-        <div className="bg-white/95 dark:bg-[#0d121d]/95 backdrop-blur-md p-2.5 rounded-2xl border border-cream-400 dark:border-amber-500/20 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
+        <div className="bg-white/95 dark:bg-[#0d121d]/95 backdrop-blur-md p-2 sm:p-2.5 rounded-2xl border border-cream-400 dark:border-amber-500/20 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-2.5">
           {/* Left: Breadcrumbs & Instant Scripture Switcher */}
-          <div className="flex items-center flex-wrap gap-2 text-xs">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-xs flex-1 min-w-0 w-full sm:w-auto">
             {/* Library Home Button */}
             <button
               type="button"
               onClick={resetToLibrary}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-cream-100 dark:bg-slate-900 hover:bg-cream-200 dark:hover:bg-slate-800 rounded-xl border border-cream-400/80 dark:border-amber-500/30 text-xs font-bold text-stone-700 dark:text-slate-300 hover:text-saffron-800 dark:hover:text-amber-300 transition-colors cursor-pointer shadow-2xs"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-cream-100 dark:bg-slate-900 hover:bg-cream-200 dark:hover:bg-slate-800 rounded-xl border border-cream-400/80 dark:border-amber-500/30 text-xs font-bold text-stone-700 dark:text-slate-300 hover:text-saffron-800 dark:hover:text-amber-300 transition-colors cursor-pointer shadow-2xs shrink-0"
               title="Return to Sacred Library Home"
             >
               <Compass className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
-              <span>Library</span>
+              <span className="hidden xs:inline sm:inline">Library</span>
             </button>
 
             {/* Quick Scripture Dropdown */}
-            <div className="relative flex items-center">
+            <div className="relative flex-1 min-w-0 max-w-[170px] sm:max-w-[220px] md:max-w-[260px] flex items-center">
               <select
                 value={currentVeda ? currentVeda.id : (currentSource || '')}
                 onChange={(e) => {
@@ -947,7 +967,7 @@ export default function ReadMode({
                     }
                   }
                 }}
-                className="bg-cream-100 dark:bg-slate-900 text-saffron-950 dark:text-amber-300 font-bold px-3 py-1.5 rounded-xl border border-cream-400/80 dark:border-amber-500/30 text-xs focus:outline-none cursor-pointer pr-6 appearance-none font-cinzel shadow-2xs"
+                className="w-full bg-cream-100 dark:bg-slate-900 text-saffron-950 dark:text-amber-300 font-bold px-2.5 sm:px-3 py-1.5 rounded-xl border border-cream-400/80 dark:border-amber-500/30 text-xs focus:outline-none cursor-pointer pr-6 appearance-none font-cinzel shadow-2xs truncate"
               >
                 <option value="">Select Scripture...</option>
 
@@ -1032,7 +1052,7 @@ export default function ReadMode({
 
             {/* Quick Chapter Selector Dropdown with Sub-Division Groups */}
             {isReading && (
-              <div className="relative flex items-center">
+              <div className="relative flex-1 min-w-0 max-w-[150px] sm:max-w-[200px] md:max-w-[240px] flex items-center">
                 <select
                   value={currentVeda ? (currentVedaSection || '') : (currentSection || '')}
                   onChange={(e) => {
@@ -1043,7 +1063,7 @@ export default function ReadMode({
                       loadChapter(currentSource, num);
                     }
                   }}
-                  className="bg-cream-100 dark:bg-slate-900 text-stone-900 dark:text-slate-100 font-semibold px-3 py-1.5 rounded-xl border border-cream-400/80 dark:border-amber-500/30 text-xs focus:outline-none cursor-pointer pr-6 appearance-none shadow-2xs max-w-[180px] sm:max-w-[260px] truncate"
+                  className="w-full bg-cream-100 dark:bg-slate-900 text-stone-900 dark:text-slate-100 font-semibold px-2.5 sm:px-3 py-1.5 rounded-xl border border-cream-400/80 dark:border-amber-500/30 text-xs focus:outline-none cursor-pointer pr-6 appearance-none shadow-2xs truncate"
                 >
                   {currentVeda ? (
                     vedaSectionSubdivisionMap ? (
@@ -1087,9 +1107,9 @@ export default function ReadMode({
           </div>
 
           {/* Right: Usability Toolset (Chapter Flippers, TOC Drawer) */}
-          <div className="flex items-center gap-1.5">
-            {isReading && (
-              <>
+          {isReading && (
+            <div className="flex items-center justify-between sm:justify-end gap-1.5 w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-cream-200/80 dark:border-slate-800/80 shrink-0">
+              <div className="flex items-center gap-1">
                 {/* Quick Chapter Flippers */}
                 <button
                   type="button"
@@ -1108,12 +1128,14 @@ export default function ReadMode({
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
+              </div>
 
+              <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
                 {/* Upanishad 108 Canon Shortcut Badge */}
                 {currentUpanishadCanon && (
                   <Link
                     href="/upanishads"
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-saffron-100 to-amber-100 dark:from-amber-950/60 dark:to-slate-900 text-saffron-950 dark:text-amber-300 font-bold rounded-xl border border-saffron-300 dark:border-amber-500/30 text-xs transition-all cursor-pointer shadow-2xs hover:scale-105"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-saffron-100 to-amber-100 dark:from-amber-950/60 dark:to-slate-900 text-saffron-950 dark:text-amber-300 font-bold rounded-xl border border-saffron-300 dark:border-amber-500/30 text-xs transition-all cursor-pointer shadow-2xs hover:scale-105"
                     title="Explore 108 Upanishads Canon"
                   >
                     <ScrollText className="w-3.5 h-3.5 text-saffron-700 dark:text-amber-400" />
@@ -1126,14 +1148,14 @@ export default function ReadMode({
                 <button
                   type="button"
                   onClick={() => setIsTocDrawerOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-saffron-100 dark:bg-amber-950/40 hover:bg-saffron-200 dark:hover:bg-amber-900/50 text-saffron-950 dark:text-amber-300 font-bold rounded-xl border border-saffron-300 dark:border-amber-500/30 text-xs transition-colors cursor-pointer shadow-2xs"
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-saffron-100 dark:bg-amber-950/40 hover:bg-saffron-200 dark:hover:bg-amber-900/50 text-saffron-950 dark:text-amber-300 font-bold rounded-xl border border-saffron-300 dark:border-amber-500/30 text-xs transition-colors cursor-pointer shadow-2xs"
                 >
                   <Menu className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Index</span>
+                  <span>Index</span>
                 </button>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       {/* 2. TABLE OF CONTENTS SLIDE-OVER DRAWER */}

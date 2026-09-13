@@ -19,7 +19,6 @@ import {
   VedicTradition, 
   UpanishadCategory 
 } from '../../data/canonicalUpanishads';
-import ThemeToggle from '../../components/ThemeToggle';
 
 function UpanishadsPageContent() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -152,7 +151,6 @@ function UpanishadsPageContent() {
             >
               Sacred Suktams
             </Link>
-            <ThemeToggle />
             <Link
               href="/"
               className="flex items-center shrink-0 group focus:outline-none transition-transform active:scale-95"
