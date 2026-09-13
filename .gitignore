@@ -39,6 +39,8 @@ backend/vendor/
 *-wal
 *-shm
 *.backup
+*.bak
+backend/data/*.bak
 
 # Ingestion & Scripts
 *.mp3
@@ -64,3 +66,5 @@ ingestion/.venv/
 
 # Deployment
 hf_space/
+
+.gemini

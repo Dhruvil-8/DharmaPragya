@@ -100,11 +100,13 @@ func main() {
 	_ = godotenv.Load()
 	dbPath := "./data/scriptures.db"
 	vedasDBPath := "./data/vedas.db"
+	dictDBPath := "./data/dictionary.db"
 
 	ensureUnpacked(dbPath, "./data/scriptures.zip")
 	ensureUnpacked(vedasDBPath, "./data/vedas.zip")
+	ensureUnpacked(dictDBPath, "./data/dictionary.zip")
 
-	db, err := storage.NewSQLiteStorage(dbPath, vedasDBPath)
+	db, err := storage.NewSQLiteStorage(dbPath, vedasDBPath, dictDBPath)
 	if err != nil {
 		log.Fatalf("Failed to open databases: %v", err)
 	}
@@ -117,6 +119,7 @@ func main() {
 	http.HandleFunc("/api/search", gzipMiddleware(handler.SearchVerses))
 	http.HandleFunc("/api/veda/read", gzipMiddleware(handler.ReadVedas))
 	http.HandleFunc("/api/veda/search", gzipMiddleware(handler.SearchVedas))
+	http.HandleFunc("/api/dictionary/lookup", gzipMiddleware(handler.LookupDictionaryWord))
 	http.HandleFunc("/api/ask", handler.AskAI)
 	
 	// Serve static audio files (publicly accessible for HTML5 audio streaming)
@@ -135,7 +138,7 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	log.Printf("Server listening on :%s (scriptures.db + vedas.db active)\n", port)
+	log.Printf("Server listening on :%s (scriptures.db + vedas.db + dictionary.db active)\n", port)
 	if err := http.ListenAndServe(":" + port, nil); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}

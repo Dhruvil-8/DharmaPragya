@@ -13,7 +13,11 @@ import {
   Compass,
   Menu,
   ChevronDown,
+  ScrollText,
+  BookOpen,
 } from 'lucide-react';
+import UpanishadCanonModal from './UpanishadCanonModal';
+import { getUpanishadByDbName, VedicTradition } from '../data/canonicalUpanishads';
 
 interface ReadModeProps {
   apiBaseUrl: string;
@@ -67,6 +71,7 @@ export default function ReadMode({
   const [isTocDrawerOpen, setIsTocDrawerOpen] = useState<boolean>(false);
   const [tocFilterQuery, setTocFilterQuery] = useState<string>('');
   const [verseJumpInput, setVerseJumpInput] = useState<string>('');
+  const [isCanonModalOpen, setIsCanonModalOpen] = useState<boolean>(false);
 
   // Global Unified Layer Visibility State (Persisted in localStorage)
   const [globalLayers, setGlobalLayers] = useState<GlobalLayersState>({
@@ -693,6 +698,29 @@ export default function ReadMode({
     return sources.filter(s => s.type === 'Shruti' && !s.name.toLowerCase().includes('gita'));
   }, [sources]);
 
+  const upanishadsByVeda = useMemo(() => {
+    const groups: Record<VedicTradition, SourceData[]> = {
+      'Rigveda': [],
+      'Shukla Yajurveda': [],
+      'Krishna Yajurveda': [],
+      'Samaveda': [],
+      'Atharvaveda': []
+    };
+    upanishadSources.forEach(s => {
+      const canon = getUpanishadByDbName(s.name);
+      if (canon && groups[canon.veda]) {
+        groups[canon.veda].push(s);
+      } else {
+        groups['Shukla Yajurveda'].push(s);
+      }
+    });
+    return groups;
+  }, [upanishadSources]);
+
+  const currentUpanishadCanon = useMemo(() => {
+    return currentSource ? getUpanishadByDbName(currentSource) : undefined;
+  }, [currentSource]);
+
   const sutraSources = useMemo(() => {
     return sources.filter(s => s.type === 'Sutra' && !s.name.toLowerCase().includes('gita'));
   }, [sources]);
@@ -909,12 +937,42 @@ export default function ReadMode({
                   ))}
                 </optgroup>
 
-                {/* 5. Upanishads */}
-                <optgroup label="Upanishads (उपनिषद्)" className="font-bold dark:bg-slate-900">
-                  {upanishadSources.map(s => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
-                  ))}
-                </optgroup>
+                {/* 5. Upanishads by Vedic Tradition */}
+                {upanishadsByVeda['Rigveda'].length > 0 && (
+                  <optgroup label="Upanishads — Rigveda (ऋग्वेद)" className="font-bold dark:bg-slate-900">
+                    {upanishadsByVeda['Rigveda'].map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+                {upanishadsByVeda['Shukla Yajurveda'].length > 0 && (
+                  <optgroup label="Upanishads — Shukla Yajur (शुक्ल यजुर्वेद)" className="font-bold dark:bg-slate-900">
+                    {upanishadsByVeda['Shukla Yajurveda'].map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+                {upanishadsByVeda['Krishna Yajurveda'].length > 0 && (
+                  <optgroup label="Upanishads — Krishna Yajur (कृष्ण यजुर्वेद)" className="font-bold dark:bg-slate-900">
+                    {upanishadsByVeda['Krishna Yajurveda'].map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+                {upanishadsByVeda['Samaveda'].length > 0 && (
+                  <optgroup label="Upanishads — Samaveda (सामवेद)" className="font-bold dark:bg-slate-900">
+                    {upanishadsByVeda['Samaveda'].map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
+                  </optgroup>
+                )}
+                {upanishadsByVeda['Atharvaveda'].length > 0 && (
+                  <optgroup label="Upanishads — Atharvaveda (अथर्ववेद)" className="font-bold dark:bg-slate-900">
+                    {upanishadsByVeda['Atharvaveda'].map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))}
+                  </optgroup>
+                )}
 
                 {/* 6. Sutras */}
                 <optgroup label="Sutras (दर्शन सूत्र)" className="font-bold dark:bg-slate-900">
@@ -1004,6 +1062,20 @@ export default function ReadMode({
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
+
+                {/* Upanishad 108 Canon Shortcut Badge */}
+                {currentUpanishadCanon && (
+                  <button
+                    type="button"
+                    onClick={() => setIsCanonModalOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-saffron-100 to-amber-100 dark:from-amber-950/60 dark:to-slate-900 text-saffron-950 dark:text-amber-300 font-bold rounded-xl border border-saffron-300 dark:border-amber-500/30 text-xs transition-all cursor-pointer shadow-2xs hover:scale-105"
+                    title="View 108 Upanishads Canon Directory"
+                  >
+                    <ScrollText className="w-3.5 h-3.5 text-saffron-700 dark:text-amber-400" />
+                    <span className="hidden sm:inline">{currentUpanishadCanon.veda} • #{currentUpanishadCanon.muktikaNumber}</span>
+                    <span className="sm:hidden">108 Canon</span>
+                  </button>
+                )}
 
                 {/* Table of Contents Drawer Toggle Button */}
                 <button
@@ -1184,28 +1256,82 @@ export default function ReadMode({
               </button>
             ))}
 
-            {/* 5. Upanishads Cards */}
-            {(!currentCategory || currentCategory === 'Shruti') && upanishadSources.map((src) => (
-              <button 
-                key={src.id} 
-                onClick={() => loadSource(src.name)} 
-                className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-40 cursor-pointer hover:-translate-y-0.5"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-saffron-700 dark:text-amber-400 bg-saffron-50 dark:bg-slate-800 px-2 py-0.5 rounded border border-saffron-200 dark:border-amber-500/20">
-                      Upanishad
-                    </span>
+            {/* Featured 108 Upanishads Canon Directory Banner */}
+            {(!currentCategory || currentCategory === 'Shruti') && (
+              <div className="col-span-full p-5 sm:p-6 bg-gradient-to-r from-saffron-50/90 via-amber-50/70 to-cream-100 dark:from-[#111726] dark:via-[#0F1424] dark:to-[#141C30] border border-saffron-300/80 dark:border-amber-500/30 rounded-3xl shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-saffron-600 to-terracotta-600 dark:from-amber-500 dark:to-saffron-700 flex items-center justify-center text-white shrink-0 shadow-md">
+                    <ScrollText className="w-6 h-6" />
                   </div>
-                  <p className="text-base font-bold font-cinzel text-saffron-950 dark:text-amber-300 group-hover:text-saffron-700 dark:group-hover:text-amber-200 transition-colors">
-                    {src.name}
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-saffron-800 dark:text-amber-400">
+                        Muktika Canon • 108 Upanishads
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-saffron-200 dark:bg-amber-900/60 text-saffron-900 dark:text-amber-200">
+                        Vedic Classification
+                      </span>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold font-cinzel text-saffron-950 dark:text-amber-200 mt-0.5">
+                      Explore the Canonical 108 Upanishads Index
+                    </h3>
+                    <p className="text-xs text-stone-600 dark:text-slate-400 mt-0.5 max-w-xl">
+                      Rigveda (10), Shukla Yajurveda (19), Krishna Yajurveda (33), Samaveda (16), and Atharvaveda (31) with authentic Vedic Shanti Mantras.
+                    </p>
+                  </div>
                 </div>
-                <div className="flex justify-end items-center w-full pt-2">
-                  <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 transform group-hover:translate-x-1 transition-transform" />
-                </div>
-              </button>
-            ))}
+                <button
+                  type="button"
+                  onClick={() => setIsCanonModalOpen(true)}
+                  className="px-4 py-2.5 bg-saffron-600 hover:bg-saffron-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white dark:text-slate-950 font-bold text-xs rounded-xl shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0 hover:scale-105"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>Browse 108 Canon</span>
+                </button>
+              </div>
+            )}
+
+            {/* 5. Upanishads Cards */}
+            {(!currentCategory || currentCategory === 'Shruti') && upanishadSources.map((src) => {
+              const canon = getUpanishadByDbName(src.name);
+              return (
+                <button 
+                  key={src.id} 
+                  onClick={() => loadSource(src.name)} 
+                  className="group p-5 bg-white dark:bg-[#0d121d] border border-cream-400 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-500/50 rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 text-left flex flex-col justify-between h-44 cursor-pointer hover:-translate-y-0.5"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-saffron-700 dark:text-amber-400 bg-saffron-50 dark:bg-slate-800 px-2 py-0.5 rounded border border-saffron-200 dark:border-amber-500/20">
+                        {canon ? canon.veda : 'Upanishad'}
+                      </span>
+                      {canon && (
+                        <span className="text-[10px] font-bold text-stone-500 dark:text-slate-400">
+                          Muktika #{canon.muktikaNumber}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-base font-bold font-cinzel text-saffron-950 dark:text-amber-300 group-hover:text-saffron-700 dark:group-hover:text-amber-200 transition-colors">
+                      {src.name}
+                    </p>
+                    {canon?.sanskritName && (
+                      <p className="font-sanskrit text-xs text-saffron-800 dark:text-amber-400 font-semibold mt-0.5">
+                        {canon.sanskritName}
+                      </p>
+                    )}
+                    <p className="text-[11px] text-stone-500 dark:text-slate-400 font-medium line-clamp-2 mt-1">
+                      {canon?.summary || 'Authentic Upanishadic wisdom and non-dual realization.'}
+                    </p>
+                  </div>
+                  <div className="flex justify-between items-center w-full pt-2 border-t border-cream-200/60 dark:border-slate-800/60">
+                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+                      {canon?.verseCount ? `${canon.verseCount} Verses` : 'Authentic Sanskrit'}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 transform group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </button>
+              );
+            })}
 
             {/* 6. Yoga Sutras */}
             {(!currentCategory || currentCategory === 'Shruti') && sutraSources.map((src) => (
@@ -1436,6 +1562,12 @@ export default function ReadMode({
           </div>
         </div>
       )}
+      {/* 4. 108 MUKTIKA UPANISHADS CANON DIRECTORY MODAL */}
+      <UpanishadCanonModal
+        isOpen={isCanonModalOpen}
+        onClose={() => setIsCanonModalOpen(false)}
+        onSelectUpanishad={(srcName) => loadSource(srcName)}
+      />
     </div>
   );
 }

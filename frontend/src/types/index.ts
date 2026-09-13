@@ -145,3 +145,10 @@ export interface VedaMantra {
   word_meanings: VedaWordMeaning[];
   bhashyas: VedaBhashya[];
 }
+
+export interface DictionaryEntry {
+  id: number;
+  headword: string;
+  source: string;
+  definition: string;
+}

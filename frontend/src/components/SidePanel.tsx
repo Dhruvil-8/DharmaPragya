@@ -16,7 +16,8 @@ import {
   ChevronRight,
   ArrowLeft,
   Compass,
-  Flame
+  Flame,
+  ScrollText
 } from 'lucide-react';
 import { getBookmarks } from '../lib/bookmarks';
 
@@ -24,6 +25,7 @@ interface SidePanelProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenSaved?: () => void;
+  onOpenUpanishadCanon?: () => void;
   mode?: 'ask' | 'read';
   onModeChange?: (mode: 'ask' | 'read') => void;
   onSelectCoordinate?: (coord: {
@@ -39,6 +41,7 @@ export default function SidePanel({
   isOpen,
   onClose,
   onOpenSaved,
+  onOpenUpanishadCanon,
   mode = 'ask',
   onModeChange
 }: SidePanelProps) {
@@ -282,6 +285,33 @@ export default function SidePanel({
                   </div>
                   <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
                 </Link>
+
+                {/* 4. Dedicated 108 Upanishads Canon Link */}
+                {onOpenUpanishadCanon && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenUpanishadCanon();
+                    }}
+                    className="w-full flex items-center justify-between p-3.5 bg-gradient-to-r from-amber-50/80 via-cream-100 to-saffron-50/60 dark:from-slate-900 dark:via-[#131b2e] dark:to-slate-900 hover:from-amber-100 hover:to-saffron-100 dark:hover:from-slate-800 dark:hover:to-[#17223b] border border-amber-300/70 dark:border-amber-500/30 rounded-2xl shadow-xs transition-all cursor-pointer text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-600 to-saffron-600 dark:from-amber-500 dark:to-saffron-700 flex items-center justify-center text-white shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                        <ScrollText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs sm:text-sm font-bold text-saffron-950 dark:text-amber-200 block font-cinzel">
+                          108 Upanishads Canon
+                        </span>
+                        <span className="text-[11px] text-stone-600 dark:text-slate-400 block mt-0.5">
+                          Canonical Vedic Index & Muktika Directory
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
+                  </button>
+                )}
               </div>
 
               {/* Preferences & Features Section */}

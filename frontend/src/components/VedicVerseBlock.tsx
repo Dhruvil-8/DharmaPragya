@@ -18,6 +18,7 @@ import {
   Feather, 
   FileText
 } from 'lucide-react';
+import DictionaryModal from './DictionaryModal';
 
 export type SanskritFontSize = 'sm' | 'md' | 'lg' | 'xl';
 
@@ -77,6 +78,7 @@ function VedicVerseBlock({
   const [selectedBhashyaAuthor, setSelectedBhashyaAuthor] = useState<string>('Maharshi Dayananda Saraswati');
   const [bookmarked, setBookmarked] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [dictWord, setDictWord] = useState<string | null>(null);
 
   // Sync preferredLanguage prop
   useEffect(() => {
@@ -364,9 +366,22 @@ function VedicVerseBlock({
         {formatSanskritVerseLines(showSvara ? (mantra.sanskrit_svara || mantra.sanskrit_plain) : mantra.sanskrit_plain).map((line, idx) => (
           <p 
             key={idx} 
-            className={`font-sanskrit text-saffron-950 dark:text-amber-200 tracking-wide font-normal ${fontSizeClassMap[fontSize]}`}
+            className={`font-sanskrit text-saffron-950 dark:text-amber-200 tracking-wide font-normal ${fontSizeClassMap[fontSize]} leading-relaxed`}
           >
-            {line}
+            {line.split(/(\s+|[।॥,.-])/).map((token, tIdx) => {
+              const isWord = /[\u0900-\u097F]/.test(token) && token.trim().length > 0;
+              if (!isWord) return token;
+              return (
+                <span
+                  key={tIdx}
+                  onClick={() => setDictWord(token)}
+                  className="inline-block px-1 py-0.5 rounded cursor-pointer transition-all hover:bg-amber-400/25 hover:text-saffron-800 dark:hover:text-amber-300 hover:underline decoration-amber-500/50 decoration-dotted underline-offset-4 active:scale-95"
+                  title="Click for Apte & Monier-Williams definition"
+                >
+                  {token}
+                </span>
+              );
+            })}
           </p>
         ))}
 
@@ -391,7 +406,22 @@ function VedicVerseBlock({
             <span>पदपाठः (Sandhi-Split Words)</span>
           </div>
           <p className="font-sanskrit text-sm font-medium text-stone-800 dark:text-slate-200 leading-relaxed">
-            {showSvara ? (mantra.padapatha_svara || mantra.padapatha_plain) : mantra.padapatha_plain}
+            {((showSvara ? (mantra.padapatha_svara || mantra.padapatha_plain) : mantra.padapatha_plain) || '')
+              .split(/(\s+|[।॥,.-])/)
+              .map((token, tIdx) => {
+                const isWord = /[\u0900-\u097F]/.test(token) && token.trim().length > 0;
+                if (!isWord) return token;
+                return (
+                  <span
+                    key={tIdx}
+                    onClick={() => setDictWord(token)}
+                    className="inline-block px-1 py-0.5 rounded cursor-pointer transition-all hover:bg-amber-400/25 hover:text-saffron-800 dark:hover:text-amber-300 hover:underline decoration-amber-500/50 decoration-dotted underline-offset-4 active:scale-95"
+                    title="Click for Apte & Monier-Williams definition"
+                  >
+                    {token}
+                  </span>
+                );
+              })}
           </p>
         </div>
       )}
@@ -609,6 +639,13 @@ function VedicVerseBlock({
           )}
         </div>
       </div>
+
+      {/* Interactive Sanskrit Dictionary Modal */}
+      <DictionaryModal
+        isOpen={!!dictWord}
+        word={dictWord || ''}
+        onClose={() => setDictWord(null)}
+      />
 
     </article>
   );

@@ -16,13 +16,14 @@ import (
 type Storage struct {
 	db           *sql.DB
 	vedasDB      *sql.DB
+	dictDB       *sql.DB
 	sourcesCache []models.Source
 	vedasCache   []models.VedaInfo
 	sectionsMap  map[int][]models.Section
 	cacheMu      sync.RWMutex
 }
 
-func NewSQLiteStorage(scripturesDBPath string, vedasDBPath string) (*Storage, error) {
+func NewSQLiteStorage(scripturesDBPath string, vedasDBPath string, dictDBPath string) (*Storage, error) {
 	db, err := sql.Open("sqlite", scripturesDBPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open scriptures db: %w", err)
@@ -80,6 +81,27 @@ func NewSQLiteStorage(scripturesDBPath string, vedasDBPath string) (*Storage, er
 		}
 	}
 
+	var dDB *sql.DB
+	if dictDBPath != "" {
+		dDB, err = sql.Open("sqlite", dictDBPath)
+		if err == nil {
+			dPragmas := []string{
+				"PRAGMA journal_mode=WAL;",
+				"PRAGMA synchronous=NORMAL;",
+				"PRAGMA mmap_size=268435456;", // 256MB mmap
+				"PRAGMA cache_size=-32768;",   // 32MB Page Cache
+				"PRAGMA temp_store=MEMORY;",
+				"PRAGMA busy_timeout=5000;",
+			}
+			for _, p := range dPragmas {
+				_, _ = dDB.Exec(p)
+			}
+			dDB.SetMaxOpenConns(50)
+			dDB.SetMaxIdleConns(50)
+			_ = dDB.Ping()
+		}
+	}
+
 	indexes := []string{
 		"CREATE INDEX IF NOT EXISTS idx_sources_name ON sources(name);",
 		"CREATE INDEX IF NOT EXISTS idx_sources_name_nocase ON sources(name COLLATE NOCASE);",
@@ -99,6 +121,7 @@ func NewSQLiteStorage(scripturesDBPath string, vedasDBPath string) (*Storage, er
 	s := &Storage{
 		db:          db,
 		vedasDB:     vDB,
+		dictDB:      dDB,
 		sectionsMap: make(map[int][]models.Section),
 	}
 	s.ensureFTSIndex()
@@ -147,6 +170,9 @@ func (s *Storage) ensureFTSIndex() {
 func (s *Storage) Close() error {
 	if s.vedasDB != nil {
 		_ = s.vedasDB.Close()
+	}
+	if s.dictDB != nil {
+		_ = s.dictDB.Close()
 	}
 	return s.db.Close()
 }
@@ -624,12 +650,14 @@ func (s *Storage) SearchVerses(query string, sourceFilter string, limit int) ([]
 
 		if sourceFilter != "" && !strings.EqualFold(sourceFilter, "all") {
 			sfLower := strings.ToLower(strings.TrimSpace(sourceFilter))
-			if strings.Contains(sfLower, "upanishad") {
+			if sfLower == "upanishads" || sfLower == "upanishad" || sfLower == "all upanishads" {
 				sql += " AND source_name LIKE '%Upanishad%'"
-			} else if strings.Contains(sfLower, "purana") {
-				sql += " AND source_name LIKE '%Purana%'"
-			} else if strings.Contains(sfLower, "veda") {
+			} else if sfLower == "puranas" || sfLower == "purana" || sfLower == "all puranas" {
+				sql += " AND (source_name LIKE '%Purana%' OR source_name = 'Devi Mahatmyam')"
+			} else if sfLower == "vedas" || sfLower == "veda" || sfLower == "all vedas" || sfLower == "all 4 vedas" {
 				sql += " AND (source_name LIKE '%Veda%' OR source_name LIKE '%Rigveda%' OR source_name LIKE '%Samaveda%')"
+			} else if sfLower == "gitas" || sfLower == "gita" || sfLower == "all gitas" {
+				sql += " AND source_name LIKE '%Gita%'"
 			} else {
 				sql += " AND (LOWER(source_name) = ? OR source_name LIKE ?)"
 				qArgs = append(qArgs, sfLower, "%"+sourceFilter+"%")
@@ -1198,6 +1226,103 @@ func (s *Storage) SearchVedaVerses(query string, vedaID string, limit int) ([]*m
 		results = append(results, VedaMantraToVerse(&mantras[i]))
 	}
 	return results, nil
+}
+
+// -------------------------------------------------------------
+// DICTIONARY METHODS (Apte 1890 & Monier-Williams 1899)
+// -------------------------------------------------------------
+
+func (s *Storage) LookupWord(word string) ([]models.DictionaryEntry, error) {
+	if s.dictDB == nil {
+		return nil, nil
+	}
+	cleanWord := strings.TrimSpace(word)
+	if cleanWord == "" {
+		return nil, nil
+	}
+
+	// Clean Devanagari characters
+	cleanDeva := strings.Map(func(r rune) rune {
+		if r >= 0x0900 && r <= 0x097F {
+			return r
+		}
+		return -1
+	}, cleanWord)
+
+	query := `
+		SELECT id, headword, source, definition
+		FROM dictionary_entries
+		WHERE headword = ? OR headword_clean = ? OR headword_clean = ? OR headword LIKE ? OR headword_clean LIKE ?
+		ORDER BY 
+			CASE 
+				WHEN headword = ? THEN 0 
+				WHEN headword_clean = ? THEN 1 
+				WHEN headword_clean = ? THEN 2
+				WHEN headword LIKE ? THEN 3 
+				ELSE 4 
+			END,
+			CASE WHEN source LIKE 'Apte%' THEN 1 ELSE 2 END
+		LIMIT 6;
+	`
+	prefix := cleanWord + "%"
+	prefixDeva := cleanDeva + "%"
+	rows, err := s.dictDB.Query(query, cleanWord, cleanWord, cleanDeva, prefix, prefixDeva, cleanWord, cleanWord, cleanDeva, prefix)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []models.DictionaryEntry
+	for rows.Next() {
+		var e models.DictionaryEntry
+		if err := rows.Scan(&e.ID, &e.Headword, &e.Source, &e.Definition); err != nil {
+			continue
+		}
+		entries = append(entries, e)
+	}
+	return entries, nil
+}
+
+func (s *Storage) ReverseLookup(concept string, limit int) ([]models.DictionaryEntry, error) {
+	if s.dictDB == nil || strings.TrimSpace(concept) == "" {
+		return nil, nil
+	}
+	if limit <= 0 || limit > 20 {
+		limit = 5
+	}
+	cleanConcept := strings.Map(func(r rune) rune {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			return r
+		}
+		return ' '
+	}, concept)
+	cleanConcept = strings.TrimSpace(cleanConcept)
+	if cleanConcept == "" {
+		return nil, nil
+	}
+
+	query := `
+		SELECT d.id, d.headword, d.source, d.definition
+		FROM dict_fts f
+		JOIN dictionary_entries d ON f.rowid = d.id
+		WHERE dict_fts MATCH ?
+		LIMIT ?;
+	`
+	rows, err := s.dictDB.Query(query, cleanConcept, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []models.DictionaryEntry
+	for rows.Next() {
+		var e models.DictionaryEntry
+		if err := rows.Scan(&e.ID, &e.Headword, &e.Source, &e.Definition); err != nil {
+			continue
+		}
+		entries = append(entries, e)
+	}
+	return entries, nil
 }
 
 

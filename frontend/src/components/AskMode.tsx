@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ConversationalMessage, ChatHistoryMessage, VerseData } from '../types';
-import VerseBlock from './VerseBlock';
 import { useSpeechHandler } from '../hooks/useSpeechHandler';
-import { Compass, AlertCircle, ArrowRight, FileText, Mic, MicOff, Volume2, VolumeX, RefreshCw, User, Bot, CheckCircle2, ChevronDown, ChevronUp, Lock } from 'lucide-react';
+import { Compass, AlertCircle, ArrowRight, FileText, Mic, MicOff, Volume2, VolumeX, RefreshCw, User, Bot, CheckCircle2, ChevronDown, ChevronUp, Lock, Scroll, ExternalLink, BookOpen } from 'lucide-react';
 
 interface AskModeProps {
   apiBaseUrl: string;
@@ -12,11 +11,35 @@ interface AskModeProps {
     sourceFilter?: string;
     timestamp: number;
   } | null;
+  onSelectVerse?: (sourceName: string, chapterNumber: number, verseNumber: number) => void;
 }
 
 const MAX_QUERIES_PER_SESSION = 10;
 
-export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
+const SUGGESTED_INQUIRIES = [
+  {
+    label: "Duty & Peace",
+    query: "How does the Bhagavad Gita guide us to perform duty without anxiety and attachment?",
+    source: "Bhagavad Gita",
+  },
+  {
+    label: "Witness Consciousness",
+    query: "What does the Ashtavakra Gita teach about the nature of the witness self (Sakshi)?",
+    source: "Ashtavakra Gita",
+  },
+  {
+    label: "Origin of Existence",
+    query: "How does the Rigveda explain the creation of the cosmos in the Nasadiya Sukta?",
+    source: "Rigveda",
+  },
+  {
+    label: "Self & Soul",
+    query: "What is the core teaching of the Katha Upanishad regarding the chariot of the body and self?",
+    source: "Upanishad",
+  },
+];
+
+export default function AskMode({ apiBaseUrl, initialPrompt, onSelectVerse }: AskModeProps) {
   const [query, setQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState('All');
   const [language, setLanguage] = useState('english');
@@ -327,34 +350,44 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
               onChange={e => setSourceFilter(e.target.value)}
               className="bg-transparent text-stone-900 dark:text-slate-100 font-semibold focus:outline-none cursor-pointer text-xs"
             >
-              <option value="All" className="dark:bg-slate-900 font-bold">All Sources</option>
+              <option value="All" className="dark:bg-slate-900 font-bold">All Sources (31+ Scriptures & Vedas)</option>
 
-              <optgroup label="The Mahapuranas (पुराण)" className="dark:bg-slate-900 font-bold">
-                <option value="Puranas" className="dark:bg-slate-900">All Puranas (महापुराण)</option>
-                <option value="Shiva Purana" className="dark:bg-slate-900">Shiva Purana</option>
-                <option value="Bhagavata Purana" className="dark:bg-slate-900">Bhagavata Purana (Srimad Bhagavatam)</option>
-                <option value="Devi Bhagavata Purana" className="dark:bg-slate-900">Devi Bhagavata Purana</option>
-                <option value="Garuda Purana" className="dark:bg-slate-900">Garuda Purana</option>
-                <option value="Brahma Purana" className="dark:bg-slate-900">Brahma Purana</option>
-                <option value="Harivamsha Purana" className="dark:bg-slate-900">Harivamsha Purana</option>
-              </optgroup>
-
-              <optgroup label="Foundational Epics & Smriti (इतिहास)" className="dark:bg-slate-900 font-bold">
+              <optgroup label="Sacred Gitas (गीता)" className="dark:bg-slate-900 font-bold">
+                <option value="All Gitas" className="dark:bg-slate-900">All Gitas (सर्व गीता)</option>
                 <option value="Bhagavad Gita" className="dark:bg-slate-900">Bhagavad Gita</option>
-                <option value="Mahabharata" className="dark:bg-slate-900">Mahabharata</option>
-                <option value="Valmiki Ramayana" className="dark:bg-slate-900">Valmiki Ramayana</option>
+                <option value="Ashtavakra Gita" className="dark:bg-slate-900">Ashtavakra Gita</option>
+                <option value="Avadhuta Gita" className="dark:bg-slate-900">Avadhuta Gita</option>
               </optgroup>
 
-              <optgroup label="The Four Vedas (चतुर्वेद)" className="dark:bg-slate-900 font-bold">
-                <option value="Vedas" className="dark:bg-slate-900">All 4 Vedas (वेद संहिता)</option>
+              <optgroup label="The 108 Upanishads (१०८ उपनिषद्)" className="dark:bg-slate-900 font-bold">
+                <option value="Upanishad" className="dark:bg-slate-900">All 108 Upanishads (१०८ उपनिषद्)</option>
+              </optgroup>
+
+              <optgroup label="The Four Vedas (चतुर्वेद संहिता)" className="dark:bg-slate-900 font-bold">
+                <option value="Vedas" className="dark:bg-slate-900">All 4 Vedas (चतुर्वेद)</option>
                 <option value="Rigveda" className="dark:bg-slate-900">Rigveda</option>
                 <option value="Yajur Veda" className="dark:bg-slate-900">Yajurveda</option>
                 <option value="Samaveda" className="dark:bg-slate-900">Samaveda</option>
                 <option value="Atharva Veda" className="dark:bg-slate-900">Atharvaveda</option>
               </optgroup>
 
-              <optgroup label="Upanishads & Sutras (दर्शन)" className="dark:bg-slate-900 font-bold">
-                <option value="Upanishad" className="dark:bg-slate-900">Upanishads (15 Principal)</option>
+              <optgroup label="The Mahapuranas & Stotras (पुराण एवं माहात्म्य)" className="dark:bg-slate-900 font-bold">
+                <option value="Puranas" className="dark:bg-slate-900">All Puranas (महापुराण)</option>
+                <option value="Bhagavata Purana" className="dark:bg-slate-900">Bhagavata Purana (Srimad Bhagavatam)</option>
+                <option value="Shiva Purana" className="dark:bg-slate-900">Shiva Purana</option>
+                <option value="Devi Bhagavata Purana" className="dark:bg-slate-900">Devi Bhagavata Purana</option>
+                <option value="Devi Mahatmyam" className="dark:bg-slate-900">Devi Mahatmyam (Durga Saptashati)</option>
+                <option value="Garuda Purana" className="dark:bg-slate-900">Garuda Purana</option>
+                <option value="Brahma Purana" className="dark:bg-slate-900">Brahma Purana</option>
+                <option value="Harivamsha Purana" className="dark:bg-slate-900">Harivamsha Purana</option>
+              </optgroup>
+
+              <optgroup label="Foundational Epics (इतिहास)" className="dark:bg-slate-900 font-bold">
+                <option value="Mahabharata" className="dark:bg-slate-900">Mahabharata</option>
+                <option value="Valmiki Ramayana" className="dark:bg-slate-900">Valmiki Ramayana</option>
+              </optgroup>
+
+              <optgroup label="Darshana & Sutras (दर्शन एवं योग)" className="dark:bg-slate-900 font-bold">
                 <option value="Patanjali Yoga Sutras" className="dark:bg-slate-900">Patanjali Yoga Sutras</option>
               </optgroup>
             </select>
@@ -485,63 +518,91 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
                     </div>
                   ) : null}
 
-                  {/* Interactive Scripture Citation Badges */}
+                  {/* Elevated Scripture Citation Cards */}
                   {msg.citations && msg.citations.length > 0 && (
-                    <div className="pt-3 border-t border-cream-300/40 dark:border-amber-500/20 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-saffron-950 dark:text-amber-300 tracking-wider uppercase">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-saffron-600 dark:text-amber-400" />
-                          <span>Scripture Citations ({msg.citations.length})</span>
+                    <div className="pt-4 mt-2 border-t border-cream-300/60 dark:border-amber-500/20 space-y-3">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-saffron-950 dark:text-amber-300 font-cinzel tracking-wider uppercase">
+                          <Scroll className="w-4 h-4 text-saffron-600 dark:text-amber-400 shrink-0" />
+                          <span>Authoritative Scripture Citations ({msg.citations.length})</span>
                         </div>
-
-                        {!msg.isStreaming && (
-                          <button
-                            type="button"
-                            onClick={() => toggleVerseSection(msgIdx)}
-                            className="flex items-center gap-1 text-[11px] font-bold text-saffron-800 dark:text-amber-400 hover:text-saffron-950 dark:hover:text-amber-200 cursor-pointer transition-colors"
-                          >
-                            <span>{isVersesExpanded ? 'Hide Scripture Verses' : 'View Scripture Verses'}</span>
-                            {isVersesExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                          </button>
-                        )}
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400 font-sans hidden sm:inline">
+                          Click any verse to study in Read Mode
+                        </span>
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        {msg.citations.map((cit, citIdx) => (
-                          <button
-                            key={citIdx}
-                            onClick={() => scrollToVerse(`citation-card-${msgIdx}-${citIdx}`, msgIdx)}
-                            className="px-3 py-1 text-xs bg-cream-200 dark:bg-slate-900 hover:bg-saffron-100 dark:hover:bg-slate-800 border border-cream-400 dark:border-amber-500/20 hover:border-saffron-300 dark:hover:border-amber-500/40 rounded-full text-saffron-900 dark:text-amber-200 font-bold cursor-pointer transition-all duration-200 flex items-center gap-1.5 shadow-2xs"
-                          >
-                            <span className="text-[9px] bg-saffron-600 dark:bg-amber-600 text-white w-4 h-4 rounded-full flex items-center justify-center shrink-0">
-                              {citIdx + 1}
-                            </span>
-                            <span>{cit.source_name} — Ch. {cit.chapter_number}, Verse {cit.verse_number}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                      <div className="grid grid-cols-1 gap-3">
+                        {msg.citations.map((verse, citIdx) => {
+                          const primaryTrans = verse.translations && verse.translations.length > 0
+                            ? verse.translations[0]
+                            : null;
 
-                  {/* Clean Scripture Reference Blocks */}
-                  {msg.citations && msg.citations.length > 0 && !msg.isStreaming && isVersesExpanded && (
-                    <div className="pt-4 border-t border-cream-300/40 dark:border-amber-500/20 space-y-4 animate-fade-in">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-saffron-600 dark:text-amber-400" />
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-saffron-900 dark:text-amber-300 font-cinzel">
-                          Scripture Verse Records
-                        </h4>
+                          return (
+                            <div
+                              key={`${verse.source_name}-${verse.id}-${citIdx}`}
+                              className="group relative p-4 rounded-2xl bg-cream-50/90 dark:bg-[#0c101a] border border-cream-300 dark:border-amber-500/20 hover:border-saffron-400 dark:hover:border-amber-400/40 shadow-xs hover:shadow-md transition-all duration-200"
+                            >
+                              {/* Header: Source, Coordinate & Direct Read Mode Jump */}
+                              <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-cream-200/80 dark:border-amber-500/15">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-md bg-saffron-100 dark:bg-amber-950/60 text-saffron-900 dark:text-amber-300 border border-saffron-300/60 dark:border-amber-500/30 font-cinzel">
+                                    {verse.source_name}
+                                  </span>
+                                  <span className="text-xs font-semibold text-stone-700 dark:text-slate-300 font-sans">
+                                    Chapter {verse.chapter_number}, Verse {verse.verse_number}
+                                  </span>
+                                </div>
+
+                                {onSelectVerse && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onSelectVerse(verse.source_name, verse.chapter_number, verse.verse_number)}
+                                    className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg text-saffron-800 dark:text-amber-300 hover:text-saffron-950 dark:hover:text-amber-100 bg-cream-200/70 dark:bg-slate-800 hover:bg-saffron-200/80 dark:hover:bg-amber-500/20 border border-cream-300 dark:border-amber-500/25 cursor-pointer transition-all shrink-0"
+                                    title="Open in Read Mode for full chapter, commentaries, and word meanings"
+                                  >
+                                    <span>Study in Read Mode</span>
+                                    <ExternalLink className="w-3 h-3 text-saffron-600 dark:text-amber-400" />
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Sacred Sanskrit Verse */}
+                              {verse.sanskrit_text && (
+                                <div className="pt-3 pb-2">
+                                  <p className="text-sm md:text-base font-serif leading-relaxed text-saffron-950 dark:text-amber-200 font-semibold whitespace-pre-line">
+                                    {verse.sanskrit_text}
+                                  </p>
+                                  {verse.transliteration && (
+                                    <p className="text-xs font-serif italic text-stone-600 dark:text-slate-400 mt-1">
+                                      {verse.transliteration}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Primary Translation */}
+                              {primaryTrans ? (
+                                <div className="pt-2 border-t border-cream-200/60 dark:border-amber-500/10">
+                                  <p className="text-xs md:text-sm font-sans leading-relaxed text-stone-800 dark:text-slate-200">
+                                    "{primaryTrans.text}"
+                                  </p>
+                                  {primaryTrans.author && (
+                                    <p className="text-[10px] font-semibold tracking-wide uppercase text-stone-500 dark:text-amber-400/80 mt-1 font-cinzel">
+                                      — {primaryTrans.author}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="pt-2 border-t border-cream-200/60 dark:border-amber-500/10">
+                                  <p className="text-xs italic text-stone-500 dark:text-slate-400">
+                                    Click 'Study in Read Mode' to view contextual analysis and Sanskrit details.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      {msg.citations.map((verse, citIdx) => (
-                        <div id={`citation-card-${msgIdx}-${citIdx}`} key={`${verse.source_name}-${verse.id}-${citIdx}`}>
-                          <VerseBlock
-                            verse={verse}
-                            index={citIdx}
-                            totalVerses={msg.citations?.length}
-                            isAskMode={true}
-                          />
-                        </div>
-                      ))}
                     </div>
                   )}
                 </div>
@@ -552,16 +613,44 @@ export default function AskMode({ apiBaseUrl, initialPrompt }: AskModeProps) {
         </div>
       ) : (
         /* 3. Welcome View (When empty) */
-        <div className="bg-white dark:bg-[#0d121d] p-6 md:p-8 rounded-3xl border border-cream-400/60 dark:border-amber-500/20 shadow-sm space-y-4 text-center transition-colors duration-300">
+        <div className="bg-white dark:bg-[#0d121d] p-6 md:p-8 rounded-3xl border border-cream-400/60 dark:border-amber-500/20 shadow-sm space-y-6 text-center transition-colors duration-300">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-saffron-500 to-terracotta-600 dark:from-amber-500 dark:to-terracotta-600 text-white flex items-center justify-center mx-auto shadow-sm">
             <Compass className="w-6 h-6" />
           </div>
-          <h2 className="text-xl md:text-2xl font-bold font-cinzel text-saffron-950 dark:text-amber-300">
-            Seek the Eternal Wisdom
-          </h2>
-          <p className="text-xs sm:text-sm text-stone-600 dark:text-slate-300 font-serif leading-relaxed max-w-lg mx-auto">
-            Ask any question on dharma, philosophy, duty, karma, and spiritual consciousness.
-          </p>
+          <div className="space-y-1.5">
+            <h2 className="text-xl md:text-2xl font-bold font-cinzel text-saffron-950 dark:text-amber-300">
+              Seek the Eternal Wisdom
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-600 dark:text-slate-300 font-serif leading-relaxed max-w-lg mx-auto">
+              Inquire across all 120+ scriptures including the Sacred Gitas, 108 Canonical Upanishads, 4 Vedas, and Mahapuranas.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto pt-2 text-left">
+            {SUGGESTED_INQUIRIES.map((item, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => {
+                  setSourceFilter(item.source);
+                  executeInquiry(item.query, item.source);
+                }}
+                className="p-3.5 rounded-2xl bg-cream-100/70 hover:bg-cream-200 dark:bg-slate-900/80 dark:hover:bg-slate-800 border border-cream-300/80 hover:border-saffron-400/60 dark:border-amber-500/20 dark:hover:border-amber-400/40 transition-all duration-200 cursor-pointer text-left group shadow-2xs"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-saffron-800 dark:text-amber-400 font-cinzel">
+                    {item.label}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cream-200 dark:bg-slate-800 text-stone-600 dark:text-slate-400 font-semibold border border-cream-300 dark:border-slate-700">
+                    {item.source}
+                  </span>
+                </div>
+                <p className="text-xs text-stone-800 dark:text-slate-200 font-medium leading-snug group-hover:text-saffron-950 dark:group-hover:text-amber-300">
+                  {item.query}
+                </p>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

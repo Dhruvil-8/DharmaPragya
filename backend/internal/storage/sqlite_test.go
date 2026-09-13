@@ -6,7 +6,7 @@ import (
 )
 
 func TestSearchVersesFTS(t *testing.T) {
-	s, err := NewSQLiteStorage("../../data/scriptures.db", "../../data/vedas.db")
+	s, err := NewSQLiteStorage("../../data/scriptures.db", "../../data/vedas.db", "../../data/dictionary.db")
 	if err != nil {
 		t.Fatalf("Failed to open database: %v", err)
 	}
@@ -47,7 +47,7 @@ func TestSearchVersesFTS(t *testing.T) {
 }
 
 func TestDirectSearch(t *testing.T) {
-	s, err := NewSQLiteStorage("../../data/scriptures.db", "../../data/vedas.db")
+	s, err := NewSQLiteStorage("../../data/scriptures.db", "../../data/vedas.db", "../../data/dictionary.db")
 	if err != nil {
 		t.Fatalf("Failed to open database: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestDirectSearch(t *testing.T) {
 }
 
 func TestFamousHymnsLinking(t *testing.T) {
-	s, err := NewSQLiteStorage("../../data/scriptures.db", "../../data/vedas.db")
+	s, err := NewSQLiteStorage("../../data/scriptures.db", "../../data/vedas.db", "../../data/dictionary.db")
 	if err != nil {
 		t.Fatalf("Failed to open database: %v", err)
 	}
@@ -155,6 +155,34 @@ func TestFamousHymnsLinking(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDictionaryLookup(t *testing.T) {
+	s, err := NewSQLiteStorage("../../data/scriptures.db", "../../data/vedas.db", "../../data/dictionary.db")
+	if err != nil {
+		t.Fatalf("Failed to open database: %v", err)
+	}
+	defer s.Close()
+
+	entries, err := s.LookupWord("धर्म")
+	if err != nil {
+		t.Fatalf("LookupWord failed: %v", err)
+	}
+	if len(entries) == 0 {
+		t.Fatalf("Expected entries for धर्म, got 0")
+	}
+	t.Logf("Found %d dictionary entries for धर्म. Top: [%s] %s -> %s",
+		len(entries), entries[0].Source, entries[0].Headword, entries[0].Definition[:100])
+
+	revEntries, err := s.ReverseLookup("anxiety", 3)
+	if err != nil {
+		t.Fatalf("ReverseLookup failed: %v", err)
+	}
+	if len(revEntries) == 0 {
+		t.Fatalf("Expected reverse entries for anxiety, got 0")
+	}
+	t.Logf("Found %d reverse entries for anxiety. Top: [%s] %s",
+		len(revEntries), revEntries[0].Source, revEntries[0].Headword)
 }
 
 

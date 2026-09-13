@@ -18,6 +18,7 @@ COPY raw_data/ ./raw_data/
 # Unzip the databases and audio directly into their final folders (handling harmless unzip warnings)
 RUN if [ -f backend/data/scriptures.zip ]; then unzip -o backend/data/scriptures.zip -d backend/data/ || [ $? -le 1 ]; rm -f backend/data/scriptures.zip; fi
 RUN if [ -f backend/data/vedas.zip ]; then unzip -o backend/data/vedas.zip -d backend/data/ || [ $? -le 1 ]; rm -f backend/data/vedas.zip; fi
+RUN if [ -f backend/data/dictionary.zip ]; then unzip -o backend/data/dictionary.zip -d backend/data/ || [ $? -le 1 ]; rm -f backend/data/dictionary.zip; fi
 RUN mkdir -p raw_data/gita/
 RUN if [ -f raw_data/audio.zip ]; then unzip -o raw_data/audio.zip -d raw_data/gita/ || [ $? -le 1 ]; rm -f raw_data/audio.zip; fi
 

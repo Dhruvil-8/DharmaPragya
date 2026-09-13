@@ -15,6 +15,7 @@ import {
   FileText,
   AlignLeft
 } from 'lucide-react';
+import DictionaryModal from './DictionaryModal';
 
 export type SanskritFontSize = 'sm' | 'md' | 'lg' | 'xl';
 
@@ -68,6 +69,7 @@ function VerseBlock({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [dictWord, setDictWord] = useState<string | null>(null);
 
   // Unified Layer Visibility: Derived from globalLayers (defaults to true)
   const showTransliteration = globalLayers?.showTransliteration !== undefined ? globalLayers.showTransliteration : true;
@@ -343,9 +345,22 @@ function VerseBlock({
           {formatSanskritVerseLines(verse.sanskrit_text).map((line, idx) => (
             <p 
               key={idx} 
-              className={`font-sanskrit ${getSanskritFontSizeClass()} text-stone-950 dark:text-amber-200 font-bold tracking-wide transition-all duration-200`}
+              className={`font-sanskrit ${getSanskritFontSizeClass()} text-stone-950 dark:text-amber-200 font-bold tracking-wide transition-all duration-200 leading-relaxed`}
             >
-              {line}
+              {line.split(/(\s+|[।॥,.-])/).map((token, tIdx) => {
+                const isWord = /[\u0900-\u097F]/.test(token) && token.trim().length > 0;
+                if (!isWord) return token;
+                return (
+                  <span
+                    key={tIdx}
+                    onClick={() => setDictWord(token)}
+                    className="inline-block px-1 py-0.5 rounded cursor-pointer transition-all hover:bg-amber-400/25 hover:text-saffron-800 dark:hover:text-amber-300 hover:underline decoration-amber-500/50 decoration-dotted underline-offset-4 active:scale-95"
+                    title="Click for Apte & Monier-Williams definition"
+                  >
+                    {token}
+                  </span>
+                );
+              })}
             </p>
           ))}
         </div>
@@ -384,7 +399,11 @@ function VerseBlock({
                 className="bg-white dark:bg-slate-800/95 p-2.5 rounded-xl border border-cream-400/70 dark:border-amber-500/20 shadow-2xs flex flex-col justify-between hover:border-saffron-400 dark:hover:border-amber-500/40 transition-colors"
               >
                 <div className="flex items-start justify-between gap-1">
-                  <span className="font-serif font-bold text-xs sm:text-sm text-saffron-900 dark:text-amber-300">
+                  <span 
+                    onClick={() => setDictWord(item.word)}
+                    className="font-serif font-bold text-xs sm:text-sm text-saffron-900 dark:text-amber-300 cursor-pointer hover:underline decoration-amber-500/50 decoration-dotted transition-colors"
+                    title="Click for Apte & Monier-Williams definition"
+                  >
                     {item.word}
                   </span>
                   <span className="text-[9px] font-mono text-stone-400 dark:text-slate-500 shrink-0">
@@ -477,6 +496,13 @@ function VerseBlock({
           )}
         </div>
       )}
+
+      {/* Interactive Sanskrit Dictionary Modal */}
+      <DictionaryModal
+        isOpen={!!dictWord}
+        word={dictWord || ''}
+        onClose={() => setDictWord(null)}
+      />
 
     </article>
   );

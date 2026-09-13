@@ -106,3 +106,10 @@ type VedaMantra struct {
 	WordMeanings         []VedaWordMeaning `json:"word_meanings"`
 	Bhashyas             []VedaBhashya     `json:"bhashyas"`
 }
+
+type DictionaryEntry struct {
+	ID         int    `json:"id"`
+	Headword   string `json:"headword"`
+	Source     string `json:"source"`
+	Definition string `json:"definition"`
+}

@@ -6,13 +6,13 @@ import { SourceData } from '../../types';
 
 export const metadata: Metadata = {
   title: 'Read Sacred Sanatan Dharma Scriptures | Vedas, Upanishads, Gita, Ramayana | DharmaPragya',
-  description: 'Explore and read sacred Sanatan Dharma scriptures including Bhagavad Gita, Rigveda, Patanjali Yoga Sutras, 15 Principal Upanishads, Mahabharata, and Valmiki Ramayana with original Sanskrit, English & Hindi translations.',
+  description: 'Explore and read sacred Sanatan Dharma scriptures including Bhagavad Gita, Rigveda, Patanjali Yoga Sutras, 108 Canonical Upanishads, Mahabharata, and Valmiki Ramayana with original Sanskrit, English & Hindi translations.',
   keywords: [
     'Sanatan Dharma Scriptures',
     'Bhagavad Gita Online',
     'Vedas Sanskrit',
     'Rigveda English Translation',
-    'Principal Upanishads',
+    '108 Canonical Upanishads',
     'Patanjali Yoga Sutras',
     'Mahabharata Critical Edition',
     'Valmiki Ramayana Sanskrit',
