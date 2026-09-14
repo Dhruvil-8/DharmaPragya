@@ -55,7 +55,7 @@ async function getVerseData(sourceName: string, chapter: number, verseNum: numbe
   try {
     const res = await fetch(`${backendUrl}/api/read?source=${encodeURIComponent(sourceName)}&chapter=${chapter}&verse=${verseNum}`, {
       headers: { 'X-App-Token': secret },
-      next: { revalidate: 86400 }, // Cache for 24h
+      next: { revalidate: 3600 },
     });
     if (!res.ok) return null;
     const data = await res.json();

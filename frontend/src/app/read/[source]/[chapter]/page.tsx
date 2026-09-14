@@ -57,7 +57,7 @@ async function getChapterVerses(sourceName: string, chapter: number): Promise<Ve
   try {
     const res = await fetch(`${backendUrl}/api/read?source=${encodeURIComponent(sourceName)}&chapter=${chapter}`, {
       headers: { 'X-App-Token': secret },
-      next: { revalidate: 86400 },
+      next: { revalidate: 3600 },
     });
     if (!res.ok) return [];
     const data = await res.json();

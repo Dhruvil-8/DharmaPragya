@@ -36,7 +36,7 @@ async function getSources(): Promise<SourceData[]> {
   try {
     const res = await fetch(`${backendUrl}/api/read`, {
       headers: { 'X-App-Token': secret },
-      next: { revalidate: 86400 },
+      next: { revalidate: 3600 },
     });
     if (!res.ok) return [];
     return await res.json();

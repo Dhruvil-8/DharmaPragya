@@ -148,7 +148,7 @@ func (h *Handler) ReadVerses(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Verse not found", http.StatusNotFound)
 			return
 		}
-		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 		json.NewEncoder(w).Encode(v)
 		return
 	}
@@ -160,7 +160,7 @@ func (h *Handler) ReadVerses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	json.NewEncoder(w).Encode(verses)
 }
 
@@ -933,7 +933,7 @@ func (h *Handler) ReadVedas(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	w.Header().Set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
 	json.NewEncoder(w).Encode(mantras)
 }
 

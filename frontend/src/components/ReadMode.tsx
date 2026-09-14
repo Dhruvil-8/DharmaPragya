@@ -398,6 +398,7 @@ export default function ReadMode({
         queryParams.set('veda', vedaID);
         queryParams.set('div1', String(division1));
         if (targetDivision2) queryParams.set('div2', String(targetDivision2));
+        queryParams.set('v', '2');
         const res = await fetch(`${apiBaseUrl}/api/veda/read?${queryParams.toString()}`);
         data = await res.json();
         if (Array.isArray(data)) {
@@ -469,7 +470,7 @@ export default function ReadMode({
       const chKey = `${sourceName}::${chapterNum}`;
       let chData = chapterCacheRef.current.get(chKey);
       if (!chData) {
-        const chRes = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}&chapter=${chapterNum}`);
+        const chRes = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}&chapter=${chapterNum}&v=2`);
         chData = await chRes.json();
         if (Array.isArray(chData)) {
           chapterCacheRef.current.set(chKey, chData);
@@ -610,7 +611,7 @@ export default function ReadMode({
       const chKey = `${sourceName}::${chapterNumber}`;
       let data = chapterCacheRef.current.get(chKey);
       if (!data) {
-        const res = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}&chapter=${chapterNumber}`);
+        const res = await fetch(`${apiBaseUrl}/api/read?source=${encodeURIComponent(sourceName)}&chapter=${chapterNumber}&v=2`);
         data = await res.json();
         if (Array.isArray(data)) {
           chapterCacheRef.current.set(chKey, data);

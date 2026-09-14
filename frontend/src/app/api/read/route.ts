@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
-export const revalidate = 86400;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const DEFAULT_BACKEND_URL = 'https://dhruvil8-dharmapragya.hf.space';
 
@@ -17,19 +18,14 @@ export async function GET(req: Request) {
       headers: {
         'X-App-Token': secret
       },
-      next: { revalidate: 86400 }
+      cache: 'no-store'
     });
-    
+
     const data = await res.json();
-    
+
     const headers = new Headers();
-    const cacheControl = res.headers.get('cache-control');
-    if (cacheControl) {
-      headers.set('Cache-Control', cacheControl);
-    } else {
-      headers.set('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
-    }
-    
+    headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+
     return NextResponse.json(data, { headers });
   } catch (error) {
     console.error("API route fetch error:", error);

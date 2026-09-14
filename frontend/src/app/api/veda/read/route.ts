@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 const BACKEND_URL = process.env.BACKEND_URL || 'https://dhruvil8-dharmapragya.hf.space';
 const FRONTEND_SECRET = process.env.FRONTEND_SECRET || '';
 
-export const revalidate = 86400;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
       headers: {
         'X-App-Token': FRONTEND_SECRET,
       },
-      next: { revalidate: 86400 },
+      cache: 'no-store',
     });
 
     if (!res.ok) {
@@ -24,12 +25,7 @@ export async function GET(request: NextRequest) {
 
     const data = await res.json();
     const headers = new Headers();
-    const cacheControl = res.headers.get('cache-control');
-    if (cacheControl) {
-      headers.set('Cache-Control', cacheControl);
-    } else {
-      headers.set('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
-    }
+    headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
     return NextResponse.json(data, { headers });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal Server Error';
