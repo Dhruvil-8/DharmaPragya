@@ -857,7 +857,7 @@ export default function ReadMode({
   // Dynamically detect which languages actually exist for the current text / Veda
   const availableTextLanguages = useMemo(() => {
     if (currentVeda) {
-      if (currentVeda.id === 'rigveda') return ['english', 'hindi'];
+      if (currentVeda.id === 'rigveda' || currentVeda.id === 'yajurveda') return ['english', 'hindi'];
       return ['hindi'];
     }
     if (chapterData && chapterData.length > 0) {
