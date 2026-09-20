@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -22,20 +24,82 @@ import (
 	"google.golang.org/api/option"
 )
 
+var (
+	// Matches query parameters like ?key=AIza... or &key=AIza...
+	keyParamRegex = regexp.MustCompile(`(?i)([?&]key=)[^&"'\s\\>]+`)
+	// Matches URL-encoded query parameters like %26key%3D... or %3Fkey%3D...
+	keyEncodedParamRegex = regexp.MustCompile(`(?i)(%26key%3D|%3Fkey%3D)[^%&"'\s\\>]+`)
+	// Matches standard Google API keys (starts with AIza and has 35 base64/url chars)
+	googleKeyRegex = regexp.MustCompile(`\bAIza[0-9A-Za-z_\-]{35}\b`)
+)
+
+// SanitizeText strips or redacts sensitive API keys and credentials from strings.
+func SanitizeText(s string) string {
+	if s == "" {
+		return ""
+	}
+	s = keyParamRegex.ReplaceAllString(s, "${1}[REDACTED]")
+	s = keyEncodedParamRegex.ReplaceAllString(s, "${1}[REDACTED]")
+	s = googleKeyRegex.ReplaceAllString(s, "[REDACTED]")
+
+	// Explicitly redact known environment keys if present
+	if k := os.Getenv("GEMINI_API_KEY"); len(k) >= 5 {
+		s = strings.ReplaceAll(s, k, "[REDACTED]")
+	}
+	if k := os.Getenv("GOOGLE_API_KEY"); len(k) >= 5 {
+		s = strings.ReplaceAll(s, k, "[REDACTED]")
+	}
+	if sec := os.Getenv("FRONTEND_SECRET"); len(sec) >= 5 {
+		s = strings.ReplaceAll(s, sec, "[REDACTED]")
+	}
+	return s
+}
+
+// SanitizeError wraps or rewrites an error to ensure no API keys or credentials are leaked in error strings.
+func SanitizeError(err error) error {
+	if err == nil {
+		return nil
+	}
+	return errors.New(SanitizeText(err.Error()))
+}
+
+// SanitizingWriter wraps an io.Writer (e.g. os.Stderr) and redacts API keys from all written log bytes.
+type SanitizingWriter struct {
+	out io.Writer
+}
+
+func NewSanitizingWriter(out io.Writer) *SanitizingWriter {
+	return &SanitizingWriter{out: out}
+}
+
+func (w *SanitizingWriter) Write(p []byte) (n int, err error) {
+	sanitized := SanitizeText(string(p))
+	_, err = w.out.Write([]byte(sanitized))
+	if err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
 type Handler struct {
 	db          *storage.Storage
 	genaiClient *genai.Client
 }
 
 func NewHandler(db *storage.Storage) *Handler {
-	apiKey := os.Getenv("GOOGLE_API_KEY")
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		apiKey = os.Getenv("GOOGLE_API_KEY")
+	}
 	var client *genai.Client
 	if apiKey != "" {
 		c, err := genai.NewClient(context.Background(), option.WithAPIKey(apiKey))
 		if err == nil {
 			client = c
 		} else {
-			log.Printf("Warning: failed to initialize persistent Gemini client: %v", err)
+			if os.Getenv("DEBUG") == "true" {
+				log.Printf("Warning: failed to initialize persistent Gemini client: %v", SanitizeError(err))
+			}
 		}
 	}
 	return &Handler{db: db, genaiClient: client}
@@ -130,7 +194,7 @@ func (h *Handler) ReadVerses(w http.ResponseWriter, r *http.Request) {
 		}
 		sections, err := h.db.GetSections(sourceID)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, SanitizeError(err).Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Cache-Control", "public, max-age=86400")
@@ -249,7 +313,7 @@ func (h *Handler) SearchVerses(w http.ResponseWriter, r *http.Request) {
 
 	results, err := h.db.DirectSearch(q, source, limit)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, SanitizeError(err).Error(), http.StatusInternalServerError)
 		return
 	}
 	if results == nil {
@@ -278,7 +342,7 @@ func (h *Handler) LookupDictionaryWord(w http.ResponseWriter, r *http.Request) {
 
 	entries, err := h.db.LookupWord(word)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, SanitizeError(err).Error(), http.StatusInternalServerError)
 		return
 	}
 	if entries == nil {
@@ -306,7 +370,7 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 
 	var req AskRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, SanitizeError(err).Error(), http.StatusBadRequest)
 		return
 	}
 	if req.Question == "" && req.Query != "" {
@@ -344,12 +408,15 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 
 	sendSSE("status", map[string]string{"status": "routing", "message": "Analyzing query and routing sacred scriptures..."})
 
-	apiKey := os.Getenv("GOOGLE_API_KEY")
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		apiKey = os.Getenv("GOOGLE_API_KEY")
+	}
 	if apiKey == "" {
 		if isStreaming {
-			sendSSE("error", map[string]string{"error": "GOOGLE_API_KEY not set"})
+			sendSSE("error", map[string]string{"error": "AI service not configured"})
 		} else {
-			http.Error(w, "GOOGLE_API_KEY not set", http.StatusInternalServerError)
+			http.Error(w, "AI service not configured", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -363,10 +430,13 @@ func (h *Handler) AskAI(w http.ResponseWriter, r *http.Request) {
 		var err error
 		localClient, err = genai.NewClient(ctx, option.WithAPIKey(apiKey))
 		if err != nil {
+			if os.Getenv("DEBUG") == "true" {
+				log.Printf("Failed to initialize local Gemini client: %v", SanitizeError(err))
+			}
 			if isStreaming {
-				sendSSE("error", map[string]string{"error": err.Error()})
+				sendSSE("error", map[string]string{"error": "AI service temporarily unavailable. Please try again."})
 			} else {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				http.Error(w, "AI service temporarily unavailable. Please try again.", http.StatusServiceUnavailable)
 			}
 			return
 		}
@@ -490,10 +560,16 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 
 	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
 	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) || strings.Contains(err.Error(), "context canceled") {
+			return
+		}
+		if os.Getenv("DEBUG") == "true" {
+			log.Printf("Router generation error: %v", SanitizeError(err))
+		}
 		if isStreaming {
-			sendSSE("error", map[string]string{"error": err.Error()})
+			sendSSE("error", map[string]string{"error": "Unable to process question at this time. Please try again."})
 		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Unable to process question at this time. Please try again.", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -516,7 +592,9 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 	var payload RouterPayload
 	err = json.Unmarshal([]byte(routerText), &payload)
 	if err != nil {
-		log.Printf("Router JSON parse error: %v, text: %s", err, routerText)
+		if os.Getenv("DEBUG") == "true" {
+			log.Printf("Router JSON parse error: %v, text: %s", SanitizeError(err), SanitizeText(routerText))
+		}
 		payload.IsOnTopic = true
 		words := strings.Fields(req.Question)
 		for _, w := range words {
@@ -524,8 +602,8 @@ MAPPING SCHEME FOR CHAPTER NUMBERS:
 				payload.EnglishKeywords = append(payload.EnglishKeywords, w)
 			}
 		}
-	} else {
-		log.Printf("[AskAI Router reasoning]: %s", payload.Reasoning)
+	} else if os.Getenv("DEBUG") == "true" {
+		log.Printf("[AskAI Router reasoning]: %s", SanitizeText(payload.Reasoning))
 	}
 
 	// Strong Programmatic Guardrail: Decline immediately if off-topic
@@ -792,11 +870,16 @@ CORE PRINCIPLES OF REASONING, PHILOSOPHY & FLUID CONVERSATION:
 				break
 			}
 			if err != nil {
+				if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) || strings.Contains(err.Error(), "context canceled") {
+					break
+				}
 				if strings.Contains(err.Error(), "looking for beginning of value") {
 					break
 				}
-				log.Printf("Synthesis streaming error: %v", err)
-				sendSSE("error", map[string]string{"error": fmt.Sprintf("Synthesis streaming error: %v", err)})
+				if os.Getenv("DEBUG") == "true" {
+					log.Printf("Synthesis streaming error: %v", SanitizeError(err))
+				}
+				sendSSE("error", map[string]string{"error": "AI response synthesis interrupted. Please try again."})
 				break
 			}
 			for _, cand := range chunkResp.Candidates {
@@ -837,7 +920,13 @@ CORE PRINCIPLES OF REASONING, PHILOSOPHY & FLUID CONVERSATION:
 
 	synthResp, err := synthModel.GenerateContent(ctx, genai.Text(synthPrompt.String()))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if errors.Is(err, context.Canceled) || errors.Is(ctx.Err(), context.Canceled) || strings.Contains(err.Error(), "context canceled") {
+			return
+		}
+		if os.Getenv("DEBUG") == "true" {
+			log.Printf("Synthesis generation error: %v", SanitizeError(err))
+		}
+		http.Error(w, "Unable to generate response at this time. Please try again.", http.StatusInternalServerError)
 		return
 	}
 
@@ -860,9 +949,11 @@ CORE PRINCIPLES OF REASONING, PHILOSOPHY & FLUID CONVERSATION:
 	var synthPayload SynthPayload
 	err = json.Unmarshal([]byte(synthText), &synthPayload)
 	if err != nil {
-		log.Printf("Synthesis JSON parse error: %v, text: %s", err, synthText)
+		if os.Getenv("DEBUG") == "true" {
+			log.Printf("Synthesis JSON parse error: %v, text: %s", SanitizeError(err), SanitizeText(synthText))
+		}
 		json.NewEncoder(w).Encode(AskResponse{
-			Answer:    synthText,
+			Answer:    SanitizeText(synthText),
 			Citations: citationsList,
 		})
 		return
@@ -905,7 +996,7 @@ func (h *Handler) ReadVedas(w http.ResponseWriter, r *http.Request) {
 	if veda == "" {
 		vedas, err := h.db.GetVedas()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, SanitizeError(err).Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Cache-Control", "public, max-age=86400")
@@ -916,7 +1007,7 @@ func (h *Handler) ReadVedas(w http.ResponseWriter, r *http.Request) {
 	if veda != "" && div1Str == "" {
 		sections, err := h.db.GetVedaSections(veda)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, SanitizeError(err).Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Cache-Control", "public, max-age=86400")
@@ -929,7 +1020,7 @@ func (h *Handler) ReadVedas(w http.ResponseWriter, r *http.Request) {
 
 	mantras, err := h.db.GetVedaMantras(veda, div1, div2)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, SanitizeError(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -967,7 +1058,7 @@ func (h *Handler) SearchVedas(w http.ResponseWriter, r *http.Request) {
 
 	results, err := h.db.SearchVedas(q, veda, limit)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, SanitizeError(err).Error(), http.StatusInternalServerError)
 		return
 	}
 	if results == nil {

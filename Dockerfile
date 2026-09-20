@@ -44,5 +44,7 @@ EXPOSE 7860
 WORKDIR /app/backend
 
 ENV PORT=7860
+ENV DEPLOYED=true
+ENV SILENT_LOGS=true
 
 CMD ["../dharmapragya-backend"]

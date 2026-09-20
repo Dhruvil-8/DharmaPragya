@@ -31,10 +31,18 @@ export async function POST(req: Request) {
 
     if (!res.ok) {
       const errorText = await res.text();
-      return new Response(errorText, {
-        status: res.status,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      let safeMessage = 'AI assistant service temporarily unavailable';
+      try {
+        const parsed = JSON.parse(errorText);
+        if (parsed.error && typeof parsed.error === 'string') {
+          safeMessage = parsed.error;
+        }
+      } catch {
+        if (errorText && errorText.length < 120 && !errorText.includes('key=') && !errorText.includes('AIza')) {
+          safeMessage = errorText.trim();
+        }
+      }
+      return NextResponse.json({ error: safeMessage }, { status: res.status });
     }
 
     if (isStreamRequested && res.body) {
@@ -51,9 +59,8 @@ export async function POST(req: Request) {
 
     const data = await res.json();
     return NextResponse.json(data);
-  } catch (error) {
-    console.error('Ask API proxy error:', error);
-    return NextResponse.json({ error: 'Failed to fetch from backend' }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Failed to connect to AI service' }, { status: 500 });
   }
 }
 

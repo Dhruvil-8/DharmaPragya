@@ -96,8 +96,28 @@ func ensureUnpacked(dbPath, zipPath string) {
 	}
 }
 
+func isDeploymentEnv() bool {
+	return os.Getenv("DEPLOYED") == "true" ||
+		os.Getenv("SILENT_LOGS") == "true" ||
+		os.Getenv("ENV") == "production" ||
+		os.Getenv("ENVIRONMENT") == "production" ||
+		os.Getenv("SPACE_ID") != "" || // Hugging Face Spaces automatically sets SPACE_ID
+		os.Getenv("SPACE_REPO_NAME") != "" ||
+		os.Getenv("PORT") == "7860" || // Hugging Face Spaces default port
+		os.Getenv("PRODUCTION") == "true"
+}
+
 func main() {
 	_ = godotenv.Load()
+
+	// In deployment / production environments (e.g. Hugging Face Spaces),
+	// completely discard terminal output so that zero data/errors are printed
+	// to public container or space logs.
+	if isDeploymentEnv() && strings.ToLower(os.Getenv("DEBUG")) != "true" {
+		log.SetOutput(io.Discard)
+	} else {
+		log.SetOutput(api.NewSanitizingWriter(os.Stderr))
+	}
 	dbPath := "./data/scriptures.db"
 	vedasDBPath := "./data/vedas.db"
 	dictDBPath := "./data/dictionary.db"
