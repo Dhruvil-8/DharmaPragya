@@ -13,6 +13,7 @@ const SavedVerses = dynamic(() => import('../components/SavedVerses'), { ssr: fa
 const ShareCardModal = dynamic(() => import('../components/ShareCardModal'), { ssr: false });
 const SidePanel = dynamic(() => import('../components/SidePanel'), { ssr: false });
 const SacredHymnModal = dynamic(() => import('../components/SacredHymnModal'), { ssr: false });
+const GitaStorySetupModal = dynamic(() => import('../components/GitaStorySetupModal'), { ssr: false });
 const API_BASE_URL = '';
 
 function HomePageContent() {
@@ -49,6 +50,9 @@ function HomePageContent() {
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(() => {
     return urlMode === 'suktams' || urlMode === 'hymns';
   });
+
+  const [isStorySetupOpen, setIsStorySetupOpen] = useState<boolean>(false);
+  const [storyInitialChapter, setStoryInitialChapter] = useState<number>(1);
 
   const [selectedHymnModal, setSelectedHymnModal] = useState<SacredHymn | null>(() => {
     if (hymnId) {
@@ -252,6 +256,10 @@ function HomePageContent() {
                 isActive={true}
                 onOpenShareModal={handleOpenShareModalFromVerse}
                 onAskAboutVerse={handleAskAboutVerse}
+                onOpenGitaStory={(ch) => {
+                  if (ch) setStoryInitialChapter(ch);
+                  setIsStorySetupOpen(true);
+                }}
                 targetCoordinate={targetCoordinate}
               />
             </div>
@@ -294,6 +302,10 @@ function HomePageContent() {
         isOpen={isAboutOpen}
         onClose={() => setIsAboutOpen(false)}
         onOpenSaved={() => setIsSavedOpen(true)}
+        onOpenGitaStory={() => {
+          setStoryInitialChapter(1);
+          setIsStorySetupOpen(true);
+        }}
         mode={mode}
         onModeChange={handleModeChange}
         onSelectCoordinate={handleSelectCoordinate}
@@ -305,6 +317,13 @@ function HomePageContent() {
         hymn={selectedHymnModal}
         onClose={() => setSelectedHymnModal(null)}
         onOpenInScripture={handleSelectCoordinate}
+      />
+
+      {/* Gita Darshan / Story Mode Setup Modal */}
+      <GitaStorySetupModal
+        isOpen={isStorySetupOpen}
+        onClose={() => setIsStorySetupOpen(false)}
+        initialChapter={storyInitialChapter}
       />
     </main>
   );

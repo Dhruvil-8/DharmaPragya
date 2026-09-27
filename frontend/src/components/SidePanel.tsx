@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   Compass,
   Flame,
+  BookAudio,
 } from 'lucide-react';
 import { getBookmarks } from '../lib/bookmarks';
 
@@ -25,6 +26,7 @@ interface SidePanelProps {
   onClose: () => void;
   onOpenSaved?: () => void;
   onOpenUpanishadCanon?: () => void;
+  onOpenGitaStory?: () => void;
   mode?: 'ask' | 'read';
   onModeChange?: (mode: 'ask' | 'read') => void;
   onSelectCoordinate?: (coord: {
@@ -64,6 +66,7 @@ export default function SidePanel({
   isOpen,
   onClose,
   onOpenSaved,
+  onOpenGitaStory,
   mode = 'ask',
   onModeChange
 }: SidePanelProps) {
@@ -302,6 +305,38 @@ export default function SidePanel({
                   </div>
                   <ChevronRight className="w-4 h-4 text-saffron-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
                 </Link>
+
+                {/* 4. Dedicated Gita Darshan (Story Mode) Option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onOpenGitaStory) {
+                      onOpenGitaStory();
+                    }
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-saffron-50/80 dark:from-slate-900 dark:via-[#1a1424] dark:to-slate-900 hover:from-amber-100 hover:to-orange-100 dark:hover:from-slate-800 dark:hover:to-[#221832] border border-amber-400/80 dark:border-amber-500/35 rounded-2xl shadow-xs transition-all cursor-pointer text-left group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 via-saffron-600 to-terracotta-600 flex items-center justify-center text-white shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                      <BookAudio className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs sm:text-sm font-bold text-saffron-950 dark:text-amber-200 block font-cinzel">
+                          Gita Darshan
+                        </span>
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-200/80 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700/50">
+                          Story Mode
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-stone-600 dark:text-slate-400 block mt-0.5">
+                        Immersive audio journey with sacred visuals & shlokas
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-amber-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
+                </button>
 
               </div>
 

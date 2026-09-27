@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ScrollText,
   BookOpen,
+  BookAudio,
 } from 'lucide-react';
 import Link from 'next/link';
 import { getUpanishadByDbName, VedicTradition } from '../data/canonicalUpanishads';
@@ -31,6 +32,7 @@ interface ReadModeProps {
     translationText: string;
   }) => void;
   onAskAboutVerse?: (verse: VerseData) => void;
+  onOpenGitaStory?: (chapter?: number) => void;
   targetCoordinate?: {
     sourceName: string;
     chapterNumber: number;
@@ -57,6 +59,7 @@ export default function ReadMode({
   isActive = true,
   onOpenShareModal,
   onAskAboutVerse,
+  onOpenGitaStory,
   targetCoordinate,
 }: ReadModeProps) {
   const [sources, setSources] = useState<SourceData[]>([]);
@@ -1447,28 +1450,42 @@ export default function ReadMode({
               </p>
             </div>
 
-            {/* Direct Verse Jump Input Form */}
-            <form onSubmit={handleDirectVerseJump} className="flex items-center gap-1.5 self-start sm:self-auto">
-              <label htmlFor="verse-jump-input" className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-slate-400">
-                Jump to #:
-              </label>
-              <input
-                id="verse-jump-input"
-                type="number"
-                min="1"
-                max={activeChapterInfo.total}
-                value={verseJumpInput}
-                onChange={e => setVerseJumpInput(e.target.value)}
-                placeholder={`1-${activeChapterInfo.total}`}
-                className="w-16 px-2 py-1 bg-cream-100 dark:bg-slate-900 border border-cream-400 dark:border-amber-500/30 rounded-xl text-xs text-center font-bold text-stone-900 dark:text-slate-100 focus:outline-none"
-              />
-              <button
-                type="submit"
-                className="px-2.5 py-1 bg-saffron-600 hover:bg-saffron-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs"
-              >
-                Go
-              </button>
-            </form>
+            {/* Direct Verse Jump Input Form & Story Mode Button */}
+            <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+              {currentSource === 'Bhagavad Gita' && currentSection && onOpenGitaStory && (
+                <button
+                  type="button"
+                  onClick={() => onOpenGitaStory(currentSection)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 via-saffron-600 to-terracotta-600 hover:from-amber-600 hover:to-saffron-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer group"
+                  title="Open this chapter in Gita Darshan (Story Mode)"
+                >
+                  <BookAudio className="w-3.5 h-3.5 text-amber-100 group-hover:scale-110 transition-transform" />
+                  <span>Story Mode</span>
+                </button>
+              )}
+
+              <form onSubmit={handleDirectVerseJump} className="flex items-center gap-1.5">
+                <label htmlFor="verse-jump-input" className="text-[10px] font-bold uppercase tracking-wider text-stone-500 dark:text-slate-400">
+                  Jump to #:
+                </label>
+                <input
+                  id="verse-jump-input"
+                  type="number"
+                  min="1"
+                  max={activeChapterInfo.total}
+                  value={verseJumpInput}
+                  onChange={e => setVerseJumpInput(e.target.value)}
+                  placeholder={`1-${activeChapterInfo.total}`}
+                  className="w-16 px-2 py-1 bg-cream-100 dark:bg-slate-900 border border-cream-400 dark:border-amber-500/30 rounded-xl text-xs text-center font-bold text-stone-900 dark:text-slate-100 focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  className="px-2.5 py-1 bg-saffron-600 hover:bg-saffron-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                >
+                  Go
+                </button>
+              </form>
+            </div>
           </div>
 
           {/* Unified Global View Settings & Layer Controls Bar */}
